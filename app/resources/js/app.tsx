@@ -37,17 +37,19 @@ router.on('invalid', (event) => {
 
     retrying = true;
     const { url, method, data } = lastVisit;
-    fetch('/sanctum/csrf-cookie', { credentials: 'same-origin' }).finally(() => {
-        router.visit(url, {
-            method,
-            data,
-            preserveState: true,
-            preserveScroll: true,
-            onFinish: () => {
-                retrying = false;
-            },
-        });
-    });
+    fetch('/sanctum/csrf-cookie', { credentials: 'same-origin' }).finally(
+        () => {
+            router.visit(url, {
+                method,
+                data,
+                preserveState: true,
+                preserveScroll: true,
+                onFinish: () => {
+                    retrying = false;
+                },
+            });
+        },
+    );
 });
 
 createInertiaApp({

@@ -85,8 +85,8 @@ class BackupManager
      */
     public function deleteBackup(Backup $backup): bool
     {
-        if (file_exists($backup->path)) {
-            @unlink($backup->path);
+        if (file_exists($backup->path) && ! unlink($backup->path)) {
+            throw new \RuntimeException("Unable to delete backup file: {$backup->path}");
         }
 
         return $backup->delete();
@@ -112,8 +112,12 @@ class BackupManager
         $deleted = 0;
 
         foreach ($toDelete as $backup) {
-            if (file_exists($backup->path)) {
-                @unlink($backup->path);
+            if (file_exists($backup->path) && ! unlink($backup->path)) {
+                Log::warning('Unable to remove backup during retention cleanup', [
+                    'path' => $backup->path,
+                ]);
+
+                continue;
             }
             $backup->delete();
             $deleted++;
@@ -277,27 +281,27 @@ class BackupManager
             throw new \RuntimeException("PZ data directory not found: {$dataPath}");
         }
 
+        $paths = array_values(array_filter(
+            ['Server', 'Saves', 'db'],
+            fn (string $path): bool => file_exists($dataPath.'/'.$path),
+        ));
+
+        if ($paths === []) {
+            throw new \RuntimeException("No PZ config, save, or database paths found in: {$dataPath}");
+        }
+
         $result = Process::timeout(300)->run([
             'tar', '-czf', $outputPath,
             '-C', $dataPath,
-            'Server', 'Saves', 'db',
+            ...$paths,
         ]);
 
         if (! $result->successful()) {
-            // Partial backup is acceptable — some dirs may not exist yet
-            Log::warning('Backup tar command had warnings', [
-                'output' => $result->output(),
-                'error' => $result->errorOutput(),
-                'exit_code' => $result->exitCode(),
-            ]);
-
-            // But a non-zero exit that also produced no usable archive isn't a partial
-            // backup — it's a total failure (disk full, permissions, etc). Letting it
-            // through would let callers (rollback/import) trust a worthless "successful"
-            // 0-byte safety snapshot before overwriting live data.
-            if (! file_exists($outputPath) || filesize($outputPath) === 0) {
-                throw new \RuntimeException('Backup archive was not created: '.$result->errorOutput());
+            if (file_exists($outputPath)) {
+                @unlink($outputPath);
             }
+
+            throw new \RuntimeException('Backup archive was not created: '.$result->errorOutput());
         }
     }
 
@@ -475,11 +479,15 @@ class BackupManager
 
             // Move extracted files to the target location
             if ($layout === 'full' || $layout === 'save_only') {
-                Process::timeout(60)->run("cp -rf {$tempDir}/* {$dataPath}/");
+                $copyResult = Process::timeout(60)->run(['cp', '-a', $tempDir.'/.', $dataPath.'/']);
             } else {
                 $saveDir = "{$dataPath}/Saves/Multiplayer/".config('zomboid.save_name', $serverName);
                 $this->ensureDirectoryExists($saveDir);
-                Process::timeout(60)->run("cp -rf {$tempDir}/* {$saveDir}/");
+                $copyResult = Process::timeout(60)->run(['cp', '-a', $tempDir.'/.', $saveDir.'/']);
+            }
+
+            if (! $copyResult->successful()) {
+                throw new \RuntimeException('Failed to copy imported world data: '.$copyResult->errorOutput());
             }
         } finally {
             Process::timeout(30)->run(['rm', '-rf', $tempDir]);

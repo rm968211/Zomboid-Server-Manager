@@ -1,14 +1,20 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { formatDateTime } from '@/lib/dates';
 import PzMap from '@/components/pz-map';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
-import type { MapConfig, PlayerMarker } from '@/types/server';
+import { formatDateTime } from '@/lib/dates';
 import { edit } from '@/routes/profile';
+import type { BreadcrumbItem } from '@/types';
+import type { MapConfig } from '@/types/server';
 
 type PlayerPosition = {
     username: string;
@@ -41,7 +47,14 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Portal({ pzAccount, hasEmail, emailVerified, playerPosition, mapConfig, hasTiles }: Props) {
+export default function Portal({
+    pzAccount,
+    hasEmail,
+    emailVerified,
+    playerPosition,
+    mapConfig,
+    hasTiles,
+}: Props) {
     const { auth } = usePage().props;
     const { t } = useTranslation();
 
@@ -51,7 +64,9 @@ export default function Portal({ pzAccount, hasEmail, emailVerified, playerPosit
 
             <div className="mx-auto max-w-3xl space-y-6 p-6">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">{t('portal.title')}</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">
+                        {t('portal.title')}
+                    </h1>
                     <p className="text-muted-foreground">
                         {t('portal.description')}
                     </p>
@@ -66,28 +81,46 @@ export default function Portal({ pzAccount, hasEmail, emailVerified, playerPosit
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{t('portal.username')}</span>
-                            <span className="font-mono text-sm">{pzAccount.username}</span>
+                            <span className="text-sm font-medium">
+                                {t('portal.username')}
+                            </span>
+                            <span className="font-mono text-sm">
+                                {pzAccount.username}
+                            </span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{t('portal.whitelist_status')}</span>
+                            <span className="text-sm font-medium">
+                                {t('portal.whitelist_status')}
+                            </span>
                             {pzAccount.whitelisted ? (
-                                <Badge variant="default">{t('portal.whitelisted')}</Badge>
+                                <Badge variant="default">
+                                    {t('portal.whitelisted')}
+                                </Badge>
                             ) : (
-                                <Badge variant="destructive">{t('portal.not_whitelisted')}</Badge>
+                                <Badge variant="destructive">
+                                    {t('portal.not_whitelisted')}
+                                </Badge>
                             )}
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{t('portal.server_status')}</span>
+                            <span className="text-sm font-medium">
+                                {t('portal.server_status')}
+                            </span>
                             {pzAccount.isOnline ? (
-                                <Badge className="bg-green-600">{t('status.online')}</Badge>
+                                <Badge className="bg-green-600">
+                                    {t('status.online')}
+                                </Badge>
                             ) : (
-                                <Badge variant="secondary">{t('status.offline')}</Badge>
+                                <Badge variant="secondary">
+                                    {t('status.offline')}
+                                </Badge>
                             )}
                         </div>
                         {pzAccount.syncedAt && (
                             <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">{t('portal.last_synced')}</span>
+                                <span className="text-sm font-medium">
+                                    {t('portal.last_synced')}
+                                </span>
                                 <span className="text-sm text-muted-foreground">
                                     {formatDateTime(pzAccount.syncedAt)}
                                 </span>
@@ -105,27 +138,41 @@ export default function Portal({ pzAccount, hasEmail, emailVerified, playerPosit
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{t('portal.email')}</span>
+                            <span className="text-sm font-medium">
+                                {t('portal.email')}
+                            </span>
                             {hasEmail ? (
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm">{auth.user.email}</span>
+                                    <span className="text-sm">
+                                        {auth.user.email}
+                                    </span>
                                     {emailVerified ? (
-                                        <Badge variant="default">{t('portal.verified')}</Badge>
+                                        <Badge variant="default">
+                                            {t('portal.verified')}
+                                        </Badge>
                                     ) : (
-                                        <Badge variant="outline">{t('portal.unverified')}</Badge>
+                                        <Badge variant="outline">
+                                            {t('portal.unverified')}
+                                        </Badge>
                                     )}
                                 </div>
                             ) : (
-                                <span className="text-sm text-muted-foreground">{t('portal.not_set')}</span>
+                                <span className="text-sm text-muted-foreground">
+                                    {t('portal.not_set')}
+                                </span>
                             )}
                         </div>
 
                         <div className="flex flex-wrap gap-3 pt-2">
                             <Button asChild variant="outline" size="sm">
-                                <Link href={edit()}>{t('portal.edit_profile')}</Link>
+                                <Link href={edit()}>
+                                    {t('portal.edit_profile')}
+                                </Link>
                             </Button>
                             <Button asChild variant="outline" size="sm">
-                                <Link href="/settings/password">{t('portal.change_password')}</Link>
+                                <Link href="/settings/password">
+                                    {t('portal.change_password')}
+                                </Link>
                             </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
@@ -145,7 +192,10 @@ export default function Portal({ pzAccount, hasEmail, emailVerified, playerPosit
                         <CardHeader>
                             <CardTitle>{t('portal.your_location')}</CardTitle>
                             <CardDescription>
-                                {t('portal.location_desc', { x: playerPosition.x.toFixed(0), y: playerPosition.y.toFixed(0) })}
+                                {t('portal.location_desc', {
+                                    x: playerPosition.x.toFixed(0),
+                                    y: playerPosition.y.toFixed(0),
+                                })}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="h-[300px] p-0">
@@ -157,13 +207,20 @@ export default function Portal({ pzAccount, hasEmail, emailVerified, playerPosit
                                         x: playerPosition.x,
                                         y: playerPosition.y,
                                         z: playerPosition.z,
-                                        status: playerPosition.is_dead ? 'dead' : pzAccount.isOnline ? 'online' : 'offline',
+                                        status: playerPosition.is_dead
+                                            ? 'dead'
+                                            : pzAccount.isOnline
+                                              ? 'online'
+                                              : 'offline',
                                         is_online: pzAccount.isOnline,
                                     },
                                 ]}
                                 mapConfig={{
                                     ...mapConfig,
-                                    center: { x: playerPosition.x, y: playerPosition.y },
+                                    center: {
+                                        x: playerPosition.x,
+                                        y: playerPosition.y,
+                                    },
                                     defaultZoom: 5,
                                 }}
                                 hasTiles={hasTiles}

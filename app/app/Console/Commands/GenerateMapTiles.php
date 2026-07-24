@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\MapConfigBuilder;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Process;
 
 class GenerateMapTiles extends Command
 {
@@ -39,15 +40,15 @@ class GenerateMapTiles extends Command
         }
 
         // Check Python3 availability
-        exec('python3 --version 2>&1', $output, $exitCode);
-        if ($exitCode !== 0) {
+        $python = Process::run(['python3', '--version']);
+        if (! $python->successful()) {
             $this->error('Python3 is required but not found.');
             $this->writeStatus('failed', 'Python3 is required but not found.');
 
             return self::FAILURE;
         }
 
-        $this->info('Python3 found: '.($output[0] ?? 'unknown version'));
+        $this->info('Python3 found: '.trim($python->output() ?: $python->errorOutput()));
 
         // Check for pzmap2dzi
         $pzmap2dziPath = $this->findPzmap2dzi();
@@ -97,7 +98,7 @@ class GenerateMapTiles extends Command
 
         // Step 2: Render isometric tiles
         $this->info('Step 2/2: Rendering isometric tiles...');
-        if (! $this->runPzmap($pzmap2dziPath, $confPath, 'render base')) {
+        if (! $this->runPzmap($pzmap2dziPath, $confPath, ['render', 'base'])) {
             $this->writeStatus('failed', $this->tailLog());
 
             return self::FAILURE;
@@ -139,27 +140,26 @@ class GenerateMapTiles extends Command
         return implode('', array_slice($lines, -20));
     }
 
-    private function runPzmap(string $pzmap2dziPath, string $confPath, string $subcommand): bool
+    /**
+     * @param  string|string[]  $subcommand
+     */
+    private function runPzmap(string $pzmap2dziPath, string $confPath, string|array $subcommand): bool
     {
         $pzmap2dziDir = dirname($pzmap2dziPath);
         $logFile = storage_path('logs/pzmap2dzi.log');
-        $command = sprintf(
-            'cd %s && python3 %s -c %s %s > %s 2>&1',
-            escapeshellarg($pzmap2dziDir),
-            escapeshellarg($pzmap2dziPath),
-            escapeshellarg($confPath),
-            $subcommand,
-            escapeshellarg($logFile),
-        );
+        $arguments = is_array($subcommand) ? $subcommand : [$subcommand];
+        $label = implode(' ', $arguments);
 
-        $this->line("Running: {$command}");
+        $this->line("Running pzmap2dzi: {$label}");
         $this->line("Output logged to: {$logFile}");
 
-        $result = 0;
-        exec($command, $output, $result);
+        $result = Process::path($pzmap2dziDir)
+            ->timeout(3600)
+            ->run(['python3', $pzmap2dziPath, '-c', $confPath, ...$arguments]);
+        file_put_contents($logFile, $result->output().$result->errorOutput());
 
-        if ($result !== 0) {
-            $this->error("pzmap2dzi '{$subcommand}' failed with exit code: {$result}");
+        if (! $result->successful()) {
+            $this->error("pzmap2dzi '{$label}' failed with exit code: {$result->exitCode()}");
             if (is_file($logFile)) {
                 // Show last 20 lines of the log for debugging
                 $lines = file($logFile);
@@ -170,7 +170,7 @@ class GenerateMapTiles extends Command
             return false;
         }
 
-        $this->info("Completed: {$subcommand}");
+        $this->info("Completed: {$label}");
 
         return true;
     }
@@ -178,7 +178,11 @@ class GenerateMapTiles extends Command
     private function generateConfig(string $serverPath, string $tilesPath): string
     {
         $mapOption = $this->option('map') ?: 'default';
-        $workerCount = (int) ($this->option('workers') ?: $this->detectCpuCores());
+        if (! preg_match('/^[a-zA-Z0-9_-]+$/', $mapOption)) {
+            throw new \InvalidArgumentException('Map name may contain only letters, numbers, underscores, and hyphens.');
+        }
+
+        $workerCount = max(1, (int) ($this->option('workers') ?: $this->detectCpuCores()));
 
         $this->info("Using {$workerCount} render workers");
 
@@ -257,9 +261,9 @@ class GenerateMapTiles extends Command
         }
 
         // Check if pzmap2dzi is in PATH
-        exec('which pzmap2dzi 2>/dev/null', $output, $exitCode);
-        if ($exitCode === 0 && ! empty($output[0])) {
-            return $output[0];
+        $which = Process::run(['which', 'pzmap2dzi']);
+        if ($which->successful() && trim($which->output()) !== '') {
+            return trim($which->output());
         }
 
         // Check common pip install location

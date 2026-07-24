@@ -19,6 +19,7 @@ use App\Services\RconClient;
 use App\Services\RconSanitizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+
 use function Illuminate\Support\defer;
 
 class ServerController extends Controller

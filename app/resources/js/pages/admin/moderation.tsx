@@ -1,22 +1,35 @@
 import { Deferred, Head, router } from '@inertiajs/react';
-import { Ban, Crosshair, Filter, MapPin, UserX } from 'lucide-react';
-import { formatDateTime } from '@/lib/dates';
-import { useCallback, useRef, useState } from 'react';
 import type L from 'leaflet';
+import { Ban, Crosshair, Filter, MapPin, UserX } from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
+import PlayerActionDialogs from '@/components/player-action-dialogs';
 import PzMap from '@/components/pz-map';
 import type { EventMarker } from '@/components/pz-map';
-import PlayerActionDialogs from '@/components/player-action-dialogs';
 import { SortableHeader } from '@/components/sortable-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { useServerSort } from '@/hooks/use-server-sort';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
+import { formatDateTime } from '@/lib/dates';
 import type { BreadcrumbItem } from '@/types';
 import type { GameEventEntry, MapConfig } from '@/types/server';
 
@@ -44,14 +57,37 @@ type Props = {
 };
 
 const EVENT_TYPES = [
-    { value: 'pvp_kill', labelKey: 'admin.moderation.event_type.pvp_kill', color: '#f97316' },
-    { value: 'pvp_hit', labelKey: 'admin.moderation.event_type.pvp_hit', color: '#ef4444' },
-    { value: 'death', labelKey: 'admin.moderation.event_type.death', color: '#9ca3af' },
-    { value: 'connect', labelKey: 'admin.moderation.event_type.connect', color: '#22c55e' },
-    { value: 'disconnect', labelKey: 'admin.moderation.event_type.disconnect', color: '#f59e0b' },
+    {
+        value: 'pvp_kill',
+        labelKey: 'admin.moderation.event_type.pvp_kill',
+        color: '#f97316',
+    },
+    {
+        value: 'pvp_hit',
+        labelKey: 'admin.moderation.event_type.pvp_hit',
+        color: '#ef4444',
+    },
+    {
+        value: 'death',
+        labelKey: 'admin.moderation.event_type.death',
+        color: '#9ca3af',
+    },
+    {
+        value: 'connect',
+        labelKey: 'admin.moderation.event_type.connect',
+        color: '#22c55e',
+    },
+    {
+        value: 'disconnect',
+        labelKey: 'admin.moderation.event_type.disconnect',
+        color: '#f59e0b',
+    },
 ] as const;
 
-const typeBadgeVariant: Record<string, 'destructive' | 'secondary' | 'outline'> = {
+const typeBadgeVariant: Record<
+    string,
+    'destructive' | 'secondary' | 'outline'
+> = {
     pvp_kill: 'destructive',
     pvp_hit: 'destructive',
     death: 'secondary',
@@ -61,7 +97,12 @@ const typeBadgeVariant: Record<string, 'destructive' | 'secondary' | 'outline'> 
 
 type SortKey = 'created_at' | 'event_type' | 'player';
 
-export default function Moderation({ mapConfig, hasTiles, filters, events }: Props) {
+export default function Moderation({
+    mapConfig,
+    hasTiles,
+    filters,
+    events,
+}: Props) {
     const { t } = useTranslation();
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -74,19 +115,26 @@ export default function Moderation({ mapConfig, hasTiles, filters, events }: Pro
         from: filters.from || '',
         to: filters.to || '',
     });
-    const [highlightedEventId, setHighlightedEventId] = useState<number | null>(null);
+    const [highlightedEventId, setHighlightedEventId] = useState<number | null>(
+        null,
+    );
     const [kickTarget, setKickTarget] = useState<string | null>(null);
     const [banTarget, setBanTarget] = useState<string | null>(null);
     const mapInstanceRef = useRef<L.Map | null>(null);
 
     const { sortKey, sortDir, toggleSort } = useServerSort<SortKey>({
         url: '/admin/moderation',
-        filters: filters as unknown as Record<string, string | null | undefined>,
+        filters: filters as unknown as Record<
+            string,
+            string | null | undefined
+        >,
         defaultSort: 'created_at',
         defaultDir: 'desc',
     });
 
-    const selectedTypes = localFilters.event_types ? localFilters.event_types.split(',') : [];
+    const selectedTypes = localFilters.event_types
+        ? localFilters.event_types.split(',')
+        : [];
 
     function toggleEventType(type: string) {
         const current = selectedTypes.includes(type)
@@ -97,7 +145,8 @@ export default function Moderation({ mapConfig, hasTiles, filters, events }: Pro
 
     function applyFilters() {
         const params: Record<string, string> = {};
-        if (localFilters.event_types) params.event_types = localFilters.event_types;
+        if (localFilters.event_types)
+            params.event_types = localFilters.event_types;
         if (localFilters.player) params.player = localFilters.player;
         if (localFilters.from) params.from = localFilters.from;
         if (localFilters.to) params.to = localFilters.to;
@@ -108,7 +157,12 @@ export default function Moderation({ mapConfig, hasTiles, filters, events }: Pro
     }
 
     function clearFilters() {
-        setLocalFilters({ event_types: 'pvp_hit,death', player: '', from: '', to: '' });
+        setLocalFilters({
+            event_types: 'pvp_hit,death',
+            player: '',
+            from: '',
+            to: '',
+        });
         const params: Record<string, string> = { event_types: 'pvp_hit,death' };
         if (filters.sort) params.sort = filters.sort;
         if (filters.direction) params.direction = filters.direction;
@@ -116,8 +170,13 @@ export default function Moderation({ mapConfig, hasTiles, filters, events }: Pro
     }
 
     function panToEvent(event: GameEventEntry) {
-        if (event.x == null || event.y == null || !mapInstanceRef.current) return;
-        mapInstanceRef.current.setView([-event.y, event.x], mapConfig.maxZoom - 2, { animate: true });
+        if (event.x == null || event.y == null || !mapInstanceRef.current)
+            return;
+        mapInstanceRef.current.setView(
+            [-event.y, event.x],
+            mapConfig.maxZoom - 2,
+            { animate: true },
+        );
         setHighlightedEventId(event.id);
     }
 
@@ -127,22 +186,23 @@ export default function Moderation({ mapConfig, hasTiles, filters, events }: Pro
         row?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, []);
 
-    const handleMapReady = useCallback((map: L.Map) => {
+    const handleMapReady = (map: L.Map) => {
         mapInstanceRef.current = map;
-    }, []);
+    };
 
     // Build event markers from loaded events
-    const eventMarkers: EventMarker[] = events?.data
-        ?.filter((e) => e.x != null && e.y != null)
-        .map((e) => ({
-            id: e.id,
-            x: e.x!,
-            y: e.y!,
-            type: e.event_type,
-            player: e.player,
-            target: e.target,
-            label: e.event_type.replace('_', ' '),
-        })) ?? [];
+    const eventMarkers: EventMarker[] =
+        events?.data
+            ?.filter((e) => e.x != null && e.y != null)
+            .map((e) => ({
+                id: e.id,
+                x: e.x!,
+                y: e.y!,
+                type: e.event_type,
+                player: e.player,
+                target: e.target,
+                label: e.event_type.replace('_', ' '),
+            })) ?? [];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -159,18 +219,28 @@ export default function Moderation({ mapConfig, hasTiles, filters, events }: Pro
                     <CardContent>
                         <div className="space-y-4">
                             <div>
-                                <Label className="mb-2 block text-xs">{t('admin.moderation.event_types')}</Label>
+                                <Label className="mb-2 block text-xs">
+                                    {t('admin.moderation.event_types')}
+                                </Label>
                                 <div className="flex flex-wrap gap-2">
                                     {EVENT_TYPES.map((et) => (
                                         <Button
                                             key={et.value}
-                                            variant={selectedTypes.includes(et.value) ? 'default' : 'outline'}
+                                            variant={
+                                                selectedTypes.includes(et.value)
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
                                             size="sm"
-                                            onClick={() => toggleEventType(et.value)}
+                                            onClick={() =>
+                                                toggleEventType(et.value)
+                                            }
                                         >
                                             <span
                                                 className="mr-1.5 inline-block size-2.5 rounded-full"
-                                                style={{ backgroundColor: et.color }}
+                                                style={{
+                                                    backgroundColor: et.color,
+                                                }}
                                             />
                                             {t(et.labelKey)}
                                         </Button>
@@ -179,32 +249,63 @@ export default function Moderation({ mapConfig, hasTiles, filters, events }: Pro
                             </div>
                             <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                 <div className="space-y-1.5">
-                                    <Label className="text-xs">{t('admin.moderation.player_label')}</Label>
+                                    <Label className="text-xs">
+                                        {t('admin.moderation.player_label')}
+                                    </Label>
                                     <Input
                                         value={localFilters.player}
-                                        onChange={(e) => setLocalFilters((f) => ({ ...f, player: e.target.value }))}
-                                        placeholder={t('admin.moderation.search_player_placeholder')}
+                                        onChange={(e) =>
+                                            setLocalFilters((f) => ({
+                                                ...f,
+                                                player: e.target.value,
+                                            }))
+                                        }
+                                        placeholder={t(
+                                            'admin.moderation.search_player_placeholder',
+                                        )}
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-xs">{t('admin.moderation.from_label')}</Label>
+                                    <Label className="text-xs">
+                                        {t('admin.moderation.from_label')}
+                                    </Label>
                                     <Input
                                         type="date"
                                         value={localFilters.from}
-                                        onChange={(e) => setLocalFilters((f) => ({ ...f, from: e.target.value }))}
+                                        onChange={(e) =>
+                                            setLocalFilters((f) => ({
+                                                ...f,
+                                                from: e.target.value,
+                                            }))
+                                        }
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-xs">{t('admin.moderation.to_label')}</Label>
+                                    <Label className="text-xs">
+                                        {t('admin.moderation.to_label')}
+                                    </Label>
                                     <Input
                                         type="date"
                                         value={localFilters.to}
-                                        onChange={(e) => setLocalFilters((f) => ({ ...f, to: e.target.value }))}
+                                        onChange={(e) =>
+                                            setLocalFilters((f) => ({
+                                                ...f,
+                                                to: e.target.value,
+                                            }))
+                                        }
                                     />
                                 </div>
                                 <div className="flex gap-2">
-                                    <Button size="sm" onClick={applyFilters}>{t('common.apply')}</Button>
-                                    <Button size="sm" variant="outline" onClick={clearFilters}>{t('common.clear')}</Button>
+                                    <Button size="sm" onClick={applyFilters}>
+                                        {t('common.apply')}
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={clearFilters}
+                                    >
+                                        {t('common.clear')}
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -221,15 +322,22 @@ export default function Moderation({ mapConfig, hasTiles, filters, events }: Pro
                                     {t('admin.moderation.event_map')}
                                 </CardTitle>
                                 <CardDescription>
-                                    {t('admin.moderation.event_map_description')}
+                                    {t(
+                                        'admin.moderation.event_map_description',
+                                    )}
                                 </CardDescription>
                             </div>
                             <div className="flex flex-wrap gap-3">
                                 {EVENT_TYPES.map((et) => (
-                                    <div key={et.value} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <div
+                                        key={et.value}
+                                        className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                                    >
                                         <span
                                             className="inline-block size-2.5 rounded-full"
-                                            style={{ backgroundColor: et.color }}
+                                            style={{
+                                                backgroundColor: et.color,
+                                            }}
                                         />
                                         {t(et.labelKey)}
                                     </div>
@@ -258,52 +366,129 @@ export default function Moderation({ mapConfig, hasTiles, filters, events }: Pro
                             {t('admin.moderation.events')}
                         </CardTitle>
                         <CardDescription>
-                            {events?.total != null ? t('admin.moderation.events_found', { count: String(events.total) }) : t('common.loading')}
+                            {events?.total != null
+                                ? t('admin.moderation.events_found', {
+                                      count: String(events.total),
+                                  })
+                                : t('common.loading')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="overflow-x-auto">
-                        <Deferred data="events" fallback={
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>{t('admin.moderation.table_time')}</TableHead>
-                                        <TableHead>{t('admin.moderation.table_type')}</TableHead>
-                                        <TableHead>{t('admin.moderation.table_player')}</TableHead>
-                                        <TableHead>{t('admin.moderation.table_target')}</TableHead>
-                                        <TableHead>{t('admin.moderation.table_location')}</TableHead>
-                                        <TableHead className="text-right">{t('common.actions')}</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {Array.from({ length: 6 }).map((_, i) => (
-                                        <TableRow key={i}>
-                                            <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-                                            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                                            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                                            <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                                            <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <Deferred
+                            data="events"
+                            fallback={
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>
+                                                {t(
+                                                    'admin.moderation.table_time',
+                                                )}
+                                            </TableHead>
+                                            <TableHead>
+                                                {t(
+                                                    'admin.moderation.table_type',
+                                                )}
+                                            </TableHead>
+                                            <TableHead>
+                                                {t(
+                                                    'admin.moderation.table_player',
+                                                )}
+                                            </TableHead>
+                                            <TableHead>
+                                                {t(
+                                                    'admin.moderation.table_target',
+                                                )}
+                                            </TableHead>
+                                            <TableHead>
+                                                {t(
+                                                    'admin.moderation.table_location',
+                                                )}
+                                            </TableHead>
+                                            <TableHead className="text-right">
+                                                {t('common.actions')}
+                                            </TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        }>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {Array.from({ length: 6 }).map(
+                                            (_, i) => (
+                                                <TableRow key={i}>
+                                                    <TableCell>
+                                                        <Skeleton className="h-4 w-28" />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Skeleton className="h-5 w-16 rounded-full" />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Skeleton className="h-4 w-24" />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Skeleton className="h-4 w-24" />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Skeleton className="h-4 w-20" />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Skeleton className="h-4 w-20" />
+                                                    </TableCell>
+                                                </TableRow>
+                                            ),
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            }
+                        >
                             {events?.data.length > 0 ? (
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>
-                                                <SortableHeader column="created_at" label={t('admin.moderation.table_time')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                                                <SortableHeader
+                                                    column="created_at"
+                                                    label={t(
+                                                        'admin.moderation.table_time',
+                                                    )}
+                                                    sortKey={sortKey}
+                                                    sortDir={sortDir}
+                                                    onSort={toggleSort}
+                                                />
                                             </TableHead>
                                             <TableHead>
-                                                <SortableHeader column="event_type" label={t('admin.moderation.table_type')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                                                <SortableHeader
+                                                    column="event_type"
+                                                    label={t(
+                                                        'admin.moderation.table_type',
+                                                    )}
+                                                    sortKey={sortKey}
+                                                    sortDir={sortDir}
+                                                    onSort={toggleSort}
+                                                />
                                             </TableHead>
                                             <TableHead>
-                                                <SortableHeader column="player" label={t('admin.moderation.table_player')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                                                <SortableHeader
+                                                    column="player"
+                                                    label={t(
+                                                        'admin.moderation.table_player',
+                                                    )}
+                                                    sortKey={sortKey}
+                                                    sortDir={sortDir}
+                                                    onSort={toggleSort}
+                                                />
                                             </TableHead>
-                                            <TableHead>{t('admin.moderation.table_target')}</TableHead>
-                                            <TableHead>{t('admin.moderation.table_location')}</TableHead>
-                                            <TableHead className="text-right">{t('common.actions')}</TableHead>
+                                            <TableHead>
+                                                {t(
+                                                    'admin.moderation.table_target',
+                                                )}
+                                            </TableHead>
+                                            <TableHead>
+                                                {t(
+                                                    'admin.moderation.table_location',
+                                                )}
+                                            </TableHead>
+                                            <TableHead className="text-right">
+                                                {t('common.actions')}
+                                            </TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -312,19 +497,33 @@ export default function Moderation({ mapConfig, hasTiles, filters, events }: Pro
                                                 key={event.id}
                                                 id={`event-row-${event.id}`}
                                                 className={`cursor-pointer transition-colors ${highlightedEventId === event.id ? 'bg-muted/50' : ''}`}
-                                                onClick={() => panToEvent(event)}
+                                                onClick={() =>
+                                                    panToEvent(event)
+                                                }
                                             >
                                                 <TableCell className="text-xs">
                                                     {event.created_at
-                                                        ? formatDateTime(event.created_at)
+                                                        ? formatDateTime(
+                                                              event.created_at,
+                                                          )
                                                         : ''}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant={typeBadgeVariant[event.event_type] ?? 'outline'}>
-                                                        {t(`admin.moderation.event_type.${event.event_type}`)}
+                                                    <Badge
+                                                        variant={
+                                                            typeBadgeVariant[
+                                                                event.event_type
+                                                            ] ?? 'outline'
+                                                        }
+                                                    >
+                                                        {t(
+                                                            `admin.moderation.event_type.${event.event_type}`,
+                                                        )}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="font-medium">{event.player}</TableCell>
+                                                <TableCell className="font-medium">
+                                                    {event.player}
+                                                </TableCell>
                                                 <TableCell className="text-muted-foreground">
                                                     {event.target ?? '-'}
                                                 </TableCell>
@@ -339,11 +538,20 @@ export default function Moderation({ mapConfig, hasTiles, filters, events }: Pro
                                                     )}
                                                 </TableCell>
                                                 <TableCell className="text-right">
-                                                    <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                                                    <div
+                                                        className="flex justify-end gap-1"
+                                                        onClick={(e) =>
+                                                            e.stopPropagation()
+                                                        }
+                                                    >
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            onClick={() => setKickTarget(event.player)}
+                                                            onClick={() =>
+                                                                setKickTarget(
+                                                                    event.player,
+                                                                )
+                                                            }
                                                         >
                                                             <UserX className="mr-1 size-3" />
                                                             {t('common.kick')}
@@ -351,7 +559,11 @@ export default function Moderation({ mapConfig, hasTiles, filters, events }: Pro
                                                         <Button
                                                             variant="destructive"
                                                             size="sm"
-                                                            onClick={() => setBanTarget(event.player)}
+                                                            onClick={() =>
+                                                                setBanTarget(
+                                                                    event.player,
+                                                                )
+                                                            }
                                                         >
                                                             <Ban className="mr-1 size-3" />
                                                             {t('common.ban')}
@@ -371,22 +583,45 @@ export default function Moderation({ mapConfig, hasTiles, filters, events }: Pro
                             {/* Pagination */}
                             {events?.last_page > 1 && (
                                 <div className="mt-4 flex items-center justify-center gap-2">
-                                    {Array.from({ length: events.last_page }, (_, i) => i + 1).map((page) => (
+                                    {Array.from(
+                                        { length: events.last_page },
+                                        (_, i) => i + 1,
+                                    ).map((page) => (
                                         <Button
                                             key={page}
-                                            variant={page === events.current_page ? 'default' : 'outline'}
+                                            variant={
+                                                page === events.current_page
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
                                             size="sm"
                                             onClick={() => {
-                                                const params: Record<string, string> = {};
-                                                if (localFilters.event_types) params.event_types = localFilters.event_types;
-                                                if (localFilters.player) params.player = localFilters.player;
-                                                if (localFilters.from) params.from = localFilters.from;
-                                                if (localFilters.to) params.to = localFilters.to;
-                                                if (filters.sort) params.sort = filters.sort;
-                                                if (filters.direction) params.direction = filters.direction;
+                                                const params: Record<
+                                                    string,
+                                                    string
+                                                > = {};
+                                                if (localFilters.event_types)
+                                                    params.event_types =
+                                                        localFilters.event_types;
+                                                if (localFilters.player)
+                                                    params.player =
+                                                        localFilters.player;
+                                                if (localFilters.from)
+                                                    params.from =
+                                                        localFilters.from;
+                                                if (localFilters.to)
+                                                    params.to = localFilters.to;
+                                                if (filters.sort)
+                                                    params.sort = filters.sort;
+                                                if (filters.direction)
+                                                    params.direction =
+                                                        filters.direction;
                                                 router.get(
                                                     '/admin/moderation',
-                                                    { ...params, page: String(page) },
+                                                    {
+                                                        ...params,
+                                                        page: String(page),
+                                                    },
                                                     { preserveState: true },
                                                 );
                                             }}

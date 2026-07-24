@@ -56,7 +56,11 @@ export default function PlayerActionDialogs({
     const [passwordConfirmation, setPasswordConfirmation] = useState('');
     const [loading, setLoading] = useState(false);
 
-    async function handleAction(url: string, data: Record<string, unknown>, onDone: () => void) {
+    async function handleAction(
+        url: string,
+        data: Record<string, unknown>,
+        onDone: () => void,
+    ) {
         setLoading(true);
         await fetchAction(url, { data });
         setLoading(false);
@@ -67,27 +71,46 @@ export default function PlayerActionDialogs({
     return (
         <>
             {/* Kick Dialog */}
-            <Dialog open={kickTarget !== null} onOpenChange={() => onCloseKick()}>
+            <Dialog
+                open={kickTarget !== null}
+                onOpenChange={() => onCloseKick()}
+            >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('admin.player_dialogs.kick_title', { player: kickTarget ?? '' })}</DialogTitle>
-                        <DialogDescription>{t('admin.player_dialogs.kick_description')}</DialogDescription>
+                        <DialogTitle>
+                            {t('admin.player_dialogs.kick_title', {
+                                player: kickTarget ?? '',
+                            })}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {t('admin.player_dialogs.kick_description')}
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2">
-                        <Label htmlFor="kick-reason">{t('admin.player_dialogs.kick_reason_label')}</Label>
+                        <Label htmlFor="kick-reason">
+                            {t('admin.player_dialogs.kick_reason_label')}
+                        </Label>
                         <Input
                             id="kick-reason"
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
-                            placeholder={t('admin.player_dialogs.kick_reason_placeholder')}
+                            placeholder={t(
+                                'admin.player_dialogs.kick_reason_placeholder',
+                            )}
                         />
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={onCloseKick}>{t('common.cancel')}</Button>
+                        <Button variant="outline" onClick={onCloseKick}>
+                            {t('common.cancel')}
+                        </Button>
                         <Button
                             disabled={loading}
                             onClick={() =>
-                                handleAction(`/admin/players/${kickTarget}/kick`, { reason }, onCloseKick)
+                                handleAction(
+                                    `/admin/players/${kickTarget}/kick`,
+                                    { reason },
+                                    onCloseKick,
+                                )
                             }
                         >
                             <UserX className="mr-1.5 size-3.5" />
@@ -101,25 +124,41 @@ export default function PlayerActionDialogs({
             <Dialog open={banTarget !== null} onOpenChange={() => onCloseBan()}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('admin.player_dialogs.ban_title', { player: banTarget ?? '' })}</DialogTitle>
-                        <DialogDescription>{t('admin.player_dialogs.ban_description')}</DialogDescription>
+                        <DialogTitle>
+                            {t('admin.player_dialogs.ban_title', {
+                                player: banTarget ?? '',
+                            })}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {t('admin.player_dialogs.ban_description')}
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2">
-                        <Label htmlFor="ban-reason">{t('admin.player_dialogs.ban_reason_label')}</Label>
+                        <Label htmlFor="ban-reason">
+                            {t('admin.player_dialogs.ban_reason_label')}
+                        </Label>
                         <Input
                             id="ban-reason"
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
-                            placeholder={t('admin.player_dialogs.ban_reason_placeholder')}
+                            placeholder={t(
+                                'admin.player_dialogs.ban_reason_placeholder',
+                            )}
                         />
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={onCloseBan}>{t('common.cancel')}</Button>
+                        <Button variant="outline" onClick={onCloseBan}>
+                            {t('common.cancel')}
+                        </Button>
                         <Button
                             variant="destructive"
                             disabled={loading}
                             onClick={() =>
-                                handleAction(`/admin/players/${banTarget}/ban`, { reason }, onCloseBan)
+                                handleAction(
+                                    `/admin/players/${banTarget}/ban`,
+                                    { reason },
+                                    onCloseBan,
+                                )
                             }
                         >
                             <Ban className="mr-1.5 size-3.5" />
@@ -130,30 +169,56 @@ export default function PlayerActionDialogs({
             </Dialog>
 
             {/* Access Level Dialog */}
-            <Dialog open={accessTarget !== null} onOpenChange={() => onCloseAccess()}>
+            <Dialog
+                open={accessTarget !== null}
+                onOpenChange={() => onCloseAccess()}
+            >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('admin.player_dialogs.access_title', { player: accessTarget ?? '' })}</DialogTitle>
-                        <DialogDescription>{t('admin.player_dialogs.access_description')}</DialogDescription>
+                        <DialogTitle>
+                            {t('admin.player_dialogs.access_title', {
+                                player: accessTarget ?? '',
+                            })}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {t('admin.player_dialogs.access_description')}
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2">
                         <Label>{t('admin.player_dialogs.access_label')}</Label>
-                        <Select value={accessLevel} onValueChange={setAccessLevel}>
+                        <Select
+                            value={accessLevel}
+                            onValueChange={setAccessLevel}
+                        >
                             <SelectTrigger>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="admin">{t('admin.player_dialogs.access_admin')}</SelectItem>
-                                <SelectItem value="moderator">{t('admin.player_dialogs.access_moderator')}</SelectItem>
-                                <SelectItem value="overseer">{t('admin.player_dialogs.access_overseer')}</SelectItem>
-                                <SelectItem value="gm">{t('admin.player_dialogs.access_gm')}</SelectItem>
-                                <SelectItem value="observer">{t('admin.player_dialogs.access_observer')}</SelectItem>
-                                <SelectItem value="none">{t('admin.player_dialogs.access_none')}</SelectItem>
+                                <SelectItem value="admin">
+                                    {t('admin.player_dialogs.access_admin')}
+                                </SelectItem>
+                                <SelectItem value="moderator">
+                                    {t('admin.player_dialogs.access_moderator')}
+                                </SelectItem>
+                                <SelectItem value="overseer">
+                                    {t('admin.player_dialogs.access_overseer')}
+                                </SelectItem>
+                                <SelectItem value="gm">
+                                    {t('admin.player_dialogs.access_gm')}
+                                </SelectItem>
+                                <SelectItem value="observer">
+                                    {t('admin.player_dialogs.access_observer')}
+                                </SelectItem>
+                                <SelectItem value="none">
+                                    {t('admin.player_dialogs.access_none')}
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={onCloseAccess}>{t('common.cancel')}</Button>
+                        <Button variant="outline" onClick={onCloseAccess}>
+                            {t('common.cancel')}
+                        </Button>
                         <Button
                             disabled={loading}
                             onClick={() =>
@@ -183,30 +248,50 @@ export default function PlayerActionDialogs({
                 >
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>{t('admin.player_dialogs.password_title', { player: passwordTarget ?? '' })}</DialogTitle>
+                            <DialogTitle>
+                                {t('admin.player_dialogs.password_title', {
+                                    player: passwordTarget ?? '',
+                                })}
+                            </DialogTitle>
                             <DialogDescription>
                                 {t('admin.player_dialogs.password_description')}
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="new-password">{t('admin.player_dialogs.new_password_label')}</Label>
+                                <Label htmlFor="new-password">
+                                    {t(
+                                        'admin.player_dialogs.new_password_label',
+                                    )}
+                                </Label>
                                 <Input
                                     id="new-password"
                                     type="password"
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder={t('admin.player_dialogs.new_password_placeholder')}
+                                    onChange={(e) =>
+                                        setPassword(e.target.value)
+                                    }
+                                    placeholder={t(
+                                        'admin.player_dialogs.new_password_placeholder',
+                                    )}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="confirm-password">{t('admin.player_dialogs.confirm_password_label')}</Label>
+                                <Label htmlFor="confirm-password">
+                                    {t(
+                                        'admin.player_dialogs.confirm_password_label',
+                                    )}
+                                </Label>
                                 <Input
                                     id="confirm-password"
                                     type="password"
                                     value={passwordConfirmation}
-                                    onChange={(e) => setPasswordConfirmation(e.target.value)}
-                                    placeholder={t('admin.player_dialogs.confirm_password_placeholder')}
+                                    onChange={(e) =>
+                                        setPasswordConfirmation(e.target.value)
+                                    }
+                                    placeholder={t(
+                                        'admin.player_dialogs.confirm_password_placeholder',
+                                    )}
                                 />
                             </div>
                         </div>
@@ -226,7 +311,11 @@ export default function PlayerActionDialogs({
                                 onClick={() => {
                                     handleAction(
                                         `/admin/players/${passwordTarget}/password`,
-                                        { password, password_confirmation: passwordConfirmation },
+                                        {
+                                            password,
+                                            password_confirmation:
+                                                passwordConfirmation,
+                                        },
                                         () => {
                                             setPassword('');
                                             setPasswordConfirmation('');
@@ -245,16 +334,30 @@ export default function PlayerActionDialogs({
 
             {/* Reset Respawn Timer Dialog */}
             {onCloseResetTimer && (
-                <Dialog open={resetTimerTarget !== null} onOpenChange={() => onCloseResetTimer()}>
+                <Dialog
+                    open={resetTimerTarget !== null}
+                    onOpenChange={() => onCloseResetTimer()}
+                >
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>{t('admin.player_dialogs.reset_timer_title', { player: resetTimerTarget ?? '' })}</DialogTitle>
+                            <DialogTitle>
+                                {t('admin.player_dialogs.reset_timer_title', {
+                                    player: resetTimerTarget ?? '',
+                                })}
+                            </DialogTitle>
                             <DialogDescription>
-                                {t('admin.player_dialogs.reset_timer_description')}
+                                {t(
+                                    'admin.player_dialogs.reset_timer_description',
+                                )}
                             </DialogDescription>
                         </DialogHeader>
                         <DialogFooter>
-                            <Button variant="outline" onClick={onCloseResetTimer}>{t('common.cancel')}</Button>
+                            <Button
+                                variant="outline"
+                                onClick={onCloseResetTimer}
+                            >
+                                {t('common.cancel')}
+                            </Button>
                             <Button
                                 disabled={loading}
                                 onClick={() =>

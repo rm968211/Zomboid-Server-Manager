@@ -131,7 +131,9 @@ class DockerManager
                 return $response->json() ?? [];
             }
 
-            return null;
+            throw new RuntimeException(
+                "Docker daemon returned HTTP {$response->status()} for {$method} {$path}"
+            );
         } catch (ConnectionException) {
             throw new RuntimeException("Cannot connect to Docker daemon at {$this->proxyUrl}");
         }
@@ -140,7 +142,10 @@ class DockerManager
     private function requestRaw(string $method, string $path, array $options = []): ?string
     {
         try {
-            $client = Http::baseUrl($this->proxyUrl);
+            $timeout = $options['timeout'] ?? 30;
+            $client = Http::baseUrl($this->proxyUrl)
+                ->timeout($timeout)
+                ->connectTimeout(5);
 
             $url = $path;
             if (isset($options['query'])) {
@@ -149,13 +154,19 @@ class DockerManager
 
             $response = $client->get($url);
 
+            if ($response->status() === 404) {
+                return null;
+            }
+
             if ($response->successful()) {
                 return $response->body();
             }
 
-            return null;
+            throw new RuntimeException(
+                "Docker daemon returned HTTP {$response->status()} for {$method} {$path}"
+            );
         } catch (ConnectionException) {
-            return null;
+            throw new RuntimeException("Cannot connect to Docker daemon at {$this->proxyUrl}");
         }
     }
 

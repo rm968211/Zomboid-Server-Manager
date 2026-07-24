@@ -1,7 +1,10 @@
 import { Hammer, LogIn, LogOut, Skull, Swords } from 'lucide-react';
 import type { GameEventEntry } from '@/types';
 
-const eventConfig: Record<string, { icon: typeof Skull; label: string; color: string }> = {
+const eventConfig: Record<
+    string,
+    { icon: typeof Skull; label: string; color: string }
+> = {
     death: { icon: Skull, label: 'Died', color: 'text-red-500' },
     pvp_hit: { icon: Swords, label: 'PvP Hit', color: 'text-yellow-500' },
     pvp_kill: { icon: Swords, label: 'PvP Kill', color: 'text-orange-500' },
@@ -45,7 +48,8 @@ export function ActivityFeed({ events }: { events: GameEventEntry[] }) {
     if (events.length === 0) {
         return (
             <p className="text-sm text-muted-foreground">
-                No game events recorded yet. Events will appear once Log Extender is active.
+                No game events recorded yet. Events will appear once Log
+                Extender is active.
             </p>
         );
     }
@@ -53,7 +57,8 @@ export function ActivityFeed({ events }: { events: GameEventEntry[] }) {
     return (
         <div className="space-y-2">
             {events.map((event) => {
-                const config = eventConfig[event.event_type] ?? eventConfig.death;
+                const config =
+                    eventConfig[event.event_type] ?? eventConfig.death;
                 const Icon = config.icon;
 
                 return (
@@ -61,11 +66,17 @@ export function ActivityFeed({ events }: { events: GameEventEntry[] }) {
                         key={event.id}
                         className="flex items-start gap-2.5 text-sm"
                     >
-                        <Icon className={`mt-0.5 size-4 shrink-0 ${config.color}`} />
+                        <Icon
+                            className={`mt-0.5 size-4 shrink-0 ${config.color}`}
+                        />
                         <div className="min-w-0 flex-1">
-                            <p className="leading-tight">{formatEventDescription(event)}</p>
+                            <p className="leading-tight">
+                                {formatEventDescription(event)}
+                            </p>
                             <p className="text-xs text-muted-foreground">
-                                {event.created_at ? timeAgo(event.created_at) : ''}
+                                {event.created_at
+                                    ? timeAgo(event.created_at)
+                                    : ''}
                             </p>
                         </div>
                     </div>

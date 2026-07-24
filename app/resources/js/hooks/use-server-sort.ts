@@ -28,7 +28,8 @@ export function useServerSort<K extends string>({
         }
 
         params.sort = key;
-        params.direction = sortKey === key ? (sortDir === 'asc' ? 'desc' : 'asc') : 'asc';
+        params.direction =
+            sortKey === key ? (sortDir === 'asc' ? 'desc' : 'asc') : 'asc';
 
         router.get(url, params, { preserveState: true });
     }

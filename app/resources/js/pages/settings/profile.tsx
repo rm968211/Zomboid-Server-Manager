@@ -1,5 +1,6 @@
 import { Transition } from '@headlessui/react';
 import { Form, Head, usePage } from '@inertiajs/react';
+import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -8,9 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
-import type { BreadcrumbItem } from '@/types';
-import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import { edit } from '@/routes/profile';
+import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -19,11 +19,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Profile({
-    status,
-}: {
-    status?: string;
-}) {
+export default function Profile() {
     const { auth } = usePage().props;
 
     return (
@@ -48,7 +44,8 @@ export default function Profile({
                             className="bg-muted"
                         />
                         <p className="text-xs text-muted-foreground">
-                            Your username cannot be changed. It is linked to your game server account.
+                            Your username cannot be changed. It is linked to
+                            your game server account.
                         </p>
                     </div>
 
@@ -83,7 +80,9 @@ export default function Profile({
                                 <div className="grid gap-2">
                                     <Label htmlFor="email">
                                         Email address{' '}
-                                        <span className="text-muted-foreground">(optional)</span>
+                                        <span className="text-muted-foreground">
+                                            (optional)
+                                        </span>
                                     </Label>
 
                                     <Input

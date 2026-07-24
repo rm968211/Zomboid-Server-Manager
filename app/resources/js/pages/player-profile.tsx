@@ -1,21 +1,64 @@
 import { Deferred, Head, Link } from '@inertiajs/react';
-import { Clock, Hammer, LogIn, Medal, Shield, Skull, Swords, Trophy } from 'lucide-react';
+import {
+    Clock,
+    Hammer,
+    LogIn,
+    Medal,
+    Shield,
+    Skull,
+    Swords,
+    Trophy,
+} from 'lucide-react';
 import { motion } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ActivityFeed } from '@/components/activity-feed';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/hooks/use-translation';
 import PublicLayout from '@/layouts/public-layout';
-import { formatHours, type HoursMode, loadHoursMode, saveHoursMode } from '@/lib/hours-format';
+import { formatHours, loadHoursMode, saveHoursMode } from '@/lib/hours-format';
+import type { HoursMode } from '@/lib/hours-format';
 import type { PlayerProfilePageData } from '@/types';
 
 const SKILL_CATEGORIES: Record<string, string[]> = {
-    Combat: ['Axe', 'Blunt', 'SmallBlunt', 'LongBlade', 'SmallBlade', 'Spear', 'Maintenance'],
+    Combat: [
+        'Axe',
+        'Blunt',
+        'SmallBlunt',
+        'LongBlade',
+        'SmallBlade',
+        'Spear',
+        'Maintenance',
+    ],
     Firearm: ['Aiming', 'Reloading'],
-    Crafting: ['Carpentry', 'Cooking', 'Farming', 'Fishing', 'Foraging', 'Trapping', 'Tailoring', 'Metalworking', 'Mechanics', 'Electrical'],
-    Survivalist: ['Doctor', 'Lightfoot', 'Nimble', 'Sneak', 'Sprinting', 'Fitness', 'Strength'],
+    Crafting: [
+        'Carpentry',
+        'Cooking',
+        'Farming',
+        'Fishing',
+        'Foraging',
+        'Trapping',
+        'Tailoring',
+        'Metalworking',
+        'Mechanics',
+        'Electrical',
+    ],
+    Survivalist: [
+        'Doctor',
+        'Lightfoot',
+        'Nimble',
+        'Sneak',
+        'Sprinting',
+        'Fitness',
+        'Strength',
+    ],
 };
 
 function SkillBar({ name, level }: { name: string; level: number }) {
@@ -24,7 +67,9 @@ function SkillBar({ name, level }: { name: string; level: number }) {
 
     return (
         <div className="flex items-center gap-3">
-            <span className="w-24 truncate text-xs text-muted-foreground">{name}</span>
+            <span className="w-24 truncate text-xs text-muted-foreground">
+                {name}
+            </span>
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                 <motion.div
                     className="h-full rounded-full bg-primary"
@@ -33,18 +78,23 @@ function SkillBar({ name, level }: { name: string; level: number }) {
                     transition={{ duration: 0.6, ease: 'easeOut' }}
                 />
             </div>
-            <span className="w-6 text-right text-xs font-medium tabular-nums">{level}</span>
+            <span className="w-6 text-right text-xs font-medium tabular-nums">
+                {level}
+            </span>
         </div>
     );
 }
 
-export default function PlayerProfile({ player, recent_events, is_admin, day_length_minutes }: PlayerProfilePageData) {
+export default function PlayerProfile({
+    player,
+    recent_events,
+    is_admin,
+    day_length_minutes,
+}: PlayerProfilePageData) {
     const { t } = useTranslation();
-    const [hoursMode, setHoursMode] = useState<HoursMode>('ingame');
-
-    useEffect(() => {
-        setHoursMode(loadHoursMode());
-    }, []);
+    const [hoursMode, setHoursMode] = useState<HoursMode>(() =>
+        loadHoursMode(),
+    );
 
     const changeHoursMode = (mode: HoursMode) => {
         setHoursMode(mode);
@@ -52,7 +102,10 @@ export default function PlayerProfile({ player, recent_events, is_admin, day_len
     };
 
     const skills = player.skills ?? {};
-    const categorizedSkills: { category: string; skills: { name: string; level: number }[] }[] = [];
+    const categorizedSkills: {
+        category: string;
+        skills: { name: string; level: number }[];
+    }[] = [];
     const assignedSkills = new Set<string>();
 
     for (const [category, skillNames] of Object.entries(SKILL_CATEGORIES)) {
@@ -88,7 +141,9 @@ export default function PlayerProfile({ player, recent_events, is_admin, day_len
                             &larr; Back to Rankings
                         </Link>
                         <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">{t('rankings.time_unit_label')}</span>
+                            <span className="text-xs text-muted-foreground">
+                                {t('rankings.time_unit_label')}
+                            </span>
                             <div className="inline-flex overflow-hidden rounded-md border border-border text-xs">
                                 <button
                                     type="button"
@@ -126,12 +181,22 @@ export default function PlayerProfile({ player, recent_events, is_admin, day_len
                                     <Shield className="size-7 text-primary" />
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl font-bold">{player.username}</h1>
+                                    <h1 className="text-2xl font-bold">
+                                        {player.username}
+                                    </h1>
                                     <div className="flex items-center gap-2">
                                         {player.profession && (
-                                            <Badge variant="secondary">{player.profession}</Badge>
+                                            <Badge variant="secondary">
+                                                {player.profession}
+                                            </Badge>
                                         )}
-                                        <Badge variant={player.is_dead ? 'destructive' : 'outline'}>
+                                        <Badge
+                                            variant={
+                                                player.is_dead
+                                                    ? 'destructive'
+                                                    : 'outline'
+                                            }
+                                        >
                                             {player.is_dead ? 'Dead' : 'Alive'}
                                         </Badge>
                                     </div>
@@ -147,11 +212,16 @@ export default function PlayerProfile({ player, recent_events, is_admin, day_len
                                         <Skull className="size-5 text-red-500" />
                                     </div>
                                     <div>
-                                        <p className="text-xs text-muted-foreground">Zombie Kills</p>
-                                        <p className="text-2xl font-bold tabular-nums">{player.zombie_kills.toLocaleString()}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Zombie Kills
+                                        </p>
+                                        <p className="text-2xl font-bold tabular-nums">
+                                            {player.zombie_kills.toLocaleString()}
+                                        </p>
                                         {player.ranks.kills > 0 && (
                                             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                                                <Trophy className="size-3" /> Rank #{player.ranks.kills}
+                                                <Trophy className="size-3" />{' '}
+                                                Rank #{player.ranks.kills}
                                             </p>
                                         )}
                                     </div>
@@ -163,13 +233,20 @@ export default function PlayerProfile({ player, recent_events, is_admin, day_len
                                         <Clock className="size-5 text-green-500" />
                                     </div>
                                     <div>
-                                        <p className="text-xs text-muted-foreground">Hours Survived</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Hours Survived
+                                        </p>
                                         <p className="text-2xl font-bold tabular-nums">
-                                            {formatHours(player.hours_survived, hoursMode, day_length_minutes)}
+                                            {formatHours(
+                                                player.hours_survived,
+                                                hoursMode,
+                                                day_length_minutes,
+                                            )}
                                         </p>
                                         {player.ranks.survival > 0 && (
                                             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                                                <Trophy className="size-3" /> Rank #{player.ranks.survival}
+                                                <Trophy className="size-3" />{' '}
+                                                Rank #{player.ranks.survival}
                                             </p>
                                         )}
                                     </div>
@@ -181,11 +258,16 @@ export default function PlayerProfile({ player, recent_events, is_admin, day_len
                                         <Medal className="size-5 text-orange-500" />
                                     </div>
                                     <div>
-                                        <p className="text-xs text-muted-foreground">Deaths</p>
-                                        <p className="text-2xl font-bold tabular-nums">{player.event_counts.death}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Deaths
+                                        </p>
+                                        <p className="text-2xl font-bold tabular-nums">
+                                            {player.event_counts.death}
+                                        </p>
                                         {player.ranks.deaths > 0 && (
                                             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                                                <Trophy className="size-3" /> Rank #{player.ranks.deaths}
+                                                <Trophy className="size-3" />{' '}
+                                                Rank #{player.ranks.deaths}
                                             </p>
                                         )}
                                     </div>
@@ -193,22 +275,36 @@ export default function PlayerProfile({ player, recent_events, is_admin, day_len
                             </Card>
                             <Card>
                                 <CardContent className="pt-4">
-                                    <p className="mb-2 text-xs text-muted-foreground">Activity</p>
+                                    <p className="mb-2 text-xs text-muted-foreground">
+                                        Activity
+                                    </p>
                                     <div className="grid grid-cols-2 gap-2">
                                         <div className="flex items-center gap-1.5 text-sm">
                                             <Swords className="size-3.5 text-orange-500" />
-                                            <span className="font-medium tabular-nums">{player.event_counts.pvp_hit}</span>
-                                            <span className="text-xs text-muted-foreground">PvP</span>
+                                            <span className="font-medium tabular-nums">
+                                                {player.event_counts.pvp_hit}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                                PvP
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-1.5 text-sm">
                                             <Hammer className="size-3.5 text-blue-500" />
-                                            <span className="font-medium tabular-nums">{player.event_counts.craft}</span>
-                                            <span className="text-xs text-muted-foreground">Craft</span>
+                                            <span className="font-medium tabular-nums">
+                                                {player.event_counts.craft}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                                Craft
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-1.5 text-sm">
                                             <LogIn className="size-3.5 text-green-500" />
-                                            <span className="font-medium tabular-nums">{player.event_counts.connect}</span>
-                                            <span className="text-xs text-muted-foreground">Joins</span>
+                                            <span className="font-medium tabular-nums">
+                                                {player.event_counts.connect}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                                Joins
+                                            </span>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -221,22 +317,41 @@ export default function PlayerProfile({ player, recent_events, is_admin, day_len
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>Skills</CardTitle>
-                                        <CardDescription>Player skill levels (0-10)</CardDescription>
+                                        <CardDescription>
+                                            Player skill levels (0-10)
+                                        </CardDescription>
                                     </CardHeader>
                                     <CardContent>
                                         <div className="space-y-5">
-                                            {categorizedSkills.map(({ category, skills: catSkills }) => (
-                                                <div key={category}>
-                                                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                                        {category}
-                                                    </h4>
-                                                    <div className="space-y-2">
-                                                        {catSkills.map((skill) => (
-                                                            <SkillBar key={skill.name} name={skill.name} level={skill.level} />
-                                                        ))}
+                                            {categorizedSkills.map(
+                                                ({
+                                                    category,
+                                                    skills: catSkills,
+                                                }) => (
+                                                    <div key={category}>
+                                                        <h4 className="mb-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                                                            {category}
+                                                        </h4>
+                                                        <div className="space-y-2">
+                                                            {catSkills.map(
+                                                                (skill) => (
+                                                                    <SkillBar
+                                                                        key={
+                                                                            skill.name
+                                                                        }
+                                                                        name={
+                                                                            skill.name
+                                                                        }
+                                                                        level={
+                                                                            skill.level
+                                                                        }
+                                                                    />
+                                                                ),
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                ),
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -247,23 +362,35 @@ export default function PlayerProfile({ player, recent_events, is_admin, day_len
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>Recent Events</CardTitle>
-                                        <CardDescription>Last 20 events for this player</CardDescription>
+                                        <CardDescription>
+                                            Last 20 events for this player
+                                        </CardDescription>
                                     </CardHeader>
                                     <CardContent>
-                                        <Deferred data="recent_events" fallback={
-                                            <div className="space-y-2">
-                                                {Array.from({ length: 5 }).map((_, i) => (
-                                                    <div key={i} className="flex items-start gap-2.5">
-                                                        <Skeleton className="mt-0.5 size-4 shrink-0 rounded" />
-                                                        <div className="flex-1 space-y-1">
-                                                            <Skeleton className="h-4 w-48" />
-                                                            <Skeleton className="h-3 w-16" />
+                                        <Deferred
+                                            data="recent_events"
+                                            fallback={
+                                                <div className="space-y-2">
+                                                    {Array.from({
+                                                        length: 5,
+                                                    }).map((_, i) => (
+                                                        <div
+                                                            key={i}
+                                                            className="flex items-start gap-2.5"
+                                                        >
+                                                            <Skeleton className="mt-0.5 size-4 shrink-0 rounded" />
+                                                            <div className="flex-1 space-y-1">
+                                                                <Skeleton className="h-4 w-48" />
+                                                                <Skeleton className="h-3 w-16" />
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        }>
-                                            <ActivityFeed events={recent_events ?? []} />
+                                                    ))}
+                                                </div>
+                                            }
+                                        >
+                                            <ActivityFeed
+                                                events={recent_events ?? []}
+                                            />
                                         </Deferred>
                                     </CardContent>
                                 </Card>

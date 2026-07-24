@@ -30,7 +30,7 @@ class SendServerWarning implements ShouldQueue
 
         try {
             $rcon->connect();
-            $rcon->command("servermsg \"".RconSanitizer::message($this->message)."\"");
+            $rcon->command('servermsg "'.RconSanitizer::message($this->message).'"');
         } catch (\Throwable) {
             // RCON unavailable — skip this warning silently
         }

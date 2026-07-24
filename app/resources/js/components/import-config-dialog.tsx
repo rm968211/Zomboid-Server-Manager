@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { FileUp, Loader2, Upload } from 'lucide-react';
-import { type ChangeEvent, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -13,7 +14,13 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { fetchAction } from '@/lib/fetch-action';
 
@@ -149,18 +156,22 @@ export function ImportConfigDialog({
     }
 
     const totalChangeable = preview
-        ? Object.keys(preview.changed).length + Object.keys(preview.added).length
+        ? Object.keys(preview.changed).length +
+          Object.keys(preview.added).length
         : 0;
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+            <DialogContent className="flex max-h-[80vh] max-w-2xl flex-col">
                 <DialogHeader>
                     <DialogTitle>Import Configuration</DialogTitle>
                     <DialogDescription>
-                        {step === 'input' && 'Paste or load a configuration file to preview changes before applying.'}
-                        {step === 'preview' && 'Review the changes below and select which settings to import.'}
-                        {step === 'applying' && 'Applying configuration changes...'}
+                        {step === 'input' &&
+                            'Paste or load a configuration file to preview changes before applying.'}
+                        {step === 'preview' &&
+                            'Review the changes below and select which settings to import.'}
+                        {step === 'applying' &&
+                            'Applying configuration changes...'}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -173,8 +184,12 @@ export function ImportConfigDialog({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="server">server.ini</SelectItem>
-                                    <SelectItem value="sandbox">SandboxVars.lua</SelectItem>
+                                    <SelectItem value="server">
+                                        server.ini
+                                    </SelectItem>
+                                    <SelectItem value="sandbox">
+                                        SandboxVars.lua
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -213,7 +228,7 @@ export function ImportConfigDialog({
                 )}
 
                 {step === 'preview' && preview && (
-                    <div className="flex-1 overflow-y-auto space-y-3 py-2">
+                    <div className="flex-1 space-y-3 overflow-y-auto py-2">
                         {totalChangeable > 0 && (
                             <div className="flex items-center gap-2 pb-1">
                                 <Checkbox
@@ -221,7 +236,10 @@ export function ImportConfigDialog({
                                     onCheckedChange={toggleAll}
                                     id="select-all"
                                 />
-                                <Label htmlFor="select-all" className="text-sm cursor-pointer">
+                                <Label
+                                    htmlFor="select-all"
+                                    className="cursor-pointer text-sm"
+                                >
                                     Select all ({totalChangeable})
                                 </Label>
                             </div>
@@ -235,28 +253,49 @@ export function ImportConfigDialog({
                                         {Object.keys(preview.changed).length}
                                     </Badge>
                                 </h4>
-                                <div className="rounded-lg border divide-y">
-                                    {Object.entries(preview.changed).map(([key, entry]) => (
-                                        <div key={key} className="flex items-start gap-3 px-3 py-2">
-                                            <Checkbox
-                                                checked={selected.has(key)}
-                                                onCheckedChange={() => toggleKey(key)}
-                                                className="mt-0.5"
-                                            />
-                                            <div className="flex-1 min-w-0">
-                                                <span className="text-sm font-mono font-medium">{key}</span>
-                                                <div className="flex gap-2 mt-0.5 text-xs">
-                                                    <span className="text-red-500 line-through truncate max-w-[200px]" title={entry.current}>
-                                                        {entry.current || '(empty)'}
+                                <div className="divide-y rounded-lg border">
+                                    {Object.entries(preview.changed).map(
+                                        ([key, entry]) => (
+                                            <div
+                                                key={key}
+                                                className="flex items-start gap-3 px-3 py-2"
+                                            >
+                                                <Checkbox
+                                                    checked={selected.has(key)}
+                                                    onCheckedChange={() =>
+                                                        toggleKey(key)
+                                                    }
+                                                    className="mt-0.5"
+                                                />
+                                                <div className="min-w-0 flex-1">
+                                                    <span className="font-mono text-sm font-medium">
+                                                        {key}
                                                     </span>
-                                                    <span className="text-muted-foreground">&rarr;</span>
-                                                    <span className="text-green-500 truncate max-w-[200px]" title={entry.new}>
-                                                        {entry.new || '(empty)'}
-                                                    </span>
+                                                    <div className="mt-0.5 flex gap-2 text-xs">
+                                                        <span
+                                                            className="max-w-[200px] truncate text-red-500 line-through"
+                                                            title={
+                                                                entry.current
+                                                            }
+                                                        >
+                                                            {entry.current ||
+                                                                '(empty)'}
+                                                        </span>
+                                                        <span className="text-muted-foreground">
+                                                            &rarr;
+                                                        </span>
+                                                        <span
+                                                            className="max-w-[200px] truncate text-green-500"
+                                                            title={entry.new}
+                                                        >
+                                                            {entry.new ||
+                                                                '(empty)'}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ),
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -269,23 +308,40 @@ export function ImportConfigDialog({
                                         {Object.keys(preview.added).length}
                                     </Badge>
                                 </h4>
-                                <div className="rounded-lg border divide-y">
-                                    {Object.entries(preview.added).map(([key, value]) => (
-                                        <div key={key} className="flex items-start gap-3 px-3 py-2">
-                                            <Checkbox
-                                                checked={selected.has(key)}
-                                                onCheckedChange={() => toggleKey(key)}
-                                                className="mt-0.5"
-                                            />
-                                            <div className="flex-1 min-w-0">
-                                                <span className="text-sm font-mono font-medium">{key}</span>
-                                                <div className="text-xs text-green-500 mt-0.5 truncate" title={value}>
-                                                    {value || '(empty)'}
+                                <div className="divide-y rounded-lg border">
+                                    {Object.entries(preview.added).map(
+                                        ([key, value]) => (
+                                            <div
+                                                key={key}
+                                                className="flex items-start gap-3 px-3 py-2"
+                                            >
+                                                <Checkbox
+                                                    checked={selected.has(key)}
+                                                    onCheckedChange={() =>
+                                                        toggleKey(key)
+                                                    }
+                                                    className="mt-0.5"
+                                                />
+                                                <div className="min-w-0 flex-1">
+                                                    <span className="font-mono text-sm font-medium">
+                                                        {key}
+                                                    </span>
+                                                    <div
+                                                        className="mt-0.5 truncate text-xs text-green-500"
+                                                        title={value}
+                                                    >
+                                                        {value || '(empty)'}
+                                                    </div>
                                                 </div>
+                                                <Badge
+                                                    variant="outline"
+                                                    className="shrink-0 text-xs"
+                                                >
+                                                    New
+                                                </Badge>
                                             </div>
-                                            <Badge variant="outline" className="text-xs shrink-0">New</Badge>
-                                        </div>
-                                    ))}
+                                        ),
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -298,17 +354,24 @@ export function ImportConfigDialog({
                                         {Object.keys(preview.skipped).length}
                                     </Badge>
                                 </h4>
-                                <div className="rounded-lg border divide-y opacity-60">
-                                    {Object.entries(preview.skipped).map(([key, entry]) => (
-                                        <div key={key} className="flex items-center gap-3 px-3 py-2">
-                                            <div className="flex-1 min-w-0">
-                                                <span className="text-sm font-mono">{key}</span>
-                                                <div className="text-xs text-muted-foreground mt-0.5">
-                                                    {entry.reason}
+                                <div className="divide-y rounded-lg border opacity-60">
+                                    {Object.entries(preview.skipped).map(
+                                        ([key, entry]) => (
+                                            <div
+                                                key={key}
+                                                className="flex items-center gap-3 px-3 py-2"
+                                            >
+                                                <div className="min-w-0 flex-1">
+                                                    <span className="font-mono text-sm">
+                                                        {key}
+                                                    </span>
+                                                    <div className="mt-0.5 text-xs text-muted-foreground">
+                                                        {entry.reason}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ),
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -319,11 +382,13 @@ export function ImportConfigDialog({
                             </p>
                         )}
 
-                        {totalChangeable === 0 && Object.keys(preview.skipped).length === 0 && (
-                            <p className="py-4 text-center text-sm text-muted-foreground">
-                                No differences found. Your configuration is already up to date.
-                            </p>
-                        )}
+                        {totalChangeable === 0 &&
+                            Object.keys(preview.skipped).length === 0 && (
+                                <p className="py-4 text-center text-sm text-muted-foreground">
+                                    No differences found. Your configuration is
+                                    already up to date.
+                                </p>
+                            )}
                     </div>
                 )}
 
@@ -336,10 +401,16 @@ export function ImportConfigDialog({
                 <DialogFooter>
                     {step === 'input' && (
                         <>
-                            <Button variant="outline" onClick={() => handleClose(false)}>
+                            <Button
+                                variant="outline"
+                                onClick={() => handleClose(false)}
+                            >
                                 Cancel
                             </Button>
-                            <Button onClick={handlePreview} disabled={!content.trim() || loading}>
+                            <Button
+                                onClick={handlePreview}
+                                disabled={!content.trim() || loading}
+                            >
                                 {loading ? (
                                     <>
                                         <Loader2 className="mr-2 size-4 animate-spin" />
@@ -353,12 +424,19 @@ export function ImportConfigDialog({
                     )}
                     {step === 'preview' && (
                         <>
-                            <Button variant="outline" onClick={() => setStep('input')}>
+                            <Button
+                                variant="outline"
+                                onClick={() => setStep('input')}
+                            >
                                 Back
                             </Button>
-                            <Button onClick={handleApply} disabled={selected.size === 0}>
+                            <Button
+                                onClick={handleApply}
+                                disabled={selected.size === 0}
+                            >
                                 <Upload className="mr-2 size-4" />
-                                Apply {selected.size} Change{selected.size !== 1 ? 's' : ''}
+                                Apply {selected.size} Change
+                                {selected.size !== 1 ? 's' : ''}
                             </Button>
                         </>
                     )}

@@ -14,6 +14,9 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->admin = User::factory()->admin()->create();
+    $this->backupPath = sys_get_temp_dir().'/pz_world_import_'.uniqid();
+    mkdir($this->backupPath, 0755, true);
+    config(['zomboid.backups.path' => $this->backupPath]);
 
     $docker = Mockery::mock(DockerManager::class);
     $docker->shouldReceive('getContainerStatus')->andReturn([
@@ -29,6 +32,17 @@ beforeEach(function () {
     $rcon->shouldReceive('connect')->byDefault();
     $rcon->shouldReceive('command')->byDefault();
     app()->instance(RconClient::class, $rcon);
+});
+
+afterEach(function () {
+    $importsPath = $this->backupPath.'/imports';
+    if (is_dir($importsPath)) {
+        foreach (glob($importsPath.'/*') ?: [] as $file) {
+            @unlink($file);
+        }
+        @rmdir($importsPath);
+    }
+    @rmdir($this->backupPath);
 });
 
 function mockBackupManagerForImport(): void

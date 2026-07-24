@@ -53,7 +53,9 @@ export function RestartDialog({
                 data.message = message.trim();
             }
         }
-        await fetchAction('/admin/server/restart', { data: Object.keys(data).length > 0 ? data : undefined });
+        await fetchAction('/admin/server/restart', {
+            data: Object.keys(data).length > 0 ? data : undefined,
+        });
         setLoading(false);
         onOpenChange(false);
         setCountdown('0');
@@ -67,7 +69,8 @@ export function RestartDialog({
                 <DialogHeader>
                     <DialogTitle>Restart Server</DialogTitle>
                     <DialogDescription>
-                        Choose a delay to warn players before restarting, or restart immediately.
+                        Choose a delay to warn players before restarting, or
+                        restart immediately.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -79,7 +82,10 @@ export function RestartDialog({
                             </SelectTrigger>
                             <SelectContent>
                                 {COUNTDOWN_OPTIONS.map((opt) => (
-                                    <SelectItem key={opt.value} value={opt.value}>
+                                    <SelectItem
+                                        key={opt.value}
+                                        value={opt.value}
+                                    >
                                         {opt.label}
                                     </SelectItem>
                                 ))}
@@ -88,7 +94,9 @@ export function RestartDialog({
                     </div>
                     {countdown !== '0' && (
                         <div className="grid gap-2">
-                            <Label htmlFor="restart-message">Warning message (optional)</Label>
+                            <Label htmlFor="restart-message">
+                                Warning message (optional)
+                            </Label>
                             <Input
                                 id="restart-message"
                                 placeholder="Server restarting for maintenance..."
@@ -100,7 +108,11 @@ export function RestartDialog({
                     )}
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+                    <Button
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={loading}
+                    >
                         Cancel
                     </Button>
                     <Button
@@ -108,7 +120,11 @@ export function RestartDialog({
                         onClick={handleRestart}
                         disabled={loading}
                     >
-                        {loading ? 'Restarting...' : countdown === '0' ? 'Restart Now' : 'Schedule Restart'}
+                        {loading
+                            ? 'Restarting...'
+                            : countdown === '0'
+                              ? 'Restart Now'
+                              : 'Schedule Restart'}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -138,7 +154,9 @@ export function StopDialog({
                 data.message = message.trim();
             }
         }
-        await fetchAction('/admin/server/stop', { data: Object.keys(data).length > 0 ? data : undefined });
+        await fetchAction('/admin/server/stop', {
+            data: Object.keys(data).length > 0 ? data : undefined,
+        });
         setLoading(false);
         onOpenChange(false);
         setCountdown('0');
@@ -152,7 +170,8 @@ export function StopDialog({
                 <DialogHeader>
                     <DialogTitle>Stop Server</DialogTitle>
                     <DialogDescription>
-                        Choose a delay to warn players before shutting down, or stop immediately.
+                        Choose a delay to warn players before shutting down, or
+                        stop immediately.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -164,7 +183,10 @@ export function StopDialog({
                             </SelectTrigger>
                             <SelectContent>
                                 {COUNTDOWN_OPTIONS.map((opt) => (
-                                    <SelectItem key={opt.value} value={opt.value}>
+                                    <SelectItem
+                                        key={opt.value}
+                                        value={opt.value}
+                                    >
                                         {opt.label}
                                     </SelectItem>
                                 ))}
@@ -173,7 +195,9 @@ export function StopDialog({
                     </div>
                     {countdown !== '0' && (
                         <div className="grid gap-2">
-                            <Label htmlFor="stop-message">Warning message (optional)</Label>
+                            <Label htmlFor="stop-message">
+                                Warning message (optional)
+                            </Label>
                             <Input
                                 id="stop-message"
                                 placeholder="Server shutting down for maintenance..."
@@ -185,11 +209,23 @@ export function StopDialog({
                     )}
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+                    <Button
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={loading}
+                    >
                         Cancel
                     </Button>
-                    <Button variant="destructive" onClick={handleStop} disabled={loading}>
-                        {loading ? 'Stopping...' : countdown === '0' ? 'Stop Now' : 'Schedule Shutdown'}
+                    <Button
+                        variant="destructive"
+                        onClick={handleStop}
+                        disabled={loading}
+                    >
+                        {loading
+                            ? 'Stopping...'
+                            : countdown === '0'
+                              ? 'Stop Now'
+                              : 'Schedule Shutdown'}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -227,7 +263,9 @@ export function UpdateDialog({
                 data.message = message.trim();
             }
         }
-        await fetchAction('/admin/server/update', { data: Object.keys(data).length > 0 ? data : undefined });
+        await fetchAction('/admin/server/update', {
+            data: Object.keys(data).length > 0 ? data : undefined,
+        });
         setLoading(false);
         onOpenChange(false);
         setCountdown('0');
@@ -241,8 +279,9 @@ export function UpdateDialog({
                 <DialogHeader>
                     <DialogTitle>Update Game Server</DialogTitle>
                     <DialogDescription>
-                        Force a SteamCMD re-download. Optionally change the Steam branch.
-                        A pre-update backup will be created automatically.
+                        Force a SteamCMD re-download. Optionally change the
+                        Steam branch. A pre-update backup will be created
+                        automatically.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -259,8 +298,12 @@ export function UpdateDialog({
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="public">public</SelectItem>
-                                <SelectItem value="unstable">unstable</SelectItem>
-                                <SelectItem value="iwillbackupmysave">iwillbackupmysave</SelectItem>
+                                <SelectItem value="unstable">
+                                    unstable
+                                </SelectItem>
+                                <SelectItem value="iwillbackupmysave">
+                                    iwillbackupmysave
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -272,7 +315,10 @@ export function UpdateDialog({
                             </SelectTrigger>
                             <SelectContent>
                                 {COUNTDOWN_OPTIONS.map((opt) => (
-                                    <SelectItem key={opt.value} value={opt.value}>
+                                    <SelectItem
+                                        key={opt.value}
+                                        value={opt.value}
+                                    >
                                         {opt.label}
                                     </SelectItem>
                                 ))}
@@ -281,7 +327,9 @@ export function UpdateDialog({
                     </div>
                     {countdown !== '0' && (
                         <div className="grid gap-2">
-                            <Label htmlFor="update-message">Warning message (optional)</Label>
+                            <Label htmlFor="update-message">
+                                Warning message (optional)
+                            </Label>
                             <Input
                                 id="update-message"
                                 placeholder="Server updating — expect downtime..."
@@ -292,16 +340,25 @@ export function UpdateDialog({
                         </div>
                     )}
                     <p className="text-xs text-muted-foreground">
-                        The server will be stopped, SteamCMD will re-download game files, then the server will restart.
-                        This may take several minutes depending on download speed.
+                        The server will be stopped, SteamCMD will re-download
+                        game files, then the server will restart. This may take
+                        several minutes depending on download speed.
                     </p>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+                    <Button
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={loading}
+                    >
                         Cancel
                     </Button>
                     <Button onClick={handleUpdate} disabled={loading}>
-                        {loading ? 'Updating...' : countdown === '0' ? 'Update Now' : 'Schedule Update'}
+                        {loading
+                            ? 'Updating...'
+                            : countdown === '0'
+                              ? 'Update Now'
+                              : 'Schedule Update'}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -343,7 +400,9 @@ export function WipeDialog({
                 data.message = message.trim();
             }
         }
-        await fetchAction('/admin/server/wipe', { data: Object.keys(data).length > 0 ? data : undefined });
+        await fetchAction('/admin/server/wipe', {
+            data: Object.keys(data).length > 0 ? data : undefined,
+        });
         setLoading(false);
         handleOpenChange(false);
         setCountdown('0');
@@ -356,15 +415,18 @@ export function WipeDialog({
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle className="text-destructive">Wipe Server</DialogTitle>
+                    <DialogTitle className="text-destructive">
+                        Wipe Server
+                    </DialogTitle>
                     <DialogDescription>
-                        This will permanently delete all save data. A backup will be created automatically before wiping.
+                        This will permanently delete all save data. A backup
+                        will be created automatically before wiping.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                        All player progress, buildings, and world state will be permanently destroyed.
-                        This action cannot be undone.
+                        All player progress, buildings, and world state will be
+                        permanently destroyed. This action cannot be undone.
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="wipe-countdown">Countdown</Label>
@@ -374,7 +436,10 @@ export function WipeDialog({
                             </SelectTrigger>
                             <SelectContent>
                                 {COUNTDOWN_OPTIONS.map((opt) => (
-                                    <SelectItem key={opt.value} value={opt.value}>
+                                    <SelectItem
+                                        key={opt.value}
+                                        value={opt.value}
+                                    >
                                         {opt.label}
                                     </SelectItem>
                                 ))}
@@ -383,7 +448,9 @@ export function WipeDialog({
                     </div>
                     {countdown !== '0' && (
                         <div className="grid gap-2">
-                            <Label htmlFor="wipe-message">Warning message (optional)</Label>
+                            <Label htmlFor="wipe-message">
+                                Warning message (optional)
+                            </Label>
                             <Input
                                 id="wipe-message"
                                 placeholder="Server wiping — all progress will be reset..."
@@ -402,7 +469,11 @@ export function WipeDialog({
                     >
                         Cancel
                     </Button>
-                    <Button variant="destructive" onClick={handleWipe} disabled={loading}>
+                    <Button
+                        variant="destructive"
+                        onClick={handleWipe}
+                        disabled={loading}
+                    >
                         {loading
                             ? 'Wiping...'
                             : confirmStep === 0

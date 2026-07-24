@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\AuditLog;
 use App\Services\AuditLogger;
 use App\Services\DiscordWebhookService;
 use App\Services\SafeZoneManager;

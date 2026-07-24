@@ -22,7 +22,20 @@ export function formatDate(dateStr: string): string {
 /** DD Mon YYYY (e.g. 17 Mar 2026) */
 export function formatShortDate(dateStr: string): string {
     const d = new Date(dateStr);
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+    ];
     return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 

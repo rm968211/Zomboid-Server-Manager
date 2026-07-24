@@ -62,7 +62,10 @@ const labelColors: Record<PlayerMarker['status'], string> = {
     dead: '#f87171',
 };
 
-function createMarkerIcon(status: PlayerMarker['status'], name: string): L.DivIcon {
+function createMarkerIcon(
+    status: PlayerMarker['status'],
+    name: string,
+): L.DivIcon {
     const color = statusColors[status];
     const labelColor = labelColors[status];
     return L.divIcon({
@@ -95,8 +98,10 @@ function createPopupHtml(marker: PlayerMarker): string {
     const statusLabel = `<span style="color: ${statusColors[marker.status]}; text-transform: capitalize; font-size: 12px;">${marker.status}</span>`;
     const coords = `<small style="color: #9ca3af;">X: ${marker.x.toFixed(0)}, Y: ${marker.y.toFixed(0)}, Z: ${marker.z}</small>`;
 
-    const btnStyle = 'display:inline-block;padding:3px 8px;font-size:11px;border-radius:4px;cursor:pointer;border:1px solid #374151;background:#1f2937;color:#e5e7eb;margin:2px;';
-    const btnDanger = 'display:inline-block;padding:3px 8px;font-size:11px;border-radius:4px;cursor:pointer;border:1px solid #7f1d1d;background:#991b1b;color:#fecaca;margin:2px;';
+    const btnStyle =
+        'display:inline-block;padding:3px 8px;font-size:11px;border-radius:4px;cursor:pointer;border:1px solid #374151;background:#1f2937;color:#e5e7eb;margin:2px;';
+    const btnDanger =
+        'display:inline-block;padding:3px 8px;font-size:11px;border-radius:4px;cursor:pointer;border:1px solid #7f1d1d;background:#991b1b;color:#fecaca;margin:2px;';
 
     const actions = marker.is_online
         ? `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:2px;">
@@ -120,7 +125,10 @@ function createPopupHtml(marker: PlayerMarker): string {
  * Create a DZI tile layer.
  * pzmap2dzi outputs tiles as {z}/{x}_{y}.webp (underscore separator).
  */
-function createDziTileLayer(templateUrl: string, options: L.TileLayerOptions): L.TileLayer {
+function createDziTileLayer(
+    templateUrl: string,
+    options: L.TileLayerOptions,
+): L.TileLayer {
     const Layer = L.TileLayer.extend({
         getTileUrl(coords: L.Coords) {
             return templateUrl
@@ -177,8 +185,12 @@ function createPzCRS(dzi: DziInfo): L.CRS {
         return L.Util.extend({}, L.CRS, {
             projection,
             transformation: new L.Transformation(scale, 0, scale, 0),
-            scale(zoom: number) { return Math.pow(2, zoom); },
-            zoom(s: number) { return Math.log(s) / Math.LN2; },
+            scale(zoom: number) {
+                return Math.pow(2, zoom);
+            },
+            zoom(s: number) {
+                return Math.log(s) / Math.LN2;
+            },
             infinite: false,
         }) as unknown as L.CRS;
     }
@@ -304,15 +316,23 @@ export default function PzMap({
 
             // Create preview rectangle
             state.previewRect = L.rectangle(
-                [e.latlng, e.latlng],
-                { color: '#22c55e', weight: 2, fillOpacity: 0.15, dashArray: '6 4' },
+                L.latLngBounds(e.latlng, e.latlng),
+                {
+                    color: '#22c55e',
+                    weight: 2,
+                    fillOpacity: 0.15,
+                    dashArray: '6 4',
+                },
             ).addTo(map);
         });
 
         map.on('mousemove', (e: L.LeafletMouseEvent) => {
             const state = drawStateRef.current;
-            if (!state.drawing || !state.startLatLng || !state.previewRect) return;
-            state.previewRect.setBounds(L.latLngBounds(state.startLatLng, e.latlng));
+            if (!state.drawing || !state.startLatLng || !state.previewRect)
+                return;
+            state.previewRect.setBounds(
+                L.latLngBounds(state.startLatLng, e.latlng),
+            );
         });
 
         map.on('mouseup', (e: L.LeafletMouseEvent) => {
@@ -362,20 +382,23 @@ export default function PzMap({
     }, [drawingMode]);
 
     // Cancel drawing on Escape
-    const handleKeyDown = useCallback((e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-            const state = drawStateRef.current;
-            if (state.previewRect && mapRef.current) {
-                mapRef.current.removeLayer(state.previewRect);
+    const handleKeyDown = useCallback(
+        (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                const state = drawStateRef.current;
+                if (state.previewRect && mapRef.current) {
+                    mapRef.current.removeLayer(state.previewRect);
+                }
+                state.drawing = false;
+                state.startLatLng = null;
+                state.previewRect = null;
+                if (interactive && mapRef.current) {
+                    mapRef.current.dragging.enable();
+                }
             }
-            state.drawing = false;
-            state.startLatLng = null;
-            state.previewRect = null;
-            if (interactive && mapRef.current) {
-                mapRef.current.dragging.enable();
-            }
-        }
-    }, [interactive]);
+        },
+        [interactive],
+    );
 
     useEffect(() => {
         if (drawingMode) {
@@ -392,9 +415,10 @@ export default function PzMap({
         layer.clearLayers();
 
         markers.forEach((marker) => {
-            const label = marker.name && marker.name !== marker.username
-                ? `${marker.name} (${marker.username})`
-                : marker.username;
+            const label =
+                marker.name && marker.name !== marker.username
+                    ? `${marker.name} (${marker.username})`
+                    : marker.username;
             const icon = createMarkerIcon(marker.status, label);
             const popup = L.popup().setContent(createPopupHtml(marker));
             const lMarker = L.marker([-marker.y, marker.x], { icon })
@@ -404,15 +428,19 @@ export default function PzMap({
             lMarker.on('popupopen', () => {
                 const container = popup.getElement();
                 if (!container) return;
-                container.querySelectorAll<HTMLButtonElement>('.pz-action').forEach((btn) => {
-                    btn.addEventListener('click', (ev) => {
-                        const action = (ev.currentTarget as HTMLButtonElement).dataset.action as MarkerAction;
-                        if (action && onMarkerAction) {
-                            onMarkerAction(marker, action);
-                            lMarker.closePopup();
-                        }
+                container
+                    .querySelectorAll<HTMLButtonElement>('.pz-action')
+                    .forEach((btn) => {
+                        btn.addEventListener('click', (ev) => {
+                            const action = (
+                                ev.currentTarget as HTMLButtonElement
+                            ).dataset.action as MarkerAction;
+                            if (action && onMarkerAction) {
+                                onMarkerAction(marker, action);
+                                lMarker.closePopup();
+                            }
+                        });
                     });
-                });
             });
 
             if (onMarkerClick) {
@@ -474,7 +502,9 @@ export default function PzMap({
             }).addTo(layer);
 
             const typeLabel = em.type.replace('_', ' ');
-            const targetInfo = em.target ? `<br/><small>Target: ${em.target}</small>` : '';
+            const targetInfo = em.target
+                ? `<br/><small>Target: ${em.target}</small>`
+                : '';
             circle.bindPopup(
                 `<div style="min-width:120px;">
                     <strong>${em.player}</strong><br/>
@@ -490,7 +520,12 @@ export default function PzMap({
         });
     }, [eventMarkers, onEventMarkerClick]);
 
-    return <div ref={containerRef} className={`isolate h-full w-full ${className}`} />;
+    return (
+        <div
+            ref={containerRef}
+            className={`isolate h-full w-full ${className}`}
+        />
+    );
 }
 
 function addCoordinateGrid(map: L.Map) {

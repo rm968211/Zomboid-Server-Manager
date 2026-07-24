@@ -1,10 +1,38 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ChevronDown, Download, Eye, EyeOff, Loader2, Save, Search, Timer, Upload } from 'lucide-react';
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import {
+    ChevronDown,
+    Download,
+    Eye,
+    EyeOff,
+    Loader2,
+    Save,
+    Search,
+    Timer,
+    Upload,
+} from 'lucide-react';
+import {
+    forwardRef,
+    useEffect,
+    useImperativeHandle,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
+import { ImportConfigDialog } from '@/components/import-config-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
     Dialog,
     DialogContent,
@@ -15,7 +43,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
@@ -24,11 +58,9 @@ import {
     SANDBOX_GROUP_ORDER,
     SANDBOX_META,
     SERVER_INI_GROUP_ORDER,
-    SERVER_INI_META
-    
+    SERVER_INI_META,
 } from '@/lib/config-metadata';
-import type {SettingMeta} from '@/lib/config-metadata';
-import { ImportConfigDialog } from '@/components/import-config-dialog';
+import type { SettingMeta } from '@/lib/config-metadata';
 import { fetchAction } from '@/lib/fetch-action';
 import type { BreadcrumbItem } from '@/types';
 
@@ -84,7 +116,11 @@ function PasswordInput({
                 className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 tabIndex={-1}
             >
-                {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                {visible ? (
+                    <EyeOff className="size-4" />
+                ) : (
+                    <Eye className="size-4" />
+                )}
             </button>
         </div>
     );
@@ -131,9 +167,14 @@ function SettingInput({
                         </Badge>
                     ))
                 ) : (
-                    <span className="text-xs text-muted-foreground">{t('common.none')}</span>
+                    <span className="text-xs text-muted-foreground">
+                        {t('common.none')}
+                    </span>
                 )}
-                <Link href="/admin/mods" className="ml-1 text-xs text-blue-500 hover:underline">
+                <Link
+                    href="/admin/mods"
+                    className="ml-1 text-xs text-blue-500 hover:underline"
+                >
                     {t('admin.config.manage_mods_link')}
                 </Link>
             </div>
@@ -141,7 +182,14 @@ function SettingInput({
     }
 
     if (meta.sensitive) {
-        return <PasswordInput id={inputId} value={value} onChange={onChange} className={dirtyClass} />;
+        return (
+            <PasswordInput
+                id={inputId}
+                value={value}
+                onChange={onChange}
+                className={dirtyClass}
+            />
+        );
     }
 
     if (meta.type === 'boolean') {
@@ -150,10 +198,17 @@ function SettingInput({
                 <Switch
                     id={inputId}
                     checked={value === 'true'}
-                    onCheckedChange={(checked) => onChange(checked ? 'true' : 'false')}
+                    onCheckedChange={(checked) =>
+                        onChange(checked ? 'true' : 'false')
+                    }
                 />
-                <Label htmlFor={inputId} className="cursor-pointer text-sm font-normal">
-                    {value === 'true' ? t('common.enabled') : t('common.disabled')}
+                <Label
+                    htmlFor={inputId}
+                    className="cursor-pointer text-sm font-normal"
+                >
+                    {value === 'true'
+                        ? t('common.enabled')
+                        : t('common.disabled')}
                 </Label>
             </div>
         );
@@ -218,149 +273,191 @@ type ConfigSectionProps = {
     onDirtyChange: (count: number) => void;
 };
 
-const ConfigSection = forwardRef<ConfigSectionHandle, ConfigSectionProps>(function ConfigSection(
-    { title, description, config, meta, groupOrder, search, onSave, onDirtyChange },
-    ref,
-) {
-    const { t } = useTranslation();
-    const [values, setValues] = useState<Record<string, string>>(config);
-    const [dirty, setDirty] = useState<Set<string>>(new Set());
-    const [openGroups, setOpenGroups] = useState<Set<string>>(new Set(groupOrder));
+const ConfigSection = forwardRef<ConfigSectionHandle, ConfigSectionProps>(
+    function ConfigSection(
+        {
+            title,
+            description,
+            config,
+            meta,
+            groupOrder,
+            search,
+            onSave,
+            onDirtyChange,
+        },
+        ref,
+    ) {
+        const { t } = useTranslation();
+        const [values, setValues] = useState<Record<string, string>>(config);
+        const [dirty, setDirty] = useState<Set<string>>(new Set());
+        const [openGroups, setOpenGroups] = useState<Set<string>>(
+            new Set(groupOrder),
+        );
 
-    const groups = useMemo(() => groupSettings(values, meta, groupOrder), [values, meta, groupOrder]);
+        const groups = useMemo(
+            () => groupSettings(values, meta, groupOrder),
+            [values, meta, groupOrder],
+        );
 
-    const filteredGroups = useMemo(() => {
-        if (!search) return groups;
-        const q = search.toLowerCase();
-        return groups
-            .map((g) => ({
-                ...g,
-                entries: g.entries.filter(
-                    (e) =>
-                        e.key.toLowerCase().includes(q) ||
-                        (e.meta?.description ?? '').toLowerCase().includes(q),
-                ),
-            }))
-            .filter((g) => g.entries.length > 0);
-    }, [groups, search]);
+        const filteredGroups = useMemo(() => {
+            if (!search) return groups;
+            const q = search.toLowerCase();
+            return groups
+                .map((g) => ({
+                    ...g,
+                    entries: g.entries.filter(
+                        (e) =>
+                            e.key.toLowerCase().includes(q) ||
+                            (e.meta?.description ?? '')
+                                .toLowerCase()
+                                .includes(q),
+                    ),
+                }))
+                .filter((g) => g.entries.length > 0);
+        }, [groups, search]);
 
-    useEffect(() => {
-        onDirtyChange(dirty.size);
-    }, [dirty.size]);
+        useEffect(() => {
+            onDirtyChange(dirty.size);
+        }, [dirty.size, onDirtyChange]);
 
-    function handleChange(key: string, value: string) {
-        setValues((prev) => ({ ...prev, [key]: value }));
-        if (value !== config[key]) {
-            setDirty((prev) => new Set(prev).add(key));
-        } else {
-            setDirty((prev) => {
+        function handleChange(key: string, value: string) {
+            setValues((prev) => ({ ...prev, [key]: value }));
+            if (value !== config[key]) {
+                setDirty((prev) => new Set(prev).add(key));
+            } else {
+                setDirty((prev) => {
+                    const next = new Set(prev);
+                    next.delete(key);
+                    return next;
+                });
+            }
+        }
+
+        async function handleSave(): Promise<boolean> {
+            if (dirty.size === 0) return true;
+            const changed: Record<string, string> = {};
+            dirty.forEach((key) => {
+                changed[key] = values[key];
+            });
+            const success = await onSave(changed);
+            if (success) {
+                setDirty(new Set());
+            }
+            return success;
+        }
+
+        useImperativeHandle(ref, () => ({ save: handleSave }));
+
+        function toggleGroup(group: string) {
+            setOpenGroups((prev) => {
                 const next = new Set(prev);
-                next.delete(key);
+                if (next.has(group)) {
+                    next.delete(group);
+                } else {
+                    next.add(group);
+                }
                 return next;
             });
         }
-    }
 
-    async function handleSave(): Promise<boolean> {
-        if (dirty.size === 0) return true;
-        const changed: Record<string, string> = {};
-        dirty.forEach((key) => {
-            changed[key] = values[key];
-        });
-        const success = await onSave(changed);
-        if (success) {
-            setDirty(new Set());
+        if (Object.keys(config).length === 0) {
+            return (
+                <div className="rounded-lg border p-8 text-center text-muted-foreground">
+                    <p className="text-sm">
+                        {t('admin.config.config_not_available', { title })}
+                    </p>
+                </div>
+            );
         }
-        return success;
-    }
 
-    useImperativeHandle(ref, () => ({ save: handleSave }));
-
-    function toggleGroup(group: string) {
-        setOpenGroups((prev) => {
-            const next = new Set(prev);
-            if (next.has(group)) {
-                next.delete(group);
-            } else {
-                next.add(group);
-            }
-            return next;
-        });
-    }
-
-    if (Object.keys(config).length === 0) {
         return (
-            <div className="rounded-lg border p-8 text-center text-muted-foreground">
-                <p className="text-sm">{t('admin.config.config_not_available', { title })}</p>
+            <div className="space-y-3">
+                <div>
+                    <h2 className="text-lg font-semibold">{title}</h2>
+                    <p className="text-sm text-muted-foreground">
+                        {description}
+                    </p>
+                </div>
+
+                {filteredGroups.map(({ group, entries }) => (
+                    <Collapsible
+                        key={group}
+                        open={openGroups.has(group)}
+                        onOpenChange={() => toggleGroup(group)}
+                    >
+                        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border bg-card px-4 py-3 text-left transition-colors hover:bg-accent/50">
+                            <div className="flex items-center gap-2">
+                                <span className="font-medium">{group}</span>
+                                <Badge variant="secondary" className="text-xs">
+                                    {entries.length}
+                                </Badge>
+                            </div>
+                            <ChevronDown
+                                className={`size-4 text-muted-foreground transition-transform ${
+                                    openGroups.has(group) ? 'rotate-180' : ''
+                                }`}
+                            />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                            <div className="mt-1 rounded-lg border bg-card p-4">
+                                <div className="grid gap-5 sm:grid-cols-2">
+                                    {entries.map(
+                                        ({ key, value, meta: settingMeta }) => (
+                                            <div
+                                                key={key}
+                                                className="space-y-1.5"
+                                            >
+                                                <Label
+                                                    htmlFor={`cfg-${key}`}
+                                                    className="text-xs font-medium"
+                                                >
+                                                    {key}
+                                                </Label>
+                                                <SettingInput
+                                                    settingKey={key}
+                                                    value={value}
+                                                    meta={settingMeta}
+                                                    isDirty={dirty.has(key)}
+                                                    onChange={(v) =>
+                                                        handleChange(key, v)
+                                                    }
+                                                />
+                                                {settingMeta?.description && (
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {
+                                                            settingMeta.description
+                                                        }
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ),
+                                    )}
+                                </div>
+                            </div>
+                        </CollapsibleContent>
+                    </Collapsible>
+                ))}
+
+                {filteredGroups.length === 0 && search && (
+                    <p className="py-4 text-center text-sm text-muted-foreground">
+                        {t('admin.config.no_settings_match', {
+                            search,
+                            section: title.toLowerCase(),
+                        })}
+                    </p>
+                )}
             </div>
         );
-    }
-
-    return (
-        <div className="space-y-3">
-            <div>
-                <h2 className="text-lg font-semibold">{title}</h2>
-                <p className="text-sm text-muted-foreground">{description}</p>
-            </div>
-
-            {filteredGroups.map(({ group, entries }) => (
-                <Collapsible key={group} open={openGroups.has(group)} onOpenChange={() => toggleGroup(group)}>
-                    <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border bg-card px-4 py-3 text-left hover:bg-accent/50 transition-colors">
-                        <div className="flex items-center gap-2">
-                            <span className="font-medium">{group}</span>
-                            <Badge variant="secondary" className="text-xs">
-                                {entries.length}
-                            </Badge>
-                        </div>
-                        <ChevronDown
-                            className={`size-4 text-muted-foreground transition-transform ${
-                                openGroups.has(group) ? 'rotate-180' : ''
-                            }`}
-                        />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                        <div className="mt-1 rounded-lg border bg-card p-4">
-                            <div className="grid gap-5 sm:grid-cols-2">
-                                {entries.map(({ key, value, meta: settingMeta }) => (
-                                    <div key={key} className="space-y-1.5">
-                                        <Label
-                                            htmlFor={`cfg-${key}`}
-                                            className="text-xs font-medium"
-                                        >
-                                            {key}
-                                        </Label>
-                                        <SettingInput
-                                            settingKey={key}
-                                            value={value}
-                                            meta={settingMeta}
-                                            isDirty={dirty.has(key)}
-                                            onChange={(v) => handleChange(key, v)}
-                                        />
-                                        {settingMeta?.description && (
-                                            <p className="text-xs text-muted-foreground">
-                                                {settingMeta.description}
-                                            </p>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </CollapsibleContent>
-                </Collapsible>
-            ))}
-
-            {filteredGroups.length === 0 && search && (
-                <p className="py-4 text-center text-sm text-muted-foreground">
-                    {t('admin.config.no_settings_match', { search, section: title.toLowerCase() })}
-                </p>
-            )}
-        </div>
-    );
-});
+    },
+);
 
 // ── Main config page ────────────────────────────────────────────────
 
-export default function Config({ server_config, sandbox_config, respawn_delay }: ConfigProps) {
+export default function Config({
+    server_config,
+    sandbox_config,
+    respawn_delay,
+}: ConfigProps) {
     const { t } = useTranslation();
     const breadcrumbs: BreadcrumbItem[] = [
         { title: t('nav.dashboard'), href: '/dashboard' },
@@ -382,7 +479,9 @@ export default function Config({ server_config, sandbox_config, respawn_delay }:
 
     // Respawn delay state
     const [respawnEnabled, setRespawnEnabled] = useState(respawn_delay.enabled);
-    const [respawnMinutes, setRespawnMinutes] = useState(respawn_delay.delay_minutes);
+    const [respawnMinutes, setRespawnMinutes] = useState(
+        respawn_delay.delay_minutes,
+    );
     const [respawnSaving, setRespawnSaving] = useState(false);
 
     const serverRef = useRef<ConfigSectionHandle>(null);
@@ -390,7 +489,10 @@ export default function Config({ server_config, sandbox_config, respawn_delay }:
 
     const totalDirty = serverDirty + sandboxDirty;
 
-    async function saveConfig(url: string, settings: Record<string, string>): Promise<boolean> {
+    async function saveConfig(
+        url: string,
+        settings: Record<string, string>,
+    ): Promise<boolean> {
         setSaving(true);
         const result = await fetchAction(url, {
             method: 'PATCH',
@@ -421,7 +523,9 @@ export default function Config({ server_config, sandbox_config, respawn_delay }:
                 data.message = restartMessage.trim();
             }
         }
-        const result = await fetchAction('/admin/server/restart', { data: Object.keys(data).length > 0 ? data : undefined });
+        const result = await fetchAction('/admin/server/restart', {
+            data: Object.keys(data).length > 0 ? data : undefined,
+        });
         setRestartLoading(false);
         if (result === null) {
             return;
@@ -429,7 +533,10 @@ export default function Config({ server_config, sandbox_config, respawn_delay }:
         setShowRestartDialog(false);
         setRestartCountdown('0');
         setRestartMessage('');
-        setTimeout(() => router.reload({ only: ['server_config', 'sandbox_config'] }), 2000);
+        setTimeout(
+            () => router.reload({ only: ['server_config', 'sandbox_config'] }),
+            2000,
+        );
     }
 
     async function saveRespawnDelay() {
@@ -447,7 +554,11 @@ export default function Config({ server_config, sandbox_config, respawn_delay }:
     function flatten(obj: Record<string, unknown>, prefix = '') {
         for (const [key, val] of Object.entries(obj)) {
             const fullKey = prefix ? `${prefix}.${key}` : key;
-            if (val !== null && typeof val === 'object' && !Array.isArray(val)) {
+            if (
+                val !== null &&
+                typeof val === 'object' &&
+                !Array.isArray(val)
+            ) {
                 flatten(val as Record<string, unknown>, fullKey);
             } else {
                 flatSandbox[fullKey] = String(val ?? '');
@@ -462,7 +573,9 @@ export default function Config({ server_config, sandbox_config, respawn_delay }:
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">{t('admin.config.title')}</h1>
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            {t('admin.config.title')}
+                        </h1>
                         <p className="text-muted-foreground">
                             {t('admin.config.description')}
                         </p>
@@ -480,14 +593,19 @@ export default function Config({ server_config, sandbox_config, respawn_delay }:
                                 SandboxVars.lua
                             </a>
                         </Button>
-                        <Button variant="outline" onClick={() => setShowImportDialog(true)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowImportDialog(true)}
+                        >
                             <Upload className="mr-2 size-4" />
                             {t('common.import')}
                         </Button>
                         <div className="relative w-full sm:w-72">
                             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
-                                placeholder={t('admin.config.search_placeholder')}
+                                placeholder={t(
+                                    'admin.config.search_placeholder',
+                                )}
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="pl-9"
@@ -509,11 +627,16 @@ export default function Config({ server_config, sandbox_config, respawn_delay }:
                     <CardContent className="space-y-4">
                         <div className="flex items-center justify-between rounded-lg border p-4">
                             <div className="space-y-0.5">
-                                <Label htmlFor="respawn-enabled" className="text-sm font-medium">
+                                <Label
+                                    htmlFor="respawn-enabled"
+                                    className="text-sm font-medium"
+                                >
                                     {t('admin.config.respawn_delay_label')}
                                 </Label>
                                 <p className="text-xs text-muted-foreground">
-                                    {t('admin.config.respawn_delay_description')}
+                                    {t(
+                                        'admin.config.respawn_delay_description',
+                                    )}
                                 </p>
                             </div>
                             <Switch
@@ -524,14 +647,24 @@ export default function Config({ server_config, sandbox_config, respawn_delay }:
                         </div>
                         {respawnEnabled && (
                             <div className="grid gap-2">
-                                <Label htmlFor="respawn-minutes">{t('admin.config.cooldown_label')}</Label>
+                                <Label htmlFor="respawn-minutes">
+                                    {t('admin.config.cooldown_label')}
+                                </Label>
                                 <Input
                                     id="respawn-minutes"
                                     type="number"
                                     min={1}
                                     max={10080}
                                     value={respawnMinutes}
-                                    onChange={(e) => setRespawnMinutes(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                                    onChange={(e) =>
+                                        setRespawnMinutes(
+                                            Math.max(
+                                                1,
+                                                parseInt(e.target.value, 10) ||
+                                                    1,
+                                            ),
+                                        )
+                                    }
                                     className="w-32"
                                 />
                                 <p className="text-xs text-muted-foreground">
@@ -564,7 +697,9 @@ export default function Config({ server_config, sandbox_config, respawn_delay }:
                     meta={SERVER_INI_META}
                     groupOrder={SERVER_INI_GROUP_ORDER}
                     search={search}
-                    onSave={(settings) => saveConfig('/admin/config/server', settings)}
+                    onSave={(settings) =>
+                        saveConfig('/admin/config/server', settings)
+                    }
                     onDirtyChange={setServerDirty}
                 />
 
@@ -576,14 +711,16 @@ export default function Config({ server_config, sandbox_config, respawn_delay }:
                     meta={SANDBOX_META}
                     groupOrder={SANDBOX_GROUP_ORDER}
                     search={search}
-                    onSave={(settings) => saveConfig('/admin/config/sandbox', settings)}
+                    onSave={(settings) =>
+                        saveConfig('/admin/config/sandbox', settings)
+                    }
                     onDirtyChange={setSandboxDirty}
                 />
             </div>
 
             {/* Floating save button */}
             <div
-                className={`fixed bottom-6 right-6 z-50 transition-all duration-200 ${
+                className={`fixed right-6 bottom-6 z-50 transition-all duration-200 ${
                     totalDirty > 0
                         ? 'translate-y-0 opacity-100'
                         : 'pointer-events-none translate-y-4 opacity-0'
@@ -596,7 +733,11 @@ export default function Config({ server_config, sandbox_config, respawn_delay }:
                     className="shadow-lg"
                 >
                     <Save className="mr-2 size-4" />
-                    {saving ? t('common.saving') : t('admin.config.save_changes', { count: String(totalDirty) })}
+                    {saving
+                        ? t('common.saving')
+                        : t('admin.config.save_changes', {
+                              count: String(totalDirty),
+                          })}
                 </Button>
             </div>
 
@@ -608,24 +749,37 @@ export default function Config({ server_config, sandbox_config, respawn_delay }:
             />
 
             {/* Restart dialog */}
-            <Dialog open={showRestartDialog} onOpenChange={setShowRestartDialog}>
+            <Dialog
+                open={showRestartDialog}
+                onOpenChange={setShowRestartDialog}
+            >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('admin.config.restart_dialog_title')}</DialogTitle>
+                        <DialogTitle>
+                            {t('admin.config.restart_dialog_title')}
+                        </DialogTitle>
                         <DialogDescription>
                             {t('admin.config.restart_dialog_description')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="restart-countdown">{t('admin.config.restart_countdown_label')}</Label>
-                            <Select value={restartCountdown} onValueChange={setRestartCountdown}>
+                            <Label htmlFor="restart-countdown">
+                                {t('admin.config.restart_countdown_label')}
+                            </Label>
+                            <Select
+                                value={restartCountdown}
+                                onValueChange={setRestartCountdown}
+                            >
                                 <SelectTrigger id="restart-countdown">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {COUNTDOWN_OPTIONS.map((opt) => (
-                                        <SelectItem key={opt.value} value={opt.value}>
+                                        <SelectItem
+                                            key={opt.value}
+                                            value={opt.value}
+                                        >
                                             {opt.label}
                                         </SelectItem>
                                     ))}
@@ -634,12 +788,18 @@ export default function Config({ server_config, sandbox_config, respawn_delay }:
                         </div>
                         {restartCountdown !== '0' && (
                             <div className="grid gap-2">
-                                <Label htmlFor="restart-message">{t('admin.config.restart_warning_label')}</Label>
+                                <Label htmlFor="restart-message">
+                                    {t('admin.config.restart_warning_label')}
+                                </Label>
                                 <Input
                                     id="restart-message"
-                                    placeholder={t('admin.config.restart_warning_placeholder')}
+                                    placeholder={t(
+                                        'admin.config.restart_warning_placeholder',
+                                    )}
                                     value={restartMessage}
-                                    onChange={(e) => setRestartMessage(e.target.value)}
+                                    onChange={(e) =>
+                                        setRestartMessage(e.target.value)
+                                    }
                                     maxLength={500}
                                 />
                             </div>
@@ -654,7 +814,11 @@ export default function Config({ server_config, sandbox_config, respawn_delay }:
                             {t('admin.config.restart_skip')}
                         </Button>
                         <Button
-                            variant={restartCountdown === '0' ? 'destructive' : 'default'}
+                            variant={
+                                restartCountdown === '0'
+                                    ? 'destructive'
+                                    : 'default'
+                            }
                             onClick={handleRestart}
                             disabled={restartLoading}
                         >

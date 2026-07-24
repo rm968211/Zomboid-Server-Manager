@@ -333,7 +333,7 @@ class ModManager
      *
      * @param  list<string>  $current
      * @param  list<string>  $incoming
-     * @return array{0: list<string>, 1: int}  The merged list and the number added.
+     * @return array{0: list<string>, 1: int} The merged list and the number added.
      */
     private function mergeList(array $current, array $incoming): array
     {
@@ -465,7 +465,10 @@ class ModManager
         $contents = "Mods=$mods\nWorkshopItems=$workshopItems\n";
         $tempFile = @tempnam($stateDir, '.mod_state.');
 
-        if ($tempFile === false || dirname($tempFile) !== $stateDir) {
+        if (
+            $tempFile === false
+            || realpath(dirname($tempFile)) !== realpath($stateDir)
+        ) {
             if ($tempFile !== false) {
                 @unlink($tempFile);
             }

@@ -4,6 +4,7 @@ use App\Models\User;
 use App\Services\DockerManager;
 use App\Services\RconClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
 
@@ -32,6 +33,8 @@ function mockRconConsoleOffline(): void
 
 function mockDockerForLogs(array $lines = []): void
 {
+    Queue::fake();
+
     $docker = Mockery::mock(DockerManager::class);
     $docker->shouldReceive('getContainerLogs')->andReturn($lines)->byDefault();
     $docker->shouldReceive('getContainerStatus')->andReturn([

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\TransactionSource;
-use App\Models\WalletTransaction;
 use App\Models\WhitelistEntry;
 use Illuminate\Support\Str;
 
@@ -178,13 +177,6 @@ class MoneyDepositManager
                 continue;
             }
 
-            // Dedup: skip if already credited (but still mark for removal)
-            if (WalletTransaction::query()->where('reference_id', $result['id'])->exists()) {
-                $creditedIds[] = $result['id'];
-
-                continue;
-            }
-
             $totalCoins = $result['total_coins'] ?? 0;
             if ($totalCoins <= 0) {
                 $creditedIds[] = $result['id'];
@@ -204,13 +196,13 @@ class MoneyDepositManager
 
             $wallet = $walletService->getOrCreateWallet($whitelistEntry->user);
 
-            $walletService->credit(
+            $walletService->creditOnce(
                 $wallet,
                 (float) $totalCoins,
                 TransactionSource::InGameDeposit,
-                "In-game money deposit: {$result['money_count']}x Money + " . ($result['bundle_count'] ?? 0) . "x MoneyBundle",
                 'deposit',
                 $result['id'],
+                "In-game money deposit: {$result['money_count']}x Money + ".($result['bundle_count'] ?? 0).'x MoneyBundle',
                 [
                     'money_count' => $result['money_count'] ?? 0,
                     'bundle_count' => $result['bundle_count'] ?? 0,

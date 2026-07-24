@@ -110,6 +110,15 @@ it('validates required fields', function () {
         ->assertJsonValidationErrors(['workshop_id', 'mod_id']);
 });
 
+it('rejects mod list delimiter injection', function () {
+    $this->postJson('/api/config/mods', [
+        'workshop_id' => '123456;999999',
+        'mod_id' => "SafeMod;InjectedMod\nAnotherMod",
+    ], modApiHeaders())
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['workshop_id', 'mod_id']);
+});
+
 // ── DELETE /api/config/mods/{workshopId} ─────────────────────────────
 
 it('removes a mod', function () {

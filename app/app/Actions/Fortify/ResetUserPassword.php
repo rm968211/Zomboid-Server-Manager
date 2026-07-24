@@ -4,15 +4,17 @@ namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
 use App\Models\User;
-use App\Services\PzAccountAuthenticator;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use App\Services\PzPasswordSyncService;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\ResetsUserPasswords;
 
 class ResetUserPassword implements ResetsUserPasswords
 {
     use PasswordValidationRules;
+
+    public function __construct(
+        private readonly PzPasswordSyncService $pzPasswordSync,
+    ) {}
 
     /**
      * Validate and reset the user's forgotten password.
@@ -25,36 +27,16 @@ class ResetUserPassword implements ResetsUserPasswords
             'password' => $this->passwordRules(),
         ])->validate();
 
+        $pzUsername = $user->whitelistEntries()
+            ->where('active', true)
+            ->value('pz_username');
+
+        if ($pzUsername !== null) {
+            $this->pzPasswordSync->sync($pzUsername, $input['password']);
+        }
+
         $user->forceFill([
             'password' => $input['password'],
         ])->save();
-
-        // Sync plain text password to PZ SQLite
-        $this->syncPzPassword($user->username, $input['password']);
-    }
-
-    private function syncPzPassword(string $username, string $password): void
-    {
-        try {
-            $pzHash = PzAccountAuthenticator::hashForPz($password);
-
-            DB::connection('pz_sqlite')
-                ->table('whitelist')
-                ->where('username', $username)
-                ->update(['password' => $pzHash]);
-
-            $user = User::where('username', $username)->first();
-            $user?->whitelistEntries()
-                ->where('pz_username', $username)
-                ->update([
-                    'pz_password_hash' => $pzHash,
-                    'synced_at' => now(),
-                ]);
-        } catch (\Exception $e) {
-            Log::warning('Failed to sync reset password to PZ SQLite', [
-                'username' => $username,
-                'error' => $e->getMessage(),
-            ]);
-        }
     }
 }

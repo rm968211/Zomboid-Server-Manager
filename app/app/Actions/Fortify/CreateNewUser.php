@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Models\WhitelistEntry;
 use App\Services\PzAccountAuthenticator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
@@ -52,27 +51,30 @@ class CreateNewUser implements CreatesNewUsers
     {
         $pzHash = PzAccountAuthenticator::hashForPz($password);
 
+        DB::connection('pz_sqlite')
+            ->table('whitelist')
+            ->insert([
+                'username' => $username,
+                'password' => $pzHash,
+            ]);
+
         try {
+            WhitelistEntry::create([
+                'user_id' => $user->id,
+                'pz_username' => $username,
+                'pz_password_hash' => $pzHash,
+                'active' => true,
+                'synced_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            // The databases cannot share a transaction, so compensate for a
+            // failed application write instead of leaving an orphan PZ login.
             DB::connection('pz_sqlite')
                 ->table('whitelist')
-                ->insert([
-                    'username' => $username,
-                    'password' => $pzHash,
-                ]);
-        } catch (\Exception $e) {
-            // SQLite DB may not be available in dev/test — log but don't block registration
-            Log::warning('Failed to create PZ account in SQLite', [
-                'username' => $username,
-                'error' => $e->getMessage(),
-            ]);
-        }
+                ->where('username', $username)
+                ->delete();
 
-        WhitelistEntry::create([
-            'user_id' => $user->id,
-            'pz_username' => $username,
-            'pz_password_hash' => $pzHash,
-            'active' => true,
-            'synced_at' => now(),
-        ]);
+            throw $e;
+        }
     }
 }

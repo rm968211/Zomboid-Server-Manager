@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\AuditLogger;
+use App\Support\SensitiveDataRedactor;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -37,16 +38,7 @@ class AuditApiActions
             'status' => $response->getStatusCode(),
         ];
 
-        $body = $request->except([
-            'password',
-            'password_confirmation',
-            'api_key',
-            'token',
-            'secret',
-            'current_password',
-            'two_factor_secret',
-            'two_factor_recovery_codes',
-        ]);
+        $body = SensitiveDataRedactor::redact($request->all());
         if ($body !== []) {
             $details['body'] = $body;
         }

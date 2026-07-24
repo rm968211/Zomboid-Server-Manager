@@ -249,5 +249,4 @@ class ServerController
             'count' => count($lines),
         ]);
     }
-
 }

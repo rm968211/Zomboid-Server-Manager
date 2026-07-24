@@ -16,7 +16,7 @@ class PvpViolationFactory extends Factory
         return [
             'attacker' => fake()->userName(),
             'victim' => fake()->userName(),
-            'zone_id' => 'zone_' . fake()->randomNumber(3),
+            'zone_id' => 'zone_'.fake()->randomNumber(3),
             'zone_name' => fake()->randomElement(['Spawn', 'Market', 'Hospital', 'Safe House']),
             'attacker_x' => fake()->numberBetween(8000, 12000),
             'attacker_y' => fake()->numberBetween(8000, 12000),

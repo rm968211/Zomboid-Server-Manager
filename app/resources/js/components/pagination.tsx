@@ -16,7 +16,13 @@ type PaginationProps = {
     preserveState?: boolean;
 };
 
-export function Pagination({ currentPage, lastPage, links, onPageChange, baseUrl, preserveState = true }: PaginationProps) {
+export function Pagination({
+    currentPage,
+    lastPage,
+    links,
+    onPageChange,
+    preserveState = true,
+}: PaginationProps) {
     if (lastPage <= 1) return null;
 
     if (links) {
@@ -37,7 +43,7 @@ export function Pagination({ currentPage, lastPage, links, onPageChange, baseUrl
                             />
                         ) : (
                             <span
-                                className="text-muted-foreground px-3 py-1.5 text-sm"
+                                className="px-3 py-1.5 text-sm text-muted-foreground"
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             />
                         )}

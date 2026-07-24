@@ -195,9 +195,19 @@ class PlayerController extends Controller
             return response()->json(['error' => "User {$name} not found"], 404);
         }
 
-        $user->update(['password' => $request->password]);
+        $pzUsername = $user->whitelistEntries()
+            ->where('active', true)
+            ->value('pz_username') ?? $name;
 
-        $this->pzPasswordSync->sync($name, $request->password);
+        try {
+            $this->pzPasswordSync->sync($pzUsername, $request->password);
+        } catch (\Throwable) {
+            return response()->json([
+                'error' => 'The game account password could not be updated.',
+            ], 503);
+        }
+
+        $user->update(['password' => $request->password]);
 
         $this->auditLogger->log(
             actor: $request->user()->name ?? 'admin',

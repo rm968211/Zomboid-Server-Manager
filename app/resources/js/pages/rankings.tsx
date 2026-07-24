@@ -1,17 +1,47 @@
 import { Deferred, Head, Link } from '@inertiajs/react';
-import { Clock, Coins, Crosshair, Medal, ShoppingCart, Skull, Swords, Trophy, Users } from 'lucide-react';
+import {
+    Clock,
+    Coins,
+    Crosshair,
+    Medal,
+    ShoppingCart,
+    Skull,
+    Swords,
+    Trophy,
+    Users,
+} from 'lucide-react';
 import { motion } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AnimatedCounter } from '@/components/animated-counter';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/hooks/use-translation';
 import PublicLayout from '@/layouts/public-layout';
-import { convertHours, formatHours, type HoursMode, loadHoursMode, saveHoursMode } from '@/lib/hours-format';
-import type { DeathLeaderboardEntry, LeaderboardEntry, RankingsPageData, RatioLeaderboardEntry, WalletLeaderboardEntry } from '@/types';
+import {
+    convertHours,
+    formatHours,
+    loadHoursMode,
+    saveHoursMode,
+} from '@/lib/hours-format';
+import type { HoursMode } from '@/lib/hours-format';
+import type {
+    DeathLeaderboardEntry,
+    LeaderboardEntry,
+    RankingsPageData,
+    RatioLeaderboardEntry,
+    WalletLeaderboardEntry,
+} from '@/types';
 
-type TabKey = 'kills' | 'survival' | 'deaths' | 'kd' | 'hd' | 'pvpd' | 'spent' | 'balance';
+type TabKey =
+    | 'kills'
+    | 'survival'
+    | 'deaths'
+    | 'kd'
+    | 'hd'
+    | 'pvpd'
+    | 'spent'
+    | 'balance';
 
 function RankBadge({ rank }: { rank: number }) {
     if (rank === 1) {
@@ -45,7 +75,11 @@ function RankBadge({ rank }: { rank: number }) {
 function KillsTable({ data }: { data: LeaderboardEntry[] }) {
     const { t } = useTranslation();
     if (data.length === 0) {
-        return <p className="py-8 text-center text-sm text-muted-foreground">{t('rankings.no_stats')}</p>;
+        return (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+                {t('rankings.no_stats')}
+            </p>
+        );
     }
 
     return (
@@ -63,13 +97,23 @@ function KillsTable({ data }: { data: LeaderboardEntry[] }) {
                     >
                         <div className="flex items-center gap-3">
                             <RankBadge rank={entry.rank} />
-                            <span className="font-medium">{entry.username}</span>
+                            <span className="font-medium">
+                                {entry.username}
+                            </span>
                             {entry.profession && (
-                                <Badge variant="secondary" className="text-xs">{entry.profession}</Badge>
+                                <Badge variant="secondary" className="text-xs">
+                                    {entry.profession}
+                                </Badge>
                             )}
-                            {entry.is_dead && <Skull className="size-3.5 text-red-500" title="Dead" />}
+                            {entry.is_dead && (
+                                <span title="Dead">
+                                    <Skull className="size-3.5 text-red-500" />
+                                </span>
+                            )}
                         </div>
-                        <span className="font-semibold tabular-nums">{entry.zombie_kills.toLocaleString()}</span>
+                        <span className="font-semibold tabular-nums">
+                            {entry.zombie_kills.toLocaleString()}
+                        </span>
                     </Link>
                 </motion.div>
             ))}
@@ -77,10 +121,22 @@ function KillsTable({ data }: { data: LeaderboardEntry[] }) {
     );
 }
 
-function SurvivalTable({ data, hoursMode, dayLengthMinutes }: { data: LeaderboardEntry[]; hoursMode: HoursMode; dayLengthMinutes: number }) {
+function SurvivalTable({
+    data,
+    hoursMode,
+    dayLengthMinutes,
+}: {
+    data: LeaderboardEntry[];
+    hoursMode: HoursMode;
+    dayLengthMinutes: number;
+}) {
     const { t } = useTranslation();
     if (data.length === 0) {
-        return <p className="py-8 text-center text-sm text-muted-foreground">{t('rankings.no_stats')}</p>;
+        return (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+                {t('rankings.no_stats')}
+            </p>
+        );
     }
 
     return (
@@ -98,14 +154,26 @@ function SurvivalTable({ data, hoursMode, dayLengthMinutes }: { data: Leaderboar
                     >
                         <div className="flex items-center gap-3">
                             <RankBadge rank={entry.rank} />
-                            <span className="font-medium">{entry.username}</span>
+                            <span className="font-medium">
+                                {entry.username}
+                            </span>
                             {entry.profession && (
-                                <Badge variant="secondary" className="text-xs">{entry.profession}</Badge>
+                                <Badge variant="secondary" className="text-xs">
+                                    {entry.profession}
+                                </Badge>
                             )}
-                            {entry.is_dead && <Skull className="size-3.5 text-red-500" title="Dead" />}
+                            {entry.is_dead && (
+                                <span title="Dead">
+                                    <Skull className="size-3.5 text-red-500" />
+                                </span>
+                            )}
                         </div>
                         <span className="font-semibold tabular-nums">
-                            {formatHours(entry.hours_survived, hoursMode, dayLengthMinutes)}
+                            {formatHours(
+                                entry.hours_survived,
+                                hoursMode,
+                                dayLengthMinutes,
+                            )}
                         </span>
                     </Link>
                 </motion.div>
@@ -117,7 +185,11 @@ function SurvivalTable({ data, hoursMode, dayLengthMinutes }: { data: Leaderboar
 function DeathsTable({ data }: { data: DeathLeaderboardEntry[] }) {
     const { t } = useTranslation();
     if (data.length === 0) {
-        return <p className="py-8 text-center text-sm text-muted-foreground">{t('rankings.no_deaths')}</p>;
+        return (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+                {t('rankings.no_deaths')}
+            </p>
+        );
     }
 
     return (
@@ -135,9 +207,13 @@ function DeathsTable({ data }: { data: DeathLeaderboardEntry[] }) {
                     >
                         <div className="flex items-center gap-3">
                             <RankBadge rank={entry.rank} />
-                            <span className="font-medium">{entry.username}</span>
+                            <span className="font-medium">
+                                {entry.username}
+                            </span>
                         </div>
-                        <span className="font-semibold tabular-nums">{entry.death_count.toLocaleString()}</span>
+                        <span className="font-semibold tabular-nums">
+                            {entry.death_count.toLocaleString()}
+                        </span>
                     </Link>
                 </motion.div>
             ))}
@@ -160,18 +236,28 @@ function RatioTable({
 }) {
     const { t } = useTranslation();
     if (data.length === 0) {
-        return <p className="py-8 text-center text-sm text-muted-foreground">{t('rankings.no_ratio_data')}</p>;
+        return (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+                {t('rankings.no_ratio_data')}
+            </p>
+        );
     }
 
     return (
         <div className="space-y-1">
             {data.map((entry, i) => {
-                const numerator = isHoursRatio && hoursMode && dayLengthMinutes
-                    ? convertHours(entry.numerator, hoursMode, dayLengthMinutes)
-                    : entry.numerator;
-                const ratio = isHoursRatio && hoursMode && dayLengthMinutes
-                    ? convertHours(entry.ratio, hoursMode, dayLengthMinutes)
-                    : entry.ratio;
+                const numerator =
+                    isHoursRatio && hoursMode && dayLengthMinutes
+                        ? convertHours(
+                              entry.numerator,
+                              hoursMode,
+                              dayLengthMinutes,
+                          )
+                        : entry.numerator;
+                const ratio =
+                    isHoursRatio && hoursMode && dayLengthMinutes
+                        ? convertHours(entry.ratio, hoursMode, dayLengthMinutes)
+                        : entry.ratio;
                 return (
                     <motion.div
                         key={entry.username}
@@ -185,13 +271,21 @@ function RatioTable({
                         >
                             <div className="flex items-center gap-3">
                                 <RankBadge rank={entry.rank} />
-                                <span className="font-medium">{entry.username}</span>
+                                <span className="font-medium">
+                                    {entry.username}
+                                </span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-xs text-muted-foreground">
-                                    ({numerator.toLocaleString(undefined, { maximumFractionDigits: 1 })}{unit ?? ''} / {entry.death_count}d)
+                                    (
+                                    {numerator.toLocaleString(undefined, {
+                                        maximumFractionDigits: 1,
+                                    })}
+                                    {unit ?? ''} / {entry.death_count}d)
                                 </span>
-                                <span className="font-semibold tabular-nums">{ratio.toFixed(2)}</span>
+                                <span className="font-semibold tabular-nums">
+                                    {ratio.toFixed(2)}
+                                </span>
                             </div>
                         </Link>
                     </motion.div>
@@ -201,10 +295,20 @@ function RatioTable({
     );
 }
 
-function WalletTable({ data, field }: { data: WalletLeaderboardEntry[]; field: 'total_spent' | 'balance' }) {
+function WalletTable({
+    data,
+    field,
+}: {
+    data: WalletLeaderboardEntry[];
+    field: 'total_spent' | 'balance';
+}) {
     const { t } = useTranslation();
     if (data.length === 0) {
-        return <p className="py-8 text-center text-sm text-muted-foreground">{t('rankings.no_wallet_data')}</p>;
+        return (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+                {t('rankings.no_wallet_data')}
+            </p>
+        );
     }
 
     return (
@@ -222,10 +326,15 @@ function WalletTable({ data, field }: { data: WalletLeaderboardEntry[]; field: '
                     >
                         <div className="flex items-center gap-3">
                             <RankBadge rank={entry.rank} />
-                            <span className="font-medium">{entry.username}</span>
+                            <span className="font-medium">
+                                {entry.username}
+                            </span>
                         </div>
                         <span className="font-semibold tabular-nums">
-                            {entry[field].toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {entry[field].toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                            })}
                         </span>
                     </Link>
                 </motion.div>
@@ -238,7 +347,10 @@ function LeaderboardSkeleton() {
     return (
         <div className="space-y-2 py-2">
             {Array.from({ length: 10 }).map((_, i) => (
-                <div key={i} className="flex items-center justify-between px-3 py-2">
+                <div
+                    key={i}
+                    className="flex items-center justify-between px-3 py-2"
+                >
                     <div className="flex items-center gap-3">
                         <Skeleton className="size-7 rounded-full" />
                         <Skeleton className="h-4 w-24" />
@@ -274,19 +386,21 @@ export default function Rankings({
     leaderboard_balance,
 }: RankingsPageData) {
     const [activeTab, setActiveTab] = useState<TabKey>('kills');
-    const [hoursMode, setHoursMode] = useState<HoursMode>('ingame');
+    const [hoursMode, setHoursMode] = useState<HoursMode>(() =>
+        loadHoursMode(),
+    );
     const { t } = useTranslation();
-
-    useEffect(() => {
-        setHoursMode(loadHoursMode());
-    }, []);
 
     const changeHoursMode = (mode: HoursMode) => {
         setHoursMode(mode);
         saveHoursMode(mode);
     };
 
-    const displayedHours = convertHours(server_stats.total_hours_survived, hoursMode, day_length_minutes);
+    const displayedHours = convertHours(
+        server_stats.total_hours_survived,
+        hoursMode,
+        day_length_minutes,
+    );
 
     return (
         <>
@@ -294,9 +408,13 @@ export default function Rankings({
             <PublicLayout>
                 <main className="mx-auto max-w-7xl px-4 py-8">
                     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-                        <h1 className="text-3xl font-bold tracking-tight">{t('rankings.title')}</h1>
+                        <h1 className="text-3xl font-bold tracking-tight">
+                            {t('rankings.title')}
+                        </h1>
                         <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">{t('rankings.time_unit_label')}</span>
+                            <span className="text-xs text-muted-foreground">
+                                {t('rankings.time_unit_label')}
+                            </span>
                             <div className="inline-flex overflow-hidden rounded-md border border-border text-xs">
                                 <button
                                     type="button"
@@ -334,9 +452,13 @@ export default function Rankings({
                                     <Users className="size-5 text-blue-500" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-muted-foreground">{t('rankings.total_players')}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('rankings.total_players')}
+                                    </p>
                                     <p className="text-2xl font-bold tabular-nums">
-                                        <AnimatedCounter value={server_stats.total_players} />
+                                        <AnimatedCounter
+                                            value={server_stats.total_players}
+                                        />
                                     </p>
                                 </div>
                             </CardContent>
@@ -347,9 +469,15 @@ export default function Rankings({
                                     <Skull className="size-5 text-red-500" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-muted-foreground">{t('rankings.zombie_kills')}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('rankings.zombie_kills')}
+                                    </p>
                                     <p className="text-2xl font-bold tabular-nums">
-                                        <AnimatedCounter value={server_stats.total_zombie_kills} />
+                                        <AnimatedCounter
+                                            value={
+                                                server_stats.total_zombie_kills
+                                            }
+                                        />
                                     </p>
                                 </div>
                             </CardContent>
@@ -360,9 +488,15 @@ export default function Rankings({
                                     <Clock className="size-5 text-green-500" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-muted-foreground">{t('rankings.hours_played')}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('rankings.hours_played')}
+                                    </p>
                                     <p className="text-2xl font-bold tabular-nums">
-                                        <AnimatedCounter value={displayedHours} decimals={1} suffix="h" />
+                                        <AnimatedCounter
+                                            value={displayedHours}
+                                            decimals={1}
+                                            suffix="h"
+                                        />
                                     </p>
                                 </div>
                             </CardContent>
@@ -373,9 +507,13 @@ export default function Rankings({
                                     <Skull className="size-5 text-orange-500" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-muted-foreground">{t('rankings.deaths')}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('rankings.deaths')}
+                                    </p>
                                     <p className="text-2xl font-bold tabular-nums">
-                                        <AnimatedCounter value={server_stats.total_deaths} />
+                                        <AnimatedCounter
+                                            value={server_stats.total_deaths}
+                                        />
                                     </p>
                                 </div>
                             </CardContent>
@@ -386,9 +524,13 @@ export default function Rankings({
                                     <Swords className="size-5 text-purple-500" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-muted-foreground">{t('rankings.pvp_kills')}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('rankings.pvp_kills')}
+                                    </p>
                                     <p className="text-2xl font-bold tabular-nums">
-                                        <AnimatedCounter value={server_stats.total_pvp_kills} />
+                                        <AnimatedCounter
+                                            value={server_stats.total_pvp_kills}
+                                        />
                                     </p>
                                 </div>
                             </CardContent>
@@ -423,43 +565,87 @@ export default function Rankings({
                         </CardHeader>
                         <CardContent>
                             {activeTab === 'kills' && (
-                                <Deferred data="leaderboard_kills" fallback={<LeaderboardSkeleton />}>
-                                    <KillsTable data={leaderboard_kills ?? []} />
+                                <Deferred
+                                    data="leaderboard_kills"
+                                    fallback={<LeaderboardSkeleton />}
+                                >
+                                    <KillsTable
+                                        data={leaderboard_kills ?? []}
+                                    />
                                 </Deferred>
                             )}
                             {activeTab === 'survival' && (
-                                <Deferred data="leaderboard_survival" fallback={<LeaderboardSkeleton />}>
-                                    <SurvivalTable data={leaderboard_survival ?? []} hoursMode={hoursMode} dayLengthMinutes={day_length_minutes} />
+                                <Deferred
+                                    data="leaderboard_survival"
+                                    fallback={<LeaderboardSkeleton />}
+                                >
+                                    <SurvivalTable
+                                        data={leaderboard_survival ?? []}
+                                        hoursMode={hoursMode}
+                                        dayLengthMinutes={day_length_minutes}
+                                    />
                                 </Deferred>
                             )}
                             {activeTab === 'deaths' && (
-                                <Deferred data="leaderboard_deaths" fallback={<LeaderboardSkeleton />}>
-                                    <DeathsTable data={leaderboard_deaths ?? []} />
+                                <Deferred
+                                    data="leaderboard_deaths"
+                                    fallback={<LeaderboardSkeleton />}
+                                >
+                                    <DeathsTable
+                                        data={leaderboard_deaths ?? []}
+                                    />
                                 </Deferred>
                             )}
                             {activeTab === 'kd' && (
-                                <Deferred data="leaderboard_kd" fallback={<LeaderboardSkeleton />}>
+                                <Deferred
+                                    data="leaderboard_kd"
+                                    fallback={<LeaderboardSkeleton />}
+                                >
                                     <RatioTable data={leaderboard_kd ?? []} />
                                 </Deferred>
                             )}
                             {activeTab === 'hd' && (
-                                <Deferred data="leaderboard_hd" fallback={<LeaderboardSkeleton />}>
-                                    <RatioTable data={leaderboard_hd ?? []} unit="h" isHoursRatio hoursMode={hoursMode} dayLengthMinutes={day_length_minutes} />
+                                <Deferred
+                                    data="leaderboard_hd"
+                                    fallback={<LeaderboardSkeleton />}
+                                >
+                                    <RatioTable
+                                        data={leaderboard_hd ?? []}
+                                        unit="h"
+                                        isHoursRatio
+                                        hoursMode={hoursMode}
+                                        dayLengthMinutes={day_length_minutes}
+                                    />
                                 </Deferred>
                             )}
                             {activeTab === 'pvpd' && (
-                                <Deferred data="leaderboard_pvpd" fallback={<LeaderboardSkeleton />}>
+                                <Deferred
+                                    data="leaderboard_pvpd"
+                                    fallback={<LeaderboardSkeleton />}
+                                >
                                     <RatioTable data={leaderboard_pvpd ?? []} />
                                 </Deferred>
                             )}
                             {activeTab === 'spent' && (
-                                <Deferred data="leaderboard_spent" fallback={<LeaderboardSkeleton />}>
-                                    <WalletTable data={leaderboard_spent ?? []} field="total_spent" />
+                                <Deferred
+                                    data="leaderboard_spent"
+                                    fallback={<LeaderboardSkeleton />}
+                                >
+                                    <WalletTable
+                                        data={leaderboard_spent ?? []}
+                                        field="total_spent"
+                                    />
                                 </Deferred>
                             )}
                             {activeTab === 'balance' && (
-                                <Deferred data="leaderboard_balance" fallback={<LeaderboardSkeleton />}>
-                                    <WalletTable data={leaderboard_balance ?? []} field="balance" />
+                                <Deferred
+                                    data="leaderboard_balance"
+                                    fallback={<LeaderboardSkeleton />}
+                                >
+                                    <WalletTable
+                                        data={leaderboard_balance ?? []}
+                                        field="balance"
+                                    />
                                 </Deferred>
                             )}
                         </CardContent>

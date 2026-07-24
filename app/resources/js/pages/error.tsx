@@ -1,8 +1,17 @@
 import { Head, Link } from '@inertiajs/react';
-import { AlertTriangle, ArrowLeft, Home, ServerCrash, ShieldX } from 'lucide-react';
+import {
+    AlertTriangle,
+    ArrowLeft,
+    Home,
+    ServerCrash,
+    ShieldX,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const errorConfig: Record<number, { title: string; description: string; icon: typeof AlertTriangle }> = {
+const errorConfig: Record<
+    number,
+    { title: string; description: string; icon: typeof AlertTriangle }
+> = {
     403: {
         title: 'Forbidden',
         description: 'You do not have permission to access this page.',
@@ -10,7 +19,8 @@ const errorConfig: Record<number, { title: string; description: string; icon: ty
     },
     404: {
         title: 'Page Not Found',
-        description: 'The page you are looking for does not exist or has been moved.',
+        description:
+            'The page you are looking for does not exist or has been moved.',
         icon: AlertTriangle,
     },
     500: {
@@ -20,7 +30,8 @@ const errorConfig: Record<number, { title: string; description: string; icon: ty
     },
     503: {
         title: 'Service Unavailable',
-        description: 'The server is currently under maintenance. Please check back soon.',
+        description:
+            'The server is currently under maintenance. Please check back soon.',
         icon: ServerCrash,
     },
 };
@@ -54,7 +65,10 @@ export default function ErrorPage({ status }: { status: number }) {
                         {config.description}
                     </p>
                     <div className="mt-8 flex items-center justify-center gap-3">
-                        <Button variant="outline" onClick={() => window.history.back()}>
+                        <Button
+                            variant="outline"
+                            onClick={() => window.history.back()}
+                        >
                             <ArrowLeft className="mr-1.5 size-4" />
                             Go Back
                         </Button>

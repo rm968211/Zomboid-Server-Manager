@@ -18,13 +18,20 @@ type FetchActionOptions = {
  * Pass `silent: true` to opt out of toasts and `signal` for cancellation.
  * Aborted requests resolve to `null` without surfacing an error.
  */
-export async function fetchAction(
+export async function fetchAction<T = Record<string, unknown>>(
     url: string,
     options: FetchActionOptions = {},
-): Promise<Record<string, unknown> | null> {
-    const { method = 'POST', data, successMessage, silent = false, signal } = options;
+): Promise<T | null> {
+    const {
+        method = 'POST',
+        data,
+        successMessage,
+        silent = false,
+        signal,
+    } = options;
     const csrfToken =
-        document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+        document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+            ?.content ?? '';
 
     // Laravel method spoofing: send PUT/PATCH/DELETE as POST with _method in body
     const spoofed = ['PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
@@ -33,13 +40,13 @@ export async function fetchAction(
     const body = data
         ? JSON.stringify(spoofed ? { ...data, _method: method } : data)
         : spoofed
-            ? JSON.stringify({ _method: method })
-            : undefined;
+          ? JSON.stringify({ _method: method })
+          : undefined;
 
     const headers: Record<string, string> = {
         'X-CSRF-TOKEN': csrfToken,
         'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json',
+        Accept: 'application/json',
     };
     if (spoofed) {
         headers['X-HTTP-Method-Override'] = method.toUpperCase();
@@ -65,11 +72,13 @@ export async function fetchAction(
                     successMessage || json.message || 'Action completed',
                 );
             }
-            return json;
+            return json as T;
         }
 
         if (!silent) {
-            toast.error(json.error || json.message || `Request failed (${res.status})`);
+            toast.error(
+                json.error || json.message || `Request failed (${res.status})`,
+            );
         }
         return null;
     } catch (err) {

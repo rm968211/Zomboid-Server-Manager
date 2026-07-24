@@ -29,7 +29,9 @@ export function LanguageSwitcher() {
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-1.5">
                     <Globe className="size-4" />
-                    <span className="text-sm">{current?.native_name ?? locale}</span>
+                    <span className="text-sm">
+                        {current?.native_name ?? locale}
+                    </span>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -41,7 +43,9 @@ export function LanguageSwitcher() {
                     >
                         {lang.native_name}
                         {lang.native_name !== lang.name && (
-                            <span className="ml-1.5 text-muted-foreground">({lang.name})</span>
+                            <span className="ml-1.5 text-muted-foreground">
+                                ({lang.name})
+                            </span>
                         )}
                     </DropdownMenuItem>
                 ))}

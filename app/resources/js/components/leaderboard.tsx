@@ -1,5 +1,11 @@
 import { Clock, Medal, Skull, Trophy } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import type { Leaderboard as LeaderboardType } from '@/types';
 
 export function Leaderboard({ data }: { data: LeaderboardType }) {
@@ -18,7 +24,9 @@ export function Leaderboard({ data }: { data: LeaderboardType }) {
                     <CardDescription>Top players by stats</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-muted-foreground">No player stats recorded yet</p>
+                    <p className="text-sm text-muted-foreground">
+                        No player stats recorded yet
+                    </p>
                 </CardContent>
             </Card>
         );
@@ -52,7 +60,9 @@ export function Leaderboard({ data }: { data: LeaderboardType }) {
                                             <span className="w-5 text-center text-xs font-bold text-muted-foreground">
                                                 {i + 1}
                                             </span>
-                                            <span className="font-medium">{entry.username}</span>
+                                            <span className="font-medium">
+                                                {entry.username}
+                                            </span>
                                         </div>
                                         <span className="tabular-nums">
                                             {entry.zombie_kills.toLocaleString()}
@@ -61,7 +71,9 @@ export function Leaderboard({ data }: { data: LeaderboardType }) {
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-xs text-muted-foreground">No data</p>
+                            <p className="text-xs text-muted-foreground">
+                                No data
+                            </p>
                         )}
                     </div>
 
@@ -82,19 +94,26 @@ export function Leaderboard({ data }: { data: LeaderboardType }) {
                                             <span className="w-5 text-center text-xs font-bold text-muted-foreground">
                                                 {i + 1}
                                             </span>
-                                            <span className="font-medium">{entry.username}</span>
+                                            <span className="font-medium">
+                                                {entry.username}
+                                            </span>
                                         </div>
                                         <span className="tabular-nums">
-                                            {entry.hours_survived.toLocaleString(undefined, {
-                                                maximumFractionDigits: 1,
-                                            })}
+                                            {entry.hours_survived.toLocaleString(
+                                                undefined,
+                                                {
+                                                    maximumFractionDigits: 1,
+                                                },
+                                            )}
                                             h
                                         </span>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-xs text-muted-foreground">No data</p>
+                            <p className="text-xs text-muted-foreground">
+                                No data
+                            </p>
                         )}
                     </div>
 
@@ -115,7 +134,9 @@ export function Leaderboard({ data }: { data: LeaderboardType }) {
                                             <span className="w-5 text-center text-xs font-bold text-muted-foreground">
                                                 {i + 1}
                                             </span>
-                                            <span className="font-medium">{entry.username}</span>
+                                            <span className="font-medium">
+                                                {entry.username}
+                                            </span>
                                         </div>
                                         <span className="tabular-nums">
                                             {entry.death_count.toLocaleString()}
@@ -124,7 +145,9 @@ export function Leaderboard({ data }: { data: LeaderboardType }) {
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-xs text-muted-foreground">No data</p>
+                            <p className="text-xs text-muted-foreground">
+                                No data
+                            </p>
                         )}
                     </div>
                 </div>

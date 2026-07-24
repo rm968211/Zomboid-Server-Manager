@@ -147,6 +147,10 @@ class PlayerMapController extends Controller
      */
     public function tile(string $level, string $tile): BinaryFileResponse|Response
     {
+        if (! ctype_digit($level) || ! preg_match('/^\d+_\d+\.(?:webp|jpg)$/', $tile)) {
+            return response('Not found', 404);
+        }
+
         $tilesPath = config('zomboid.map.tiles_path');
         $dziPath = $tilesPath.'/html/map_data/base/layer0_files';
 
@@ -173,10 +177,13 @@ class PlayerMapController extends Controller
         }
 
         // Prevent path traversal
-        $realTilesPath = realpath($tilesPath);
+        $realTilesPath = realpath($dziPath);
         $realFilePath = realpath($filePath);
+        $tilesPrefix = $realTilesPath === false
+            ? null
+            : rtrim($realTilesPath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 
-        if ($realTilesPath === false || $realFilePath === false || ! str_starts_with($realFilePath, $realTilesPath)) {
+        if ($tilesPrefix === null || $realFilePath === false || ! str_starts_with($realFilePath, $tilesPrefix)) {
             return response('Not found', 404);
         }
 

@@ -30,17 +30,11 @@ class WipeGameServer implements ShouldQueue
         Cache::forget('server.pending_action:wipe');
 
         // 1. Create pre-wipe backup
-        try {
-            $result = $backupManager->createBackup(BackupType::PreRollback, 'Pre-wipe safety backup');
+        $result = $backupManager->createBackup(BackupType::PreRollback, 'Pre-wipe safety backup');
 
-            Log::info('Pre-wipe backup created', [
-                'filename' => $result['backup']->filename,
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('Pre-wipe backup failed, proceeding with wipe', [
-                'error' => $e->getMessage(),
-            ]);
-        }
+        Log::info('Pre-wipe backup created', [
+            'filename' => $result['backup']->filename,
+        ]);
 
         // 2. Graceful shutdown via RCON, fallback to Docker stop
         try {

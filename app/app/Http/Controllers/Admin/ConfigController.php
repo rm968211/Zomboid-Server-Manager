@@ -12,6 +12,7 @@ use App\Services\ConfigStateManager;
 use App\Services\RespawnDelayManager;
 use App\Services\SandboxLuaParser;
 use App\Services\ServerIniParser;
+use App\Support\SensitiveDataRedactor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -89,8 +90,8 @@ class ConfigController extends Controller
             target: 'server.ini',
             details: [
                 'updated_fields' => array_keys($settings),
-                'before' => array_intersect_key($before, $settings),
-                'after' => array_intersect_key($after, $settings),
+                'before' => SensitiveDataRedactor::redact(array_intersect_key($before, $settings)),
+                'after' => SensitiveDataRedactor::redact(array_intersect_key($after, $settings)),
             ],
             ip: $request->ip(),
         );

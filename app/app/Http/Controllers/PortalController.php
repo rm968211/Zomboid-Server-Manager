@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\WhitelistEntry;
 use App\Services\MapConfigBuilder;
 use App\Services\PlayerPositionReader;
 use App\Services\PlayersDbReader;
@@ -25,16 +24,17 @@ class PortalController extends Controller
     {
         $user = $request->user();
 
-        $whitelistEntry = WhitelistEntry::where('pz_username', $user->username)
+        $whitelistEntry = $user->whitelistEntries()
             ->where('active', true)
             ->first();
+        $pzUsername = $whitelistEntry?->pz_username ?? $user->username;
 
-        $isOnline = $this->checkPlayerOnline($user->username);
+        $isOnline = $this->checkPlayerOnline($pzUsername);
 
         // Get player position: live first, fallback to DB
-        $playerPosition = $this->positionReader->getPlayerPosition($user->username);
+        $playerPosition = $this->positionReader->getPlayerPosition($pzUsername);
         if ($playerPosition === null) {
-            $dbPosition = $this->playersDb->getPlayerPosition($user->username);
+            $dbPosition = $this->playersDb->getPlayerPosition($pzUsername);
             if ($dbPosition !== null) {
                 $playerPosition = [
                     'username' => $dbPosition['username'],
@@ -51,7 +51,7 @@ class PortalController extends Controller
 
         return Inertia::render('portal', [
             'pzAccount' => [
-                'username' => $user->username,
+                'username' => $pzUsername,
                 'whitelisted' => $whitelistEntry !== null,
                 'isOnline' => $isOnline,
                 'syncedAt' => $whitelistEntry?->synced_at?->toISOString(),

@@ -2,12 +2,16 @@ import { Head, router } from '@inertiajs/react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { SortableHeader } from '@/components/sortable-header';
-import { useTableSort } from '@/hooks/use-table-sort';
-import { useTranslation } from '@/hooks/use-translation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -25,8 +29,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { useTableSort } from '@/hooks/use-table-sort';
+import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { fetchAction } from '@/lib/fetch-action';
 import type { BreadcrumbItem } from '@/types';
@@ -47,7 +60,10 @@ type SortKey = 'name' | 'discount_percent' | 'price' | 'is_active';
 export default function ShopBundles({ bundles, shopItems }: Props) {
     const { t } = useTranslation();
     const [dialogOpen, setDialogOpen] = useState(false);
-    const { sortKey, sortDir, toggleSort } = useTableSort<SortKey>('name', 'asc');
+    const { sortKey, sortDir, toggleSort } = useTableSort<SortKey>(
+        'name',
+        'asc',
+    );
     const [editBundle, setEditBundle] = useState<ShopBundle | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -105,7 +121,11 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
         setBundleItems(bundleItems.filter((_, i) => i !== idx));
     }
 
-    function updateBundleItem(idx: number, field: keyof BundleItemEntry, value: string | number) {
+    function updateBundleItem(
+        idx: number,
+        field: keyof BundleItemEntry,
+        value: string | number,
+    ) {
         const updated = [...bundleItems];
         updated[idx] = { ...updated[idx], [field]: value };
         setBundleItems(updated);
@@ -148,13 +168,19 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
     }
 
     function getBundleItemsTotal(bundle: ShopBundle): number {
-        return bundle.items.reduce((sum, item) => sum + coin(item.price) * item.pivot.quantity, 0);
+        return bundle.items.reduce(
+            (sum, item) => sum + coin(item.price) * item.pivot.quantity,
+            0,
+        );
     }
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: t('nav.dashboard'), href: '/dashboard' },
         { title: t('admin.shop.breadcrumb'), href: '/admin/shop' },
-        { title: t('admin.shop_bundles.breadcrumb'), href: '/admin/shop/bundles' },
+        {
+            title: t('admin.shop_bundles.breadcrumb'),
+            href: '/admin/shop/bundles',
+        },
     ];
 
     return (
@@ -163,8 +189,10 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">{t('admin.shop_bundles.title')}</h1>
-                        <p className="text-muted-foreground text-sm">
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            {t('admin.shop_bundles.title')}
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
                             {t('admin.shop_bundles.description')}
                         </p>
                     </div>
@@ -176,8 +204,14 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>{t('admin.shop_bundles.all_bundles')}</CardTitle>
-                        <CardDescription>{t('admin.shop_bundles.bundles_count', { count: String(bundles.length) })}</CardDescription>
+                        <CardTitle>
+                            {t('admin.shop_bundles.all_bundles')}
+                        </CardTitle>
+                        <CardDescription>
+                            {t('admin.shop_bundles.bundles_count', {
+                                count: String(bundles.length),
+                            })}
+                        </CardDescription>
                     </CardHeader>
                     <CardContent className="overflow-x-auto">
                         {bundles.length > 0 ? (
@@ -185,107 +219,226 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>
-                                            <SortableHeader column="name" label={t('common.name')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-                                        </TableHead>
-                                        <TableHead>{t('common.items')}</TableHead>
-                                        <TableHead className="text-center">
-                                            <SortableHeader column="discount_percent" label={t('admin.shop_bundles.discount_percent')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-                                        </TableHead>
-                                        <TableHead className="text-right">
-                                            <SortableHeader column="price" label={t('common.price')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                                            <SortableHeader
+                                                column="name"
+                                                label={t('common.name')}
+                                                sortKey={sortKey}
+                                                sortDir={sortDir}
+                                                onSort={toggleSort}
+                                            />
                                         </TableHead>
                                         <TableHead>
-                                            <SortableHeader column="is_active" label={t('common.status')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                                            {t('common.items')}
                                         </TableHead>
-                                        <TableHead className="text-right">{t('common.actions')}</TableHead>
+                                        <TableHead className="text-center">
+                                            <SortableHeader
+                                                column="discount_percent"
+                                                label={t(
+                                                    'admin.shop_bundles.discount_percent',
+                                                )}
+                                                sortKey={sortKey}
+                                                sortDir={sortDir}
+                                                onSort={toggleSort}
+                                            />
+                                        </TableHead>
+                                        <TableHead className="text-right">
+                                            <SortableHeader
+                                                column="price"
+                                                label={t('common.price')}
+                                                sortKey={sortKey}
+                                                sortDir={sortDir}
+                                                onSort={toggleSort}
+                                            />
+                                        </TableHead>
+                                        <TableHead>
+                                            <SortableHeader
+                                                column="is_active"
+                                                label={t('common.status')}
+                                                sortKey={sortKey}
+                                                sortDir={sortDir}
+                                                onSort={toggleSort}
+                                            />
+                                        </TableHead>
+                                        <TableHead className="text-right">
+                                            {t('common.actions')}
+                                        </TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {[...bundles].sort((a, b) => {
-                                        let cmp = 0;
-                                        if (sortKey === 'name') cmp = a.name.localeCompare(b.name);
-                                        else if (sortKey === 'discount_percent') cmp = parseFloat(a.discount_percent ?? '0') - parseFloat(b.discount_percent ?? '0');
-                                        else if (sortKey === 'price') cmp = parseFloat(a.price) - parseFloat(b.price);
-                                        else if (sortKey === 'is_active') cmp = Number(a.is_active) - Number(b.is_active);
-                                        return sortDir === 'desc' ? -cmp : cmp;
-                                    }).map((bundle) => {
-                                        const total = getBundleItemsTotal(bundle);
-                                        const saving = total - coin(bundle.price);
-                                        return (
-                                            <TableRow key={bundle.id}>
-                                                <TableCell>
-                                                    <div>
-                                                        <span className="font-medium">{bundle.name}</span>
-                                                        {bundle.is_featured && (
-                                                            <Badge className="ml-2 bg-amber-500 text-xs">{t('common.featured')}</Badge>
+                                    {[...bundles]
+                                        .sort((a, b) => {
+                                            let cmp = 0;
+                                            if (sortKey === 'name')
+                                                cmp = a.name.localeCompare(
+                                                    b.name,
+                                                );
+                                            else if (
+                                                sortKey === 'discount_percent'
+                                            )
+                                                cmp =
+                                                    parseFloat(
+                                                        a.discount_percent ??
+                                                            '0',
+                                                    ) -
+                                                    parseFloat(
+                                                        b.discount_percent ??
+                                                            '0',
+                                                    );
+                                            else if (sortKey === 'price')
+                                                cmp =
+                                                    parseFloat(a.price) -
+                                                    parseFloat(b.price);
+                                            else if (sortKey === 'is_active')
+                                                cmp =
+                                                    Number(a.is_active) -
+                                                    Number(b.is_active);
+                                            return sortDir === 'desc'
+                                                ? -cmp
+                                                : cmp;
+                                        })
+                                        .map((bundle) => {
+                                            const total =
+                                                getBundleItemsTotal(bundle);
+                                            const saving =
+                                                total - coin(bundle.price);
+                                            return (
+                                                <TableRow key={bundle.id}>
+                                                    <TableCell>
+                                                        <div>
+                                                            <span className="font-medium">
+                                                                {bundle.name}
+                                                            </span>
+                                                            {bundle.is_featured && (
+                                                                <Badge className="ml-2 bg-amber-500 text-xs">
+                                                                    {t(
+                                                                        'common.featured',
+                                                                    )}
+                                                                </Badge>
+                                                            )}
+                                                            {bundle.description && (
+                                                                <p className="max-w-[250px] truncate text-xs text-muted-foreground">
+                                                                    {
+                                                                        bundle.description
+                                                                    }
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex -space-x-2">
+                                                            {bundle.items
+                                                                .slice(0, 4)
+                                                                .map((item) => (
+                                                                    <img
+                                                                        key={
+                                                                            item.id
+                                                                        }
+                                                                        src={
+                                                                            item.icon ||
+                                                                            '/images/items/placeholder.svg'
+                                                                        }
+                                                                        alt={
+                                                                            item.name
+                                                                        }
+                                                                        width={
+                                                                            24
+                                                                        }
+                                                                        height={
+                                                                            24
+                                                                        }
+                                                                        className="size-6 rounded-full border-2 border-background bg-muted object-contain p-0.5"
+                                                                        title={`${item.name} x${item.pivot.quantity}`}
+                                                                    />
+                                                                ))}
+                                                            {bundle.items
+                                                                .length > 4 && (
+                                                                <div className="flex size-6 items-center justify-center rounded-full border-2 border-background bg-muted text-[10px] font-medium">
+                                                                    +
+                                                                    {bundle
+                                                                        .items
+                                                                        .length -
+                                                                        4}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        {parseFloat(
+                                                            bundle.discount_percent ??
+                                                                '0',
                                                         )}
-                                                        {bundle.description && (
-                                                            <p className="text-muted-foreground max-w-[250px] truncate text-xs">
-                                                                {bundle.description}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex -space-x-2">
-                                                        {bundle.items.slice(0, 4).map((item) => (
-                                                            <img
-                                                                key={item.id}
-                                                                src={item.icon || '/images/items/placeholder.svg'}
-                                                                alt={item.name}
-                                                                width={24}
-                                                                height={24}
-                                                                className="size-6 rounded-full border-2 border-background bg-muted object-contain p-0.5"
-                                                                title={`${item.name} x${item.pivot.quantity}`}
-                                                            />
-                                                        ))}
-                                                        {bundle.items.length > 4 && (
-                                                            <div className="flex size-6 items-center justify-center rounded-full border-2 border-background bg-muted text-[10px] font-medium">
-                                                                +{bundle.items.length - 4}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    {parseFloat(bundle.discount_percent ?? '0')}%
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <span className="font-medium tabular-nums">
-                                                            {coin(bundle.price)}
-                                                        </span>
-                                                        {saving > 0 && (
-                                                            <Badge variant="outline" className="text-xs text-green-600 dark:text-green-400">
-                                                                -{saving}
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge
-                                                        variant={bundle.is_active ? 'default' : 'destructive'}
-                                                        className="text-xs"
-                                                    >
-                                                        {bundle.is_active ? t('common.active') : t('common.inactive')}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex justify-end gap-1">
-                                                        <Button variant="ghost" size="sm" onClick={() => openEdit(bundle)}>
-                                                            {t('common.edit')}
-                                                        </Button>
-                                                        <Button variant="ghost" size="sm" onClick={() => handleDelete(bundle)}>
-                                                            <Trash2 className="size-4 text-destructive" />
-                                                        </Button>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
+                                                        %
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <span className="font-medium tabular-nums">
+                                                                {coin(
+                                                                    bundle.price,
+                                                                )}
+                                                            </span>
+                                                            {saving > 0 && (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="text-xs text-green-600 dark:text-green-400"
+                                                                >
+                                                                    -{saving}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge
+                                                            variant={
+                                                                bundle.is_active
+                                                                    ? 'default'
+                                                                    : 'destructive'
+                                                            }
+                                                            className="text-xs"
+                                                        >
+                                                            {bundle.is_active
+                                                                ? t(
+                                                                      'common.active',
+                                                                  )
+                                                                : t(
+                                                                      'common.inactive',
+                                                                  )}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex justify-end gap-1">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    openEdit(
+                                                                        bundle,
+                                                                    )
+                                                                }
+                                                            >
+                                                                {t(
+                                                                    'common.edit',
+                                                                )}
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    handleDelete(
+                                                                        bundle,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <Trash2 className="size-4 text-destructive" />
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
                                 </TableBody>
                             </Table>
                         ) : (
-                            <p className="text-muted-foreground py-8 text-center">
+                            <p className="py-8 text-center text-muted-foreground">
                                 {t('admin.shop_bundles.no_bundles')}
                             </p>
                         )}
@@ -296,79 +449,138 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>{editBundle ? t('admin.shop_bundles.edit_title') : t('admin.shop_bundles.create_title')}</DialogTitle>
+                        <DialogTitle>
+                            {editBundle
+                                ? t('admin.shop_bundles.edit_title')
+                                : t('admin.shop_bundles.create_title')}
+                        </DialogTitle>
                         <DialogDescription>
-                            {editBundle ? t('admin.shop_bundles.edit_desc') : t('admin.shop_bundles.create_desc')}
+                            {editBundle
+                                ? t('admin.shop_bundles.edit_desc')
+                                : t('admin.shop_bundles.create_desc')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
                         <div className="space-y-2">
                             <Label>{t('common.name')}</Label>
-                            <Input value={name} onChange={(e) => setName(e.target.value)} />
+                            <Input
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label>{t('common.description')}</Label>
-                            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+                            <Textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                            />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>{t('admin.shop_bundles.discount_percent')}</Label>
+                                <Label>
+                                    {t('admin.shop_bundles.discount_percent')}
+                                </Label>
                                 <Input
                                     type="number"
                                     step="1"
                                     min={0}
                                     max={99}
                                     value={discountPercent}
-                                    onChange={(e) => setDiscountPercent(e.target.value)}
+                                    onChange={(e) =>
+                                        setDiscountPercent(e.target.value)
+                                    }
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>{t('admin.shop_bundles.max_per_player')}</Label>
+                                <Label>
+                                    {t('admin.shop_bundles.max_per_player')}
+                                </Label>
                                 <Input
                                     type="number"
                                     min={1}
                                     placeholder={t('common.unlimited')}
                                     value={maxPerPlayer}
-                                    onChange={(e) => setMaxPerPlayer(e.target.value)}
+                                    onChange={(e) =>
+                                        setMaxPerPlayer(e.target.value)
+                                    }
                                 />
                             </div>
                         </div>
                         {itemsTotal > 0 && (
                             <div className="rounded-md bg-muted p-3 text-sm">
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">{t('admin.shop_bundles.items_total')}</span>
-                                    <span className="tabular-nums">{Math.round(itemsTotal)}</span>
+                                    <span className="text-muted-foreground">
+                                        {t('admin.shop_bundles.items_total')}
+                                    </span>
+                                    <span className="tabular-nums">
+                                        {Math.round(itemsTotal)}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">{t('admin.shop_bundles.discount_label', { percent: discountPercent || '0' })}</span>
-                                    <span className="tabular-nums text-green-600">-{Math.round(itemsTotal) - calculatedPrice}</span>
+                                    <span className="text-muted-foreground">
+                                        {t(
+                                            'admin.shop_bundles.discount_label',
+                                            { percent: discountPercent || '0' },
+                                        )}
+                                    </span>
+                                    <span className="text-green-600 tabular-nums">
+                                        -
+                                        {Math.round(itemsTotal) -
+                                            calculatedPrice}
+                                    </span>
                                 </div>
                                 <div className="mt-1 flex justify-between border-t pt-1 font-medium">
-                                    <span>{t('admin.shop_bundles.bundle_price')}</span>
-                                    <span className="tabular-nums">{calculatedPrice}</span>
+                                    <span>
+                                        {t('admin.shop_bundles.bundle_price')}
+                                    </span>
+                                    <span className="tabular-nums">
+                                        {calculatedPrice}
+                                    </span>
                                 </div>
                             </div>
                         )}
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <Label>{t('admin.shop_bundles.bundle_items')}</Label>
-                                <Button variant="outline" size="sm" onClick={addBundleItem}>
+                                <Label>
+                                    {t('admin.shop_bundles.bundle_items')}
+                                </Label>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={addBundleItem}
+                                >
                                     <Plus className="mr-1 size-3" />
                                     {t('common.add')}
                                 </Button>
                             </div>
                             {bundleItems.map((entry, idx) => (
-                                <div key={idx} className="flex items-center gap-2">
+                                <div
+                                    key={idx}
+                                    className="flex items-center gap-2"
+                                >
                                     <Select
                                         value={entry.shop_item_id}
-                                        onValueChange={(v) => updateBundleItem(idx, 'shop_item_id', v)}
+                                        onValueChange={(v) =>
+                                            updateBundleItem(
+                                                idx,
+                                                'shop_item_id',
+                                                v,
+                                            )
+                                        }
                                     >
                                         <SelectTrigger className="flex-1">
-                                            <SelectValue placeholder={t('admin.shop_bundles.select_item')} />
+                                            <SelectValue
+                                                placeholder={t(
+                                                    'admin.shop_bundles.select_item',
+                                                )}
+                                            />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {shopItems.map((si) => (
-                                                <SelectItem key={si.id} value={si.id}>
+                                                <SelectItem
+                                                    key={si.id}
+                                                    value={si.id}
+                                                >
                                                     {si.name} ({coin(si.price)})
                                                 </SelectItem>
                                             ))}
@@ -380,10 +592,22 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                                         className="w-20"
                                         value={entry.quantity}
                                         onChange={(e) =>
-                                            updateBundleItem(idx, 'quantity', Math.max(1, parseInt(e.target.value) || 1))
+                                            updateBundleItem(
+                                                idx,
+                                                'quantity',
+                                                Math.max(
+                                                    1,
+                                                    parseInt(e.target.value) ||
+                                                        1,
+                                                ),
+                                            )
                                         }
                                     />
-                                    <Button variant="ghost" size="sm" onClick={() => removeBundleItem(idx)}>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => removeBundleItem(idx)}
+                                    >
                                         <Trash2 className="size-3.5 text-destructive" />
                                     </Button>
                                 </div>
@@ -393,20 +617,34 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                             <Checkbox
                                 id="bundle-featured"
                                 checked={featured}
-                                onCheckedChange={(checked) => setFeatured(checked === true)}
+                                onCheckedChange={(checked) =>
+                                    setFeatured(checked === true)
+                                }
                             />
-                            <Label htmlFor="bundle-featured">{t('admin.shop_bundles.featured_bundle')}</Label>
+                            <Label htmlFor="bundle-featured">
+                                {t('admin.shop_bundles.featured_bundle')}
+                            </Label>
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setDialogOpen(false)}
+                        >
                             {t('common.cancel')}
                         </Button>
                         <Button
-                            disabled={!name || bundleItems.filter((i) => i.shop_item_id).length === 0 || loading}
+                            disabled={
+                                !name ||
+                                bundleItems.filter((i) => i.shop_item_id)
+                                    .length === 0 ||
+                                loading
+                            }
                             onClick={handleSave}
                         >
-                            {editBundle ? t('common.update') : t('common.create')}
+                            {editBundle
+                                ? t('common.update')
+                                : t('common.create')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

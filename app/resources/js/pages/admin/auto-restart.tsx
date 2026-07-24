@@ -1,11 +1,15 @@
 import { Head, router } from '@inertiajs/react';
 import { Clock, Plus, Timer, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { fetchAction } from '@/lib/fetch-action';
-import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -18,6 +22,8 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { useTranslation } from '@/hooks/use-translation';
+import AppLayout from '@/layouts/app-layout';
+import { fetchAction } from '@/lib/fetch-action';
 import type { BreadcrumbItem } from '@/types';
 
 type ScheduleEntry = {
@@ -70,17 +76,27 @@ const TIMEZONE_OPTIONS = [
     'UTC',
 ] as const;
 
-export default function AutoRestart({ settings, schedule, next_restart_at }: Props) {
+export default function AutoRestart({
+    settings,
+    schedule,
+    next_restart_at,
+}: Props) {
     const { t } = useTranslation();
     const breadcrumbs: BreadcrumbItem[] = [
         { title: t('nav.dashboard'), href: '/dashboard' },
         { title: t('admin.auto_restart.title'), href: '/admin/auto-restart' },
     ];
     const [enabled, setEnabled] = useState(settings.enabled);
-    const [warningMinutes, setWarningMinutes] = useState(String(settings.warning_minutes));
-    const [warningMessage, setWarningMessage] = useState(settings.warning_message ?? '');
+    const [warningMinutes, setWarningMinutes] = useState(
+        String(settings.warning_minutes),
+    );
+    const [warningMessage, setWarningMessage] = useState(
+        settings.warning_message ?? '',
+    );
     const [timezone, setTimezone] = useState(settings.timezone);
-    const [discordReminderMinutes, setDiscordReminderMinutes] = useState(String(settings.discord_reminder_minutes));
+    const [discordReminderMinutes, setDiscordReminderMinutes] = useState(
+        String(settings.discord_reminder_minutes),
+    );
     const [saving, setSaving] = useState(false);
     const [newTime, setNewTime] = useState('');
     const [addingTime, setAddingTime] = useState(false);
@@ -138,7 +154,9 @@ export default function AutoRestart({ settings, schedule, next_restart_at }: Pro
             <Head title={t('admin.auto_restart.title')} />
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">{t('admin.auto_restart.title')}</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">
+                        {t('admin.auto_restart.title')}
+                    </h1>
                     <p className="text-muted-foreground">
                         {t('admin.auto_restart.description')}
                     </p>
@@ -159,7 +177,9 @@ export default function AutoRestart({ settings, schedule, next_restart_at }: Pro
                         {/* Enable/Disable */}
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
-                                <Label htmlFor="auto-restart-enabled">{t('admin.auto_restart.enable_label')}</Label>
+                                <Label htmlFor="auto-restart-enabled">
+                                    {t('admin.auto_restart.enable_label')}
+                                </Label>
                                 <p className="text-sm text-muted-foreground">
                                     {t('admin.auto_restart.enable_description')}
                                 </p>
@@ -175,11 +195,16 @@ export default function AutoRestart({ settings, schedule, next_restart_at }: Pro
 
                         {/* Timezone */}
                         <div className="grid gap-2">
-                            <Label htmlFor="timezone">{t('admin.auto_restart.timezone_label')}</Label>
+                            <Label htmlFor="timezone">
+                                {t('admin.auto_restart.timezone_label')}
+                            </Label>
                             <p className="text-sm text-muted-foreground">
                                 {t('admin.auto_restart.timezone_description')}
                             </p>
-                            <Select value={timezone} onValueChange={setTimezone}>
+                            <Select
+                                value={timezone}
+                                onValueChange={setTimezone}
+                            >
                                 <SelectTrigger id="timezone">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -195,17 +220,27 @@ export default function AutoRestart({ settings, schedule, next_restart_at }: Pro
 
                         {/* Warning Minutes */}
                         <div className="grid gap-2">
-                            <Label htmlFor="warning">{t('admin.auto_restart.warning_time_label')}</Label>
+                            <Label htmlFor="warning">
+                                {t('admin.auto_restart.warning_time_label')}
+                            </Label>
                             <p className="text-sm text-muted-foreground">
-                                {t('admin.auto_restart.warning_time_description')}
+                                {t(
+                                    'admin.auto_restart.warning_time_description',
+                                )}
                             </p>
-                            <Select value={warningMinutes} onValueChange={setWarningMinutes}>
+                            <Select
+                                value={warningMinutes}
+                                onValueChange={setWarningMinutes}
+                            >
                                 <SelectTrigger id="warning">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {WARNING_OPTIONS.map((opt) => (
-                                        <SelectItem key={opt.value} value={opt.value}>
+                                        <SelectItem
+                                            key={opt.value}
+                                            value={opt.value}
+                                        >
                                             {opt.label}
                                         </SelectItem>
                                     ))}
@@ -215,17 +250,27 @@ export default function AutoRestart({ settings, schedule, next_restart_at }: Pro
 
                         {/* Discord Reminder Minutes */}
                         <div className="grid gap-2">
-                            <Label htmlFor="discord-reminder">{t('admin.auto_restart.discord_reminder_label')}</Label>
+                            <Label htmlFor="discord-reminder">
+                                {t('admin.auto_restart.discord_reminder_label')}
+                            </Label>
                             <p className="text-sm text-muted-foreground">
-                                {t('admin.auto_restart.discord_reminder_description')}
+                                {t(
+                                    'admin.auto_restart.discord_reminder_description',
+                                )}
                             </p>
-                            <Select value={discordReminderMinutes} onValueChange={setDiscordReminderMinutes}>
+                            <Select
+                                value={discordReminderMinutes}
+                                onValueChange={setDiscordReminderMinutes}
+                            >
                                 <SelectTrigger id="discord-reminder">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {DISCORD_REMINDER_OPTIONS.map((opt) => (
-                                        <SelectItem key={opt.value} value={opt.value}>
+                                        <SelectItem
+                                            key={opt.value}
+                                            value={opt.value}
+                                        >
                                             {opt.label}
                                         </SelectItem>
                                     ))}
@@ -235,23 +280,33 @@ export default function AutoRestart({ settings, schedule, next_restart_at }: Pro
 
                         {/* Warning Message */}
                         <div className="grid gap-2">
-                            <Label htmlFor="warning-message">{t('admin.auto_restart.warning_message_label')}</Label>
+                            <Label htmlFor="warning-message">
+                                {t('admin.auto_restart.warning_message_label')}
+                            </Label>
                             <Input
                                 id="warning-message"
                                 value={warningMessage}
-                                onChange={(e) => setWarningMessage(e.target.value)}
-                                placeholder={t('admin.auto_restart.warning_message_placeholder')}
+                                onChange={(e) =>
+                                    setWarningMessage(e.target.value)
+                                }
+                                placeholder={t(
+                                    'admin.auto_restart.warning_message_placeholder',
+                                )}
                                 maxLength={500}
                             />
                             <p className="text-sm text-muted-foreground">
-                                {t('admin.auto_restart.warning_message_description')}
+                                {t(
+                                    'admin.auto_restart.warning_message_description',
+                                )}
                             </p>
                         </div>
 
                         <Separator />
 
                         <Button onClick={save} disabled={saving}>
-                            {saving ? t('common.saving') : t('admin.auto_restart.save_settings')}
+                            {saving
+                                ? t('common.saving')
+                                : t('admin.auto_restart.save_settings')}
                         </Button>
                     </CardContent>
                 </Card>
@@ -264,7 +319,9 @@ export default function AutoRestart({ settings, schedule, next_restart_at }: Pro
                             {t('admin.auto_restart.schedule_title')}
                         </CardTitle>
                         <CardDescription>
-                            {t('admin.auto_restart.schedule_description', { timezone: settings.timezone })}
+                            {t('admin.auto_restart.schedule_description', {
+                                timezone: settings.timezone,
+                            })}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -281,18 +338,24 @@ export default function AutoRestart({ settings, schedule, next_restart_at }: Pro
                                                 {entry.time}
                                             </span>
                                             {!entry.enabled && (
-                                                <Badge variant="secondary">{t('common.disabled')}</Badge>
+                                                <Badge variant="secondary">
+                                                    {t('common.disabled')}
+                                                </Badge>
                                             )}
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Switch
                                                 checked={entry.enabled}
-                                                onCheckedChange={() => toggleTime(entry.id)}
+                                                onCheckedChange={() =>
+                                                    toggleTime(entry.id)
+                                                }
                                             />
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => deleteTime(entry.id)}
+                                                onClick={() =>
+                                                    deleteTime(entry.id)
+                                                }
                                             >
                                                 <Trash2 className="size-4 text-destructive" />
                                             </Button>
@@ -311,7 +374,9 @@ export default function AutoRestart({ settings, schedule, next_restart_at }: Pro
                         {/* Add new time */}
                         <div className="flex items-end gap-3">
                             <div className="grid gap-2">
-                                <Label htmlFor="new-time">{t('admin.auto_restart.add_time_label')}</Label>
+                                <Label htmlFor="new-time">
+                                    {t('admin.auto_restart.add_time_label')}
+                                </Label>
                                 <Input
                                     id="new-time"
                                     type="time"
@@ -322,15 +387,23 @@ export default function AutoRestart({ settings, schedule, next_restart_at }: Pro
                             </div>
                             <Button
                                 onClick={addTime}
-                                disabled={!newTime || addingTime || schedule.length >= 5}
+                                disabled={
+                                    !newTime ||
+                                    addingTime ||
+                                    schedule.length >= 5
+                                }
                             >
                                 <Plus className="mr-1.5 size-4" />
-                                {addingTime ? t('admin.auto_restart.adding') : t('common.add')}
+                                {addingTime
+                                    ? t('admin.auto_restart.adding')
+                                    : t('common.add')}
                             </Button>
                         </div>
 
                         <p className="text-sm text-muted-foreground">
-                            {t('admin.auto_restart.slots_used', { count: String(schedule.length) })}
+                            {t('admin.auto_restart.slots_used', {
+                                count: String(schedule.length),
+                            })}
                         </p>
 
                         {/* Next Restart Info */}
