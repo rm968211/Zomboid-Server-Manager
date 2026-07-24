@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Process;
 
 class GenerateMapTiles extends Command
 {
+    private ?string $generationStartedAt = null;
+
     /** @var string */
     protected $signature = 'zomboid:generate-map-tiles
         {--force : Regenerate tiles even if they already exist}
@@ -69,57 +71,75 @@ class GenerateMapTiles extends Command
             return self::SUCCESS;
         }
 
-        $this->writeStatus('running', null);
+        $this->generationStartedAt = now()->toIso8601String();
+        $this->writeStatus('running', null, 'preparing');
 
-        // The renderer resumes from marker files, so stale output from a
-        // previous (failed or forced) run must be cleared or it silently
-        // produces nothing.
-        if (is_dir($tilesPath.'/html')) {
-            $this->info('Clearing previous tile output...');
-            exec('rm -rf '.escapeshellarg($tilesPath.'/html'));
-        }
+        try {
+            // The renderer resumes from marker files, so stale output from a
+            // previous (failed or forced) run must be cleared or it silently
+            // produces nothing.
+            if (is_dir($tilesPath.'/html')) {
+                $this->info('Clearing previous tile output...');
+                exec('rm -rf '.escapeshellarg($tilesPath.'/html'));
+            }
 
-        // Create output directory
-        if (! is_dir($tilesPath)) {
-            mkdir($tilesPath, 0755, true);
-        }
+            // Create output directory
+            if (! is_dir($tilesPath)) {
+                mkdir($tilesPath, 0755, true);
+            }
 
-        // Generate pzmap2dzi config
-        $confPath = $this->generateConfig($serverPath, $tilesPath);
-        $this->info("Generated config: {$confPath}");
+            // Generate pzmap2dzi config
+            $confPath = $this->generateConfig($serverPath, $tilesPath);
+            $this->info("Generated config: {$confPath}");
 
-        // Step 1: Unpack textures
-        $this->info('Step 1/2: Unpacking textures...');
-        if (! $this->runPzmap($pzmap2dziPath, $confPath, 'unpack')) {
-            $this->writeStatus('failed', $this->tailLog());
+            // Step 1: Unpack textures
+            $this->writeStatus('running', null, 'unpacking');
+            $this->info('Step 1/2: Unpacking textures...');
+            if (! $this->runPzmap($pzmap2dziPath, $confPath, 'unpack')) {
+                $this->writeStatus('failed', $this->tailLog(), 'failed');
+
+                return self::FAILURE;
+            }
+
+            // Step 2: Render isometric tiles
+            $this->writeStatus('running', null, 'rendering');
+            $this->info('Step 2/2: Rendering isometric tiles...');
+            if (! $this->runPzmap($pzmap2dziPath, $confPath, ['render', 'base'])) {
+                $this->writeStatus('failed', $this->tailLog(), 'failed');
+
+                return self::FAILURE;
+            }
+
+            $this->info('Map tiles generated successfully at: '.$tilesPath);
+            $this->writeStatus('success', null, 'complete');
+
+            return self::SUCCESS;
+        } catch (\Throwable $exception) {
+            $message = sprintf('%s: %s', $exception::class, $exception->getMessage());
+            file_put_contents(
+                storage_path('logs/pzmap2dzi.log'),
+                '['.now()->toIso8601String()."] {$message}".PHP_EOL,
+                FILE_APPEND,
+            );
+            $this->error($message);
+            $this->writeStatus('failed', $message, 'failed');
 
             return self::FAILURE;
         }
-
-        // Step 2: Render isometric tiles
-        $this->info('Step 2/2: Rendering isometric tiles...');
-        if (! $this->runPzmap($pzmap2dziPath, $confPath, ['render', 'base'])) {
-            $this->writeStatus('failed', $this->tailLog());
-
-            return self::FAILURE;
-        }
-
-        $this->info('Map tiles generated successfully at: '.$tilesPath);
-        $this->writeStatus('success', null);
-
-        return self::SUCCESS;
     }
 
     /**
      * Persist generation status so the admin UI can surface real progress/errors
      * instead of silently showing a generic "no tiles yet" message.
      */
-    private function writeStatus(string $status, ?string $error): void
+    private function writeStatus(string $status, ?string $error, ?string $stage = null): void
     {
         $statusPath = config('zomboid.map.status_path');
         $payload = [
             'status' => $status,
             'error' => $error,
+            'stage' => $stage,
+            'started_at' => $this->generationStartedAt,
             'updated_at' => now()->toIso8601String(),
         ];
 
@@ -154,7 +174,10 @@ class GenerateMapTiles extends Command
         $this->line("Output logged to: {$logFile}");
 
         $result = Process::path($pzmap2dziDir)
-            ->timeout(3600)
+            // A first render can legitimately take many hours. The scheduler's
+            // overlap lock prevents concurrent runs, so a wall-clock timeout
+            // only destroys valid work and causes the next run to start over.
+            ->forever()
             ->run(['python3', $pzmap2dziPath, '-c', $confPath, ...$arguments]);
         file_put_contents($logFile, $result->output().$result->errorOutput());
 
