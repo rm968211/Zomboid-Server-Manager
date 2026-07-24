@@ -178,26 +178,6 @@ services:
     networks:
       - backend-net
 
-  # ---------------------------------------------------------------------------
-  # Caddy — Reverse proxy with automatic TLS
-  # ---------------------------------------------------------------------------
-  caddy:
-    image: caddy:2.11.2-alpine
-    container_name: pz-caddy
-    restart: unless-stopped
-    ports:
-      - "${CADDY_HTTP_PORT:-80}:80"
-      - "${CADDY_HTTPS_PORT:-443}:443"
-    volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./caddy/certs:/etc/caddy/certs:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      - app
-    networks:
-      - zomboid-net
-
 # -----------------------------------------------------------------------------
 # Networks
 # -----------------------------------------------------------------------------
@@ -236,7 +216,3 @@ volumes:
     name: pz-lua-bridge
   map-tiles:
     name: pz-map-tiles
-  caddy-data:
-    name: pz-caddy-data
-  caddy-config:
-    name: pz-caddy-config

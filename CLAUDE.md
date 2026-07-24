@@ -121,16 +121,6 @@ The Laravel app is the single control plane wrapping three integration points:
 - **Health endpoint:** `/api/health` is public (returns `status` only), `/api/health/detailed` requires API key (returns rcon/db details).
 - **Route patterns:** Defined in `AppServiceProvider::boot()` (not `bootstrap/app.php`). Patterns: `name` and `username` = `[a-zA-Z0-9_]{1,50}`.
 
-## Implementation Phases
-
-Detailed plan with acceptance criteria in `IMPLEMENTATION_PLAN.md`. Status tracked in the table at the bottom of that file.
-
-**Stage 1 (MVP) — Phases 1–8:** Docker infra, Laravel + RCON, audit DB, server/config/player/mod API endpoints, Pest tests
-**Stage 2 — Phases 9–12:** Backup/rollback (Laravel Queue + Scheduler), whitelist CRUD, schema expansion
-**Stage 3 — Phases 13–15:** React/Inertia web dashboard
-**Stage 4 — Phases 16–21:** User registration + PZ sync, config UX, Lua bridge mod, player map, inventory management, UX polish
-**Final Stages:** Cashier subscriptions, item shop (monetization deferred to end)
-
 ## Package Versions
 
 - php 8.3, laravel/framework v12, inertiajs/inertia-laravel v2, laravel/fortify v1

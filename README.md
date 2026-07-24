@@ -359,20 +359,20 @@ Schedule daily restart times with timezone support, configurable in-game countdo
 
 ## Architecture
 
-Seven Docker services across two networks:
+Six Docker services across two networks:
 
 ```
                           Internet
                              │
                 ┌────────────┼──────────────────────────────────────┐
                 │            │                                      │
-                │  UDP 16261-16262        TCP 80/443                │
+                │  UDP 16261-16262        TCP 8000                  │
                 │            │               │                      │
-                │  ┌─────────▼────────┐  ┌───▼──────────────────┐   │
-                │  │  game-server     │  │  caddy               │   │
-  zomboid-net   │  │  PZ Dedicated    │  │  Reverse proxy       │   │
-   (bridge)     │  │  SteamCMD        │  │  Auto-TLS            │   │
-                │  │                  │  └───┬──────────────────┘   │
+                │  ┌─────────▼────────┐      │                      │
+                │  │  game-server     │      │                      │
+  zomboid-net   │  │  PZ Dedicated    │      │                      │
+   (bridge)     │  │  SteamCMD        │      │                      │
+                │  │                  │      │                      │
                 │  │  RCON 27015 ◄────│──┐   │                      │
                 │  └──────────────────┘  │ ┌─▼──────────────────┐   │
                 │                        │ │  app               │   │
@@ -406,7 +406,7 @@ Seven Docker services across two networks:
 
 Volumes: pz-data, pz-server-files, pz-backups, pz-lua-bridge, pz-map-tiles,
          pz-postgres (external), pz-redis, pz-app-vendor, pz-app-node-modules,
-         pz-app-build, pz-caddy-data, pz-caddy-config
+         pz-app-build
 ```
 
 - **game-server** — PZ dedicated server via SteamCMD. Auto-detects ARM64/AMD64 and selects the correct image.
@@ -415,80 +415,30 @@ Volumes: pz-data, pz-server-files, pz-backups, pz-lua-bridge, pz-map-tiles,
 - **db** — PostgreSQL 16. Users, backups, audit logs, PvP violations, settings.
 - **redis** — Job queue, cache, sessions, rate limiting.
 - **docker-socket-proxy** — Tecnativa proxy restricting Docker API access to container inspect, start/stop, and log endpoints. Prevents dangerous operations (exec, image pull, volume mount).
-- **caddy** — Reverse proxy with automatic TLS via Let's Encrypt. Terminates HTTPS and forwards to the app container. Optional for development — the app is also accessible directly on port 8000.
 
 ## Quick Start
 
 ### Requirements
 
-**Linux:** Docker Engine, Docker Compose v2, Git, Make — see [full Linux guide](docs/installation-linux.md)
-
-**Windows (alpha):** PowerShell wrappers are included, but they require Docker CLI + Compose with a Linux container backend. On Windows Server, use a Linux VM or other Linux container host. See [full Windows guide](docs/installation-windows.md)
+Docker Engine, Docker Compose v2, Git, Make — see [full Linux guide](docs/installation-linux.md)
 
 ### Start
 
 ```bash
-# Linux
 git clone <repo-url> && cd Zomboid_Server
-make init
+cp .env.example .env    # fill in passwords/secrets
+make up
 ```
 
-```powershell
-# Windows (PowerShell)
-git clone <repo-url>; cd Zomboid_Server
-.\make.ps1 init
-```
-
-Or use the wrapper:
-
-```powershell
-.\easy-init.ps1
-```
-
-The interactive setup wizard will:
-
-1. Ask for environment (production/dev), admin credentials, and server settings
-2. Generate `.env` files with random secrets
-3. Build Docker images and start all services
-4. Run database migrations and create the admin account automatically
-
-All prompts have sensible defaults — press Enter through everything for a working setup.
-
-### Access Modes
-
-During `make init`, you choose how the admin panel is accessed:
-
-| Mode | When to use | TLS |
-|---|---|---|
-| **Public — Domain** | Production server with a domain pointed at it | Auto (Let's Encrypt) |
-| **Public — IP address** | Server without a domain (public or LAN IP) | Self-signed cert (browser will warn) |
-| **Local only** | Development or when you only need `localhost:8000` | Internal cert |
-
-Public modes set up [Caddy](https://caddyserver.com/) as an HTTPS reverse proxy. You also choose the Caddy listening ports (default 80/443 — change these if your router or another service already uses them).
-
-The admin panel is **always** available locally at `http://localhost:8000`, regardless of which mode you pick.
-
-### Open the Panel
-
-Navigate to the URL shown at the end of setup and log in with the displayed credentials.
-
-### Troubleshooting
-
-- **Can't reach the public URL?** The panel is always accessible at `http://localhost:8000` on the server itself. If the public URL doesn't work, check `make info` for your configured ports, run `make admin-expose` to open the firewall, and verify router port forwarding.
-- **Browser shows a certificate warning?** Expected with IP-address mode (self-signed cert). Click through to proceed.
-- **Want to change access mode?** Re-run `make init` — it will detect existing config and offer to reconfigure.
+The admin account is provisioned from the `ADMIN_*` variables in `.env`. The panel is available at `http://localhost:8000` — put it behind your own reverse proxy for remote access.
 
 ## Documentation
 
 | Guide | Description |
 |-------|-------------|
 | [Linux Installation](docs/installation-linux.md) | Requirements, setup, and step-by-step instructions for Linux |
-| [Windows Installation](docs/installation-windows.md) | Windows desktop and Windows Server guidance for PowerShell wrappers and Linux backends **(alpha)** |
-| [Command Reference](docs/commands.md) | All `make` / `.\make.ps1` commands with Linux and Windows equivalents |
+| [Command Reference](docs/commands.md) | All `make` commands |
 | [Troubleshooting](docs/troubleshooting.md) | Common issues, cloud provider notes, hardware requirements |
-| [Firewall — UFW](docs/firewall-ufw.md) | Ubuntu/Debian firewall details |
-| [Firewall — firewalld](docs/firewall-firewalld.md) | Fedora/RHEL firewall details |
-| [Firewall — Manual](docs/firewall-manual.md) | Manual iptables/nftables instructions |
 
 ## Configuration
 
@@ -535,69 +485,6 @@ After editing `.env`, restart to apply:
 ```bash
 make down && make up
 ```
-
-On Windows PowerShell, the equivalent is:
-
-```powershell
-.\easy-deploy.ps1
-```
-
-## Firewall & Network Access
-
-The setup wizard (`make init`) detects your OS and firewall backend automatically. Configuration is saved to `.firewall.conf` (gitignored).
-
-### Supported Backends
-
-| Backend | OS | Auto-managed |
-|---|---|---|
-| **firewalld** | Fedora, RHEL, CentOS | Yes |
-| **ufw** | Ubuntu, Debian | Yes |
-| **manual** | Everything else | Prints guidance |
-
-### Quick Reference
-
-| Command | What it does |
-|---|---|
-| `make expose` | Opens game ports (16261-16262/udp) in host firewall |
-| `make hide` | Closes game ports |
-| `make admin-expose` | Opens Caddy web ports in host firewall for public admin HTTPS |
-| `make admin-hide` | Closes Caddy web ports |
-| `make info` | Shows local/public URLs, configured ports, firewall status |
-
-- **Local admin** is always available at `http://localhost:8000` — no firewall changes needed.
-- **Public admin** goes through Caddy (HTTPS), not through port 8000 directly.
-- **Caddy ports** are configurable during `make init` (default 80/443). Use custom ports if your router uses 80/443.
-- **Game ports** are closed by default. Run `make expose` to let players connect.
-- All firewall rules are **runtime only** (non-permanent) on firewalld. ufw rules persist across reboots.
-- **Router port forwarding** is not automated — see the per-OS docs below.
-
-### Per-OS Documentation
-
-- [firewalld (Fedora/RHEL)](docs/firewall-firewalld.md)
-- [ufw (Ubuntu/Debian)](docs/firewall-ufw.md)
-- [Manual / Unsupported OS](docs/firewall-manual.md)
-
-### Cloud Deployments
-
-Cloud providers have their own network firewalls **in addition to** the OS-level firewall. You must allow traffic in both layers.
-
-| Provider | Where to configure | Docs |
-|---|---|---|
-| **Oracle Cloud** | VCN → Subnet → Security List → Ingress Rules | [Security Lists](https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/securitylists.htm) |
-| **AWS** | EC2 → Security Groups → Inbound Rules | [Security Groups](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-security-groups.html) |
-| **Google Cloud** | VPC → Firewall Rules | [Firewall Rules](https://cloud.google.com/vpc/docs/firewalls) |
-| **Azure** | VM → Networking → NSG → Inbound Rules | [NSG Rules](https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview) |
-| **Hetzner** | Cloud Console → Firewalls | [Firewalls](https://docs.hetzner.com/cloud/firewalls/getting-started) |
-
-**Ports to open:**
-
-| Port | Protocol | Purpose |
-|---|---|---|
-| Caddy HTTP port (default 80) | TCP | HTTP → HTTPS redirect |
-| Caddy HTTPS port (default 443) | TCP | Admin panel |
-| 16261–16262 | UDP | Game server |
-
-> **Tip:** Use the **public** IP of your cloud instance when prompted during `make init` — not the internal/private IP. Run `curl -4 ifconfig.me` on the server to find it.
 
 ## Screenshots
 
@@ -845,7 +732,6 @@ Authenticated via `X-API-Key` header. The key is auto-generated in `.env` during
 
 | Command | Description |
 |---|---|
-| `make init` | Interactive first-run setup wizard (env, admin, start services) |
 | `make up` | Start everything (builds + runs) |
 | `make down` | Stop and remove all containers |
 | `make restart` | Restart all containers |
@@ -929,8 +815,6 @@ Zomboid_Server/
 │   └── mods/ZomboidManager/      # Lua bridge mod (14 modules: inventory export,
 │                                 #   item delivery, money deposit, player tracking,
 │                                 #   PvP tracking, safe zones, respawn delay, etc.)
-├── caddy/
-│   └── Caddyfile                 # Reverse proxy config (auto-TLS)
 ├── docker-compose.yml            # Base Docker config
 ├── docker-compose.arm64.yml      # ARM64 game server override
 ├── docker-compose.amd64.yml      # AMD64 game server override
@@ -943,9 +827,7 @@ Zomboid_Server/
 
 | Port | Protocol | Service | Exposure |
 |---|---|---|---|
-| `80` | TCP | Caddy (HTTP) | Host — redirects to HTTPS |
-| `443` | TCP | Caddy (HTTPS) | Host — auto-TLS via Let's Encrypt |
-| `8000` | TCP | Web panel (Nginx) | localhost only — use Caddy for public access |
+| `8000` | TCP | Web panel (Nginx) | Host — put behind your own reverse proxy for public access |
 | `16261` | UDP | Game server | Host — Steam game traffic |
 | `16262` | UDP | Game server (direct connect) | Host — Steam direct connect |
 | `27015` | TCP | RCON | Internal only — never exposed |
@@ -998,7 +880,6 @@ make nuke        # Requires typing NUKE_ALL
 - **RCON port** (27015/tcp) is never exposed to the host — only accessible on the internal Docker network between containers
 - **`backend-net`** is marked `internal: true` — PostgreSQL and Redis are unreachable from outside Docker
 - **Docker socket proxy** restricts Docker API access to containers, logs, and start/stop only — blocks all other endpoints (image pull, exec, volume mount, etc.)
-- **Caddy reverse proxy** available for auto-TLS termination with HTTP→HTTPS redirect
 - **Trusted proxies** restricted to RFC 1918 private ranges (`127.0.0.1`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) to prevent header spoofing
 
 ### Authentication & Access Control

@@ -46,54 +46,26 @@ git clone https://github.com/YOUR_ORG/zomboid-manager.git
 cd zomboid-manager
 ```
 
-## Step 2 — Run the setup wizard
+## Step 2 — Configure and start
 
 ```bash
-make init
+cp .env.example .env    # fill in passwords/secrets
+make up
 ```
 
-This interactive wizard will:
-- Ask you for server settings (name, password, max players, RAM)
-- Create an admin account for the web dashboard
-- Configure HTTPS (domain or self-signed certificate)
-- Auto-detect your firewall (ufw / firewalld / manual)
-- Generate all `.env` config files
-- Create the database volume
-- Build and start all Docker containers
-- Run database migrations
-- Provision your admin account
+This creates the database volume, builds the images, starts all containers, and provisions the admin account from the `ADMIN_*` variables in `.env`.
 
-Just follow the prompts — sensible defaults are provided for everything. Passwords are auto-generated if you press Enter.
+Make sure UDP ports 16261-16262 are reachable by players (host firewall and/or router port forwarding).
 
-## Step 3 — Open game ports
+## Step 3 — Access the admin panel
 
-By default the game server ports are **closed**. To let players connect:
-
-```bash
-make expose
-```
-
-This opens UDP ports 16261-16262 in your firewall. To close them again:
-
-```bash
-make hide
-```
-
-## Step 4 — Access the admin panel
-
-**Local access** (always available):
 ```
 http://localhost:8000
 ```
 
-**Remote/public access** via HTTPS:
-```bash
-make admin-expose
-```
+Log in with the admin credentials from `.env`. For remote access, put the panel behind your own reverse proxy.
 
-Log in with the admin credentials you set during setup.
-
-## Step 5 — Connect in-game
+## Step 4 — Connect in-game
 
 In Project Zomboid:
 1. Click **Join** from the main menu

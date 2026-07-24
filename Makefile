@@ -12,21 +12,8 @@ COMPOSE := docker compose -f docker-compose.yml -f $(ARCH_FILE)
 PZ_GAME_PORT ?= 16261
 PZ_DIRECT_PORT ?= 16262
 APP_PORT ?= 8000
-CADDY_HTTP_PORT ?= 80
-CADDY_HTTPS_PORT ?= 443
 
-FW_DISPATCH := bash scripts/firewall/dispatch.sh
-
-.PHONY: up down build restart logs ps stop pull migrate test exec arch init setup db-check db-init db-reset db-backup db-restore nuke workshop-package update-version update \
-	admin-expose admin-hide expose hide info
-
-# ── First-run setup ──────────────────────────────────────────────────
-# Interactive wizard: configures env, creates DB volume, starts services,
-# and provisions the admin account. Safe to re-run (prompts before overwrite).
-init:
-	@bash scripts/setup.sh
-
-setup: init
+.PHONY: up down build restart logs ps stop pull migrate test exec arch db-check db-init db-reset db-backup db-restore nuke workshop-package update-version update info
 
 db-check:
 	@docker volume inspect pz-postgres >/dev/null 2>&1 || \
@@ -62,43 +49,15 @@ info:
 	echo "╚══════════════════════════════════════════════╝"; \
 	echo ""; \
 	echo "  Local Admin:   http://localhost:$(APP_PORT)"; \
-	if [ -f .firewall.conf ]; then \
-		. ./.firewall.conf; \
-		HTTPS_PORT="$${ADMIN_HTTPS_PORT:-443}"; \
-		HTTP_PORT="$${ADMIN_HTTP_PORT:-80}"; \
-		HOST="$${ADMIN_PUBLIC_HOST:-}"; \
-		if [ -n "$$HOST" ] && [ "$$HOST" != "localhost" ]; then \
-			if [ "$$HTTPS_PORT" = "443" ]; then \
-				echo "  Public Admin:  https://$$HOST  (requires 'make admin-expose')"; \
-			else \
-				echo "  Public Admin:  https://$$HOST:$$HTTPS_PORT  (requires 'make admin-expose')"; \
-			fi; \
-		else \
-			echo "  Public Admin:  not configured (run 'make init' to enable)"; \
-		fi; \
-		echo "  Caddy Ports:   $$HTTP_PORT (HTTP) / $$HTTPS_PORT (HTTPS)"; \
-		echo "  Firewall:      $$FIREWALL_BACKEND"; \
-	else \
-		echo "  Public Admin:  not configured (run 'make init')"; \
-		echo "  Firewall:      not configured"; \
-	fi; \
 	if [ -n "$$PUBLIC_IP" ]; then \
 		echo "  Public IP:     $$PUBLIC_IP"; \
 	else \
 		echo "  Public IP:     unavailable"; \
 	fi; \
-	echo "  Game Ports:    $(PZ_GAME_PORT)/udp, $(PZ_DIRECT_PORT)/udp (closed by default)"; \
-	echo ""; \
-	echo "  Run 'make expose' to allow remote players."; \
-	echo "  Run 'make admin-expose' to open public admin access."; \
+	echo "  Game Ports:    $(PZ_GAME_PORT)/udp, $(PZ_DIRECT_PORT)/udp"; \
 	echo ""
 
-# ── Firewall helpers ────────────────────────────────────────────────
-# These targets dispatch to OS-specific scripts via .firewall.conf.
-# Nothing here is permanent — all rules are runtime only.
-
 # ── Core commands ────────────────────────────────────────────────────
-# Default startup keeps the admin UI local-only and does not change firewall rules.
 up: db-check
 	$(COMPOSE) up -d --build
 
@@ -106,8 +65,7 @@ down:
 	$(COMPOSE) down
 
 VOLUMES := pz-postgres pz-app-vendor pz-app-node-modules pz-app-build \
-	pz-server-files pz-data pz-redis pz-backups pz-lua-bridge pz-map-tiles \
-	pz-caddy-data pz-caddy-config
+	pz-server-files pz-data pz-redis pz-backups pz-lua-bridge pz-map-tiles
 
 nuke:
 	@echo "WARNING: This will destroy ALL data (database, game saves, backups, config)."
@@ -126,8 +84,7 @@ nuke:
 		echo "Removing leftover volumes: $$REMAINING"; \
 		echo "$$REMAINING" | xargs docker volume rm 2>/dev/null || true; \
 	fi
-	@rm -f .env app/.env .firewall.conf
-	@rm -f caddy/Caddyfile caddy/certs/cert.pem caddy/certs/key.pem
+	@rm -f .env app/.env
 	@for dir in app/bootstrap/cache app/storage/logs app/storage/framework/cache app/storage/framework/sessions app/storage/framework/views; do \
 		chown -R $$(id -u):$$(id -g) $$dir 2>/dev/null || sudo chown -R $$(id -u):$$(id -g) $$dir 2>/dev/null || true; \
 	done
@@ -150,46 +107,6 @@ ps:
 
 pull:
 	$(COMPOSE) pull
-
-# ── Game firewall exposure ──────────────────────────────────────────
-# Separate from up/down on purpose. Game ports only (UDP).
-expose:
-	@PZ_GAME_PORT=$(PZ_GAME_PORT) PZ_DIRECT_PORT=$(PZ_DIRECT_PORT) $(FW_DISPATCH) game-open
-	@$(MAKE) info
-
-hide:
-	@PZ_GAME_PORT=$(PZ_GAME_PORT) PZ_DIRECT_PORT=$(PZ_DIRECT_PORT) $(FW_DISPATCH) game-close
-
-# ── Admin UI exposure ───────────────────────────────────────────────
-# Opens Caddy web ports in the firewall for public HTTPS access.
-# Ports are read from .firewall.conf (set during 'make init').
-# The app stays bound to 127.0.0.1:8000 — it is never exposed directly.
-# Requires Caddy to be configured (run 'make init' first).
-admin-expose:
-	@if [ ! -f .firewall.conf ]; then echo "Error: run 'make init' first."; exit 1; fi
-	@. ./.firewall.conf; \
-	HTTP="$${ADMIN_HTTP_PORT:-80}"; \
-	HTTPS="$${ADMIN_HTTPS_PORT:-443}"; \
-	CADDY_HTTP_PORT=$$HTTP CADDY_HTTPS_PORT=$$HTTPS $(FW_DISPATCH) admin-open; \
-	echo "Admin panel exposed via Caddy on ports $$HTTP/$$HTTPS"; \
-	echo "Local:  http://localhost:$(APP_PORT)"; \
-	HOST="$${ADMIN_PUBLIC_HOST:-}"; \
-	if [ -n "$$HOST" ] && [ "$$HOST" != "localhost" ]; then \
-		if [ "$$HTTPS" = "443" ]; then \
-			echo "Public: https://$$HOST"; \
-		else \
-			echo "Public: https://$$HOST:$$HTTPS"; \
-		fi; \
-	fi
-
-admin-hide:
-	@if [ ! -f .firewall.conf ]; then echo "Error: run 'make init' first."; exit 1; fi
-	@. ./.firewall.conf; \
-	HTTP="$${ADMIN_HTTP_PORT:-80}"; \
-	HTTPS="$${ADMIN_HTTPS_PORT:-443}"; \
-	CADDY_HTTP_PORT=$$HTTP CADDY_HTTPS_PORT=$$HTTPS $(FW_DISPATCH) admin-close; \
-	echo "Admin panel restricted to local access."; \
-	echo "Local:  http://localhost:$(APP_PORT)"
 
 # ── App commands ─────────────────────────────────────────────────────
 migrate: db-backup
@@ -337,10 +254,6 @@ update-version:
 help:
 	@echo "Available targets:"
 	@echo ""
-	@echo "  Setup:"
-	@echo "    init           - Interactive first-run setup wizard (detects OS & firewall)"
-	@echo "    setup          - Alias for 'init'"
-	@echo ""
 	@echo "  Services:"
 	@echo "    up             - Start services (admin UI local-only at localhost:8000)"
 	@echo "    down           - Stop services"
@@ -350,13 +263,6 @@ help:
 	@echo "    logs           - Follow service logs"
 	@echo "    ps             - List running containers"
 	@echo "    pull           - Pull latest images"
-	@echo ""
-	@echo "  Firewall (auto-detects backend from .firewall.conf):"
-	@echo "    expose         - Open game ports (UDP) in host firewall"
-	@echo "    hide           - Close game ports (UDP) in host firewall"
-	@echo "    admin-expose   - Open Caddy web ports for public admin HTTPS"
-	@echo "    admin-hide     - Close Caddy web ports"
-	@echo "                     (ports read from .firewall.conf, set during 'make init')"
 	@echo ""
 	@echo "  Database:"
 	@echo "    db-check       - Check if DB volume exists, create if not"
@@ -371,12 +277,9 @@ help:
 	@echo "    exec CMD=...   - Run a command in the app container"
 	@echo ""
 	@echo "  Other:"
-	@echo "    info             - Show URLs, public IP, and firewall status"
+	@echo "    info             - Show URLs and public IP"
 	@echo "    arch             - Show detected CPU architecture"
 	@echo "    update           - Pull latest code, rebuild, migrate, rebuild assets,"
 	@echo "                       and restart game-server (refuses if working tree dirty)"
 	@echo "    update-version   - Update game-version.conf after a PZ game update"
 	@echo "    nuke             - Destroy ALL data and stop services (DANGER)"
-	@echo ""
-	@echo "  Supported firewall backends: firewalld (Fedora/RHEL), ufw (Ubuntu/Debian), manual"
-	@echo "  See docs/firewall-*.md for per-OS documentation."
