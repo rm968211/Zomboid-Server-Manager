@@ -242,6 +242,19 @@ it('broadcasts warning before scheduled restart', function () {
         ->assertOk();
 });
 
+it('records restart notes in the audit log', function () {
+    config(['zomboid.api_key' => 'test-key-12345']);
+
+    mockRcon();
+    mockDocker();
+
+    $this->postJson('/api/server/restart', ['notes' => 'Restarted via Discord by ryan (123)'], apiHeaders())
+        ->assertOk();
+
+    $entry = AuditLog::where('action', 'post:api/server/restart')->latest('id')->first();
+    expect($entry->details['body']['notes'])->toBe('Restarted via Discord by ryan (123)');
+});
+
 it('validates restart countdown range', function () {
     config(['zomboid.api_key' => 'test-key-12345']);
 
