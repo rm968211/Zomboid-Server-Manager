@@ -18,6 +18,7 @@ class ModManager
 
     public function __construct(
         private readonly ServerIniParser $iniParser,
+        private readonly ConfigStateManager $configState,
     ) {}
 
     public static function isProtected(string $workshopId): bool
@@ -263,6 +264,96 @@ class ModManager
     }
 
     /**
+     * Merge a pasted modpack into the current config in one write.
+     *
+     * PZ treats `Mods=`, `WorkshopItems=`, and `Map=` as three INDEPENDENT ordered
+     * lists — a single Workshop item can provide several mod IDs, and some mods have
+     * no Workshop ID at all, so the counts routinely differ (a 122-item pack can have
+     * 265 mods). Each list is therefore merged on its own: new entries are appended in
+     * the order given, existing ones are left untouched (never removed), and duplicates
+     * are skipped. Map folders are prepended so modded maps sit ahead of the vanilla
+     * base map (PZ resolves overlapping cells in list order, vanilla last).
+     *
+     * Everything is written through `writeIniAndState`, so the merged lists land in
+     * `.mod_state` (authoritative across reboots), ZomboidManager is re-attached, and
+     * any Map change is persisted to `.config_state`.
+     *
+     * @param  list<string>  $workshopIds
+     * @param  list<string>  $modIds
+     * @param  list<string>  $mapFolders
+     * @return array{workshop_added: int, mods_added: int, maps_added: int}
+     */
+    public function bulkImport(string $iniPath, array $workshopIds, array $modIds, array $mapFolders = []): array
+    {
+        $current = $this->readCurrentLists($iniPath);
+
+        [$mergedWorkshop, $workshopAdded] = $this->mergeList($current['workshop_ids'], $workshopIds);
+        [$mergedMods, $modsAdded] = $this->mergeList($current['mod_ids'], $modIds);
+
+        $updates = [
+            'WorkshopItems' => implode(';', $mergedWorkshop),
+            'Mods' => implode(';', $mergedMods),
+        ];
+
+        $newMapFolders = [];
+
+        if ($mapFolders !== []) {
+            $maps = $this->splitList($this->iniParser->read($iniPath)['Map'] ?? 'Muldraugh, KY', ';');
+            $mapSet = array_flip($maps);
+
+            foreach ($mapFolders as $folder) {
+                $folder = trim((string) $folder);
+                if ($folder === '' || isset($mapSet[$folder])) {
+                    continue;
+                }
+                $mapSet[$folder] = true;
+                $newMapFolders[] = $folder;
+            }
+
+            if ($newMapFolders !== []) {
+                $updates['Map'] = implode(';', array_merge($newMapFolders, $maps));
+            }
+        }
+
+        if ($workshopAdded === 0 && $modsAdded === 0 && $newMapFolders === []) {
+            return ['workshop_added' => 0, 'mods_added' => 0, 'maps_added' => 0];
+        }
+
+        $this->writeIniAndState($iniPath, $updates);
+
+        return [
+            'workshop_added' => $workshopAdded,
+            'mods_added' => $modsAdded,
+            'maps_added' => count($newMapFolders),
+        ];
+    }
+
+    /**
+     * Append trimmed, non-empty, not-yet-present items to $current, preserving order.
+     *
+     * @param  list<string>  $current
+     * @param  list<string>  $incoming
+     * @return array{0: list<string>, 1: int}  The merged list and the number added.
+     */
+    private function mergeList(array $current, array $incoming): array
+    {
+        $seen = array_flip($current);
+        $added = 0;
+
+        foreach ($incoming as $item) {
+            $item = trim((string) $item);
+            if ($item === '' || isset($seen[$item])) {
+                continue;
+            }
+            $seen[$item] = true;
+            $current[] = $item;
+            $added++;
+        }
+
+        return [$current, $added];
+    }
+
+    /**
      * Read the current Workshop/Mods lists used by `add`, `remove`, and `reorder`.
      *
      * Prefers `.mod_state` (the web-UI's source of truth) over the live INI,
@@ -343,6 +434,15 @@ class ModManager
                 @file_put_contents($iniPath, $previousIni);
             }
             throw $e;
+        }
+
+        // Modded maps append their folder to the INI Map= line, but configure-server.sh
+        // rewrites Map= from .config_state on every boot. Persist the change there too,
+        // otherwise the modded map folder is dropped on the next container restart while
+        // the map's mod survives (via .mod_state). Only Map goes through here — Mods and
+        // WorkshopItems are restored from .mod_state, not .config_state.
+        if (array_key_exists('Map', $updates)) {
+            $this->configState->persistSettings(['Map' => $updates['Map']], $iniPath);
         }
     }
 

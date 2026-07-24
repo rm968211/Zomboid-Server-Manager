@@ -63,6 +63,8 @@ export type BackupEntry = {
     game_version: string | null;
     steam_branch: string | null;
     notes: string | null;
+    status: 'in_progress' | 'completed' | 'failed';
+    error_message: string | null;
     created_at: string;
 };
 

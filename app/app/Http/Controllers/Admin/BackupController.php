@@ -75,15 +75,19 @@ class BackupController extends Controller
             }
         }
 
+        $backup = $this->backupManager->startBackupRecord(BackupType::Manual, $request->input('notes'));
+
         CreateBackupJob::dispatch(
             BackupType::Manual,
             $request->input('notes'),
             $request->user()->name ?? 'admin',
             $request->ip(),
+            $backup->id,
         );
 
         return response()->json([
-            'message' => 'Backup started — it will appear in the list shortly',
+            'message' => 'Backup started',
+            'backup' => (new BackupResource($backup))->resolve(),
         ], 202);
     }
 

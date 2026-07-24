@@ -87,9 +87,12 @@ it('dispatches backup job to queue', function () {
         'notes' => 'Test backup notes',
     ], backupApiHeaders())
         ->assertStatus(202)
-        ->assertJsonPath('message', 'Backup started — it will appear in the list shortly');
+        ->assertJsonPath('message', 'Backup started')
+        ->assertJsonPath('backup.status', 'in_progress');
 
     Queue::assertPushed(CreateBackupJob::class);
+
+    expect(Backup::where('status', 'in_progress')->count())->toBe(1);
 });
 
 it('dispatches backup job without notes', function () {

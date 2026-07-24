@@ -20,6 +20,7 @@ class RestartServerRequest extends FormRequest
         return [
             'countdown' => ['sometimes', 'integer', 'min:10', 'max:3600'],
             'message' => ['sometimes', 'string', 'max:500', new RconSafeMessage],
+            'notes' => ['sometimes', 'string', 'max:500'],
         ];
     }
 }

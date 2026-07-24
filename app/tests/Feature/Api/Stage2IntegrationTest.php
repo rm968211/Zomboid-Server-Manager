@@ -64,6 +64,9 @@ it('completes backup create → delete cycle', function () {
     $mockManager = Mockery::mock(BackupManager::class);
     $backup = Backup::factory()->manual()->create();
 
+    $mockManager->shouldReceive('startBackupRecord')
+        ->once()
+        ->andReturn($backup);
     $mockManager->shouldReceive('createBackup')
         ->once()
         ->andReturn(['backup' => $backup, 'cleanup_count' => 0]);
@@ -181,6 +184,7 @@ it('maintains complete audit trail across all stage 2 features', function () {
 
     $mockManager = Mockery::mock(BackupManager::class);
     $backup = Backup::factory()->manual()->create();
+    $mockManager->shouldReceive('startBackupRecord')->andReturn($backup);
     $mockManager->shouldReceive('createBackup')
         ->andReturn(['backup' => $backup, 'cleanup_count' => 0]);
     $mockManager->shouldReceive('deleteBackup')->andReturn(true);

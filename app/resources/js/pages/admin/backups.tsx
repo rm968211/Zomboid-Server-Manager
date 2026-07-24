@@ -1,9 +1,7 @@
 import { Deferred, Head, router } from '@inertiajs/react';
 import { AlertTriangle, Archive, ChevronDown, ChevronLeft, ChevronRight, Download, HelpCircle, Loader2, Plus, RotateCcw, Search, Trash2, Upload } from 'lucide-react';
-import { formatDateTime } from '@/lib/dates';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { SortableHeader } from '@/components/sortable-header';
-import { useServerSort } from '@/hooks/use-server-sort';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,8 +25,10 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useServerSort } from '@/hooks/use-server-sort';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
+import { formatDateTime } from '@/lib/dates';
 import { fetchAction } from '@/lib/fetch-action';
 import type { BackupEntry, BreadcrumbItem } from '@/types';
 
@@ -111,6 +111,20 @@ export default function Backups({ backups, current_version, current_branch, filt
         return backups.data.filter((b) => b.filename.toLowerCase().includes(q));
     }, [backups?.data, search]);
 
+    // Refresh the list while any backup is still running
+    const hasInProgress = useMemo(
+        () => (backups?.data ?? []).some((b) => b.status === 'in_progress'),
+        [backups?.data],
+    );
+
+    useEffect(() => {
+        if (!hasInProgress) return;
+        const interval = setInterval(() => {
+            router.reload({ only: ['backups'] });
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [hasInProgress]);
+
     const allSelected = filteredBackups.length > 0 && filteredBackups.every((b) => selectedIds.has(b.id));
 
     function toggleSelect(id: string) {
@@ -190,6 +204,14 @@ export default function Backups({ backups, current_version, current_branch, filt
         setLoading(false);
         setDeleteTarget(null);
         router.reload();
+    }
+
+    async function dismissFailed(backup: BackupEntry) {
+        await fetchAction(`/admin/backups/${backup.id}`, {
+            method: 'DELETE',
+            successMessage: t('admin.backups.toast_failure_dismissed'),
+        });
+        router.reload({ only: ['backups'] });
     }
 
     async function deleteBulk() {
@@ -383,7 +405,28 @@ export default function Backups({ backups, current_version, current_branch, filt
                                                         aria-label={`Select ${backup.filename}`}
                                                     />
                                                 </TableCell>
-                                                <TableCell className="font-medium text-sm">{backup.filename}</TableCell>
+                                                <TableCell className="font-medium text-sm">
+                                                    <div className="flex items-center gap-2">
+                                                        <span>{backup.filename}</span>
+                                                        {backup.status === 'in_progress' && (
+                                                            <Badge className="bg-blue-500/10 text-blue-500 text-xs">
+                                                                <Loader2 className="mr-1 size-3 animate-spin" />
+                                                                {t('admin.backups.status_in_progress')}
+                                                            </Badge>
+                                                        )}
+                                                        {backup.status === 'failed' && (
+                                                            <Badge className="bg-red-500/10 text-red-500 text-xs">
+                                                                <AlertTriangle className="mr-1 size-3" />
+                                                                {t('admin.backups.status_failed')}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    {backup.status === 'failed' && backup.error_message && (
+                                                        <p className="mt-1 max-w-md text-xs font-normal text-red-500/90">
+                                                            {backup.error_message}
+                                                        </p>
+                                                    )}
+                                                </TableCell>
                                                 <TableCell className="hidden sm:table-cell">
                                                     <Badge className={`text-xs ${typeColors[backup.type] ?? ''}`}>
                                                         {backup.type}
@@ -405,35 +448,48 @@ export default function Backups({ backups, current_version, current_branch, filt
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex items-center justify-end gap-1">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            asChild
-                                                        >
-                                                            <a
-                                                                href={`/admin/backups/${backup.id}/download`}
-                                                                download
-                                                                aria-label={`Download ${backup.filename}`}
+                                                        {backup.status === 'completed' && (
+                                                            <>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    asChild
+                                                                >
+                                                                    <a
+                                                                        href={`/admin/backups/${backup.id}/download`}
+                                                                        download
+                                                                        aria-label={`Download ${backup.filename}`}
+                                                                    >
+                                                                        <Download className="size-4" />
+                                                                    </a>
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => setRollbackTarget(backup)}
+                                                                >
+                                                                    <RotateCcw className="mr-1.5 size-3.5" />
+                                                                    {t('admin.backups.rollback_button')}
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="text-destructive hover:text-destructive"
+                                                                    onClick={() => setDeleteTarget(backup)}
+                                                                >
+                                                                    <Trash2 className="size-4" />
+                                                                </Button>
+                                                            </>
+                                                        )}
+                                                        {backup.status === 'failed' && (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => dismissFailed(backup)}
                                                             >
-                                                                <Download className="size-4" />
-                                                            </a>
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => setRollbackTarget(backup)}
-                                                        >
-                                                            <RotateCcw className="mr-1.5 size-3.5" />
-                                                            {t('admin.backups.rollback_button')}
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="text-destructive hover:text-destructive"
-                                                            onClick={() => setDeleteTarget(backup)}
-                                                        >
-                                                            <Trash2 className="size-4" />
-                                                        </Button>
+                                                                {t('admin.backups.dismiss_button')}
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 </TableCell>
                                             </TableRow>

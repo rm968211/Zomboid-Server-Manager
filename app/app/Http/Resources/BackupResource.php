@@ -22,6 +22,8 @@ class BackupResource extends JsonResource
             'game_version' => $this->game_version,
             'steam_branch' => $this->steam_branch,
             'notes' => $this->notes,
+            'status' => $this->status->value,
+            'error_message' => $this->error_message,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

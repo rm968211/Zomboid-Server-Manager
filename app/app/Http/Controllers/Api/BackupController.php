@@ -36,15 +36,19 @@ class BackupController
 
     public function store(CreateBackupRequest $request): JsonResponse
     {
+        $backup = $this->backupManager->startBackupRecord(BackupType::Manual, $request->validated('notes'));
+
         CreateBackupJob::dispatch(
             BackupType::Manual,
             $request->validated('notes'),
             'api-key',
             $request->ip(),
+            $backup->id,
         );
 
         return response()->json([
-            'message' => 'Backup started — it will appear in the list shortly',
+            'message' => 'Backup started',
+            'backup' => (new BackupResource($backup))->resolve(),
         ], 202);
     }
 

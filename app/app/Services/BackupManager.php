@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\BackupStatus;
 use App\Enums\BackupType;
 use App\Models\Backup;
 use Illuminate\Support\Facades\Log;
@@ -16,34 +17,60 @@ class BackupManager
     ) {}
 
     /**
-     * Create a backup of PZ save data + config files.
-     *
-     * @return array{backup: Backup, cleanup_count: int}
+     * Create a pending backup record so the backup is visible in the
+     * management page before (and while) the queued job runs.
      */
-    public function createBackup(BackupType $type, ?string $notes = null): array
+    public function startBackupRecord(BackupType $type, ?string $notes = null): Backup
     {
-        $this->triggerServerSave();
-
         $backupDir = config('zomboid.backups.path');
-        $this->ensureDirectoryExists($backupDir);
-
         $timestamp = now()->format('Y-m-d_H-i-s');
         $filename = "backup_{$type->value}_{$timestamp}.tar.gz";
-        $fullPath = rtrim($backupDir, '/').'/'.$filename;
 
-        $this->createTarGz($fullPath);
-
-        $sizeBytes = file_exists($fullPath) ? filesize($fullPath) : 0;
-
-        $backup = Backup::create([
+        return Backup::create([
             'filename' => $filename,
-            'path' => $fullPath,
-            'size_bytes' => $sizeBytes,
+            'path' => rtrim($backupDir, '/').'/'.$filename,
+            'size_bytes' => 0,
             'type' => $type,
             'game_version' => $this->versionReader->getCachedVersion(),
             'steam_branch' => $this->versionReader->getCurrentBranch(),
             'notes' => $notes,
+            'status' => BackupStatus::InProgress,
         ]);
+    }
+
+    /**
+     * Create a backup of PZ save data + config files.
+     *
+     * Accepts an existing pending record (created at dispatch time) or
+     * creates one itself. On failure the record is marked failed with the
+     * error message and the exception is rethrown.
+     *
+     * @return array{backup: Backup, cleanup_count: int}
+     */
+    public function createBackup(BackupType $type, ?string $notes = null, ?Backup $record = null): array
+    {
+        $backup = $record ?? $this->startBackupRecord($type, $notes);
+
+        try {
+            $this->triggerServerSave();
+
+            $this->ensureDirectoryExists(config('zomboid.backups.path'));
+
+            $this->createTarGz($backup->path);
+
+            $backup->update([
+                'size_bytes' => file_exists($backup->path) ? filesize($backup->path) : 0,
+                'status' => BackupStatus::Completed,
+                'error_message' => null,
+            ]);
+        } catch (\Throwable $e) {
+            $backup->update([
+                'status' => BackupStatus::Failed,
+                'error_message' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
 
         $cleanupCount = $this->cleanupRetention($type);
 
@@ -73,6 +100,7 @@ class BackupManager
         $keep = config("zomboid.backups.retention.{$type->value}", 10);
 
         $backups = Backup::where('type', $type->value)
+            ->where('status', BackupStatus::Completed->value)
             ->orderByDesc('created_at')
             ->get();
 
@@ -131,6 +159,10 @@ class BackupManager
      */
     public function validateBackupFile(Backup $backup): void
     {
+        if ($backup->status !== BackupStatus::Completed) {
+            throw new \RuntimeException("Backup {$backup->filename} is not completed (status: {$backup->status->value}) and cannot be restored.");
+        }
+
         if (! file_exists($backup->path)) {
             throw new \RuntimeException("Backup file not found: {$backup->path}");
         }

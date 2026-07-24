@@ -56,7 +56,9 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             if ($response->getStatusCode() === 419) {
-                if ($request->expectsJson()) {
+                // Plain 419 for Inertia so the client can refresh the CSRF
+                // token and retry the visit transparently (see app.tsx).
+                if ($request->expectsJson() || $request->header('X-Inertia')) {
                     return response()->json(['error' => 'The page expired, please try again.'], 419);
                 }
 

@@ -60,32 +60,42 @@ class MapConfigBuilder
     }
 
     /**
+     * Whether locally generated tiles exist and contain real images.
+     */
+    public function hasLocalTiles(): bool
+    {
+        return $this->getLocalDziConfig() !== null;
+    }
+
+    /**
      * Get DZI config from locally generated tiles, or null if not available.
      *
      * @return array{width: int, height: int, x0: int, y0: int, sqr: int, maxNativeZoom: int, isometric: bool}|null
      */
     private function getLocalDziConfig(): ?array
     {
-        $dziPath = config('zomboid.map.tiles_path').'/html/map_data/base/layer0_files';
-
-        if (! is_dir($dziPath.'/0')) {
-            return null;
-        }
-
-        $webp = glob($dziPath.'/0/*.webp');
-        $jpg = glob($dziPath.'/0/*.jpg');
-
-        if (empty($webp) && empty($jpg)) {
-            return null;
-        }
-
-        $infoPath = config('zomboid.map.tiles_path').'/html/map_data/base/map_info.json';
+        $basePath = config('zomboid.map.tiles_path').'/html/map_data/base';
+        $infoPath = $basePath.'/map_info.json';
 
         if (! is_file($infoPath)) {
             return null;
         }
 
         $mapInfo = json_decode(file_get_contents($infoPath), true);
+
+        if (! is_array($mapInfo) || ! isset($mapInfo['w'], $mapInfo['h'])) {
+            return null;
+        }
+
+        // The renderer omits the first `skip` zoom levels (marker files only),
+        // so look for real images at the first level that is actually drawn.
+        // A failed render leaves .empty markers everywhere — those don't count.
+        $firstRenderedLevel = (int) ($mapInfo['skip'] ?? 0);
+        $levelDir = $basePath.'/layer0_files/'.$firstRenderedLevel;
+
+        if (empty(glob($levelDir.'/*.webp')) && empty(glob($levelDir.'/*.jpg'))) {
+            return null;
+        }
 
         $w = (int) $mapInfo['w'];
         $h = (int) $mapInfo['h'];

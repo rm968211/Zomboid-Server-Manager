@@ -3,7 +3,7 @@ import type {DragEndEvent} from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Head, router } from '@inertiajs/react';
-import { AlertTriangle, CheckCircle2, Clock, GripVertical, Loader2, Package, Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Clock, FileUp, GripVertical, Loader2, Package, Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -27,9 +27,11 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { fetchAction } from '@/lib/fetch-action';
+import { parseModImport } from '@/lib/parse-mod-import';
 import type { BreadcrumbItem, ModEntry } from '@/types';
 
 type LookupResult = {
@@ -193,7 +195,117 @@ export default function Mods({
     const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lookupAbort = useRef<AbortController | null>(null);
 
+    const existingWorkshopIds = useMemo(() => new Set(mods.map((m) => m.workshop_id).filter(Boolean)), [mods]);
+    const existingModIds = useMemo(() => new Set(mods.map((m) => m.mod_id).filter(Boolean)), [mods]);
+
+    const [showBulk, setShowBulk] = useState(false);
+    const [bulkText, setBulkText] = useState('');
+    const [bulkPhase, setBulkPhase] = useState<'input' | 'resolving' | 'ready'>('input');
+    const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
+    const [bulkWorkshopIds, setBulkWorkshopIds] = useState<string[]>([]);
+    const [bulkModIds, setBulkModIds] = useState<string[]>([]);
+    const [bulkMapFolders, setBulkMapFolders] = useState<string[]>([]);
+    const [bulkUnresolved, setBulkUnresolved] = useState<string[]>([]);
+    const [importing, setImporting] = useState(false);
+    const bulkCancelled = useRef(false);
+
     const isFiltering = search.length > 0;
+
+    const bulkNewMods = bulkModIds.filter((m) => !existingModIds.has(m)).length;
+    const bulkNewWorkshop = bulkWorkshopIds.filter((w) => !existingWorkshopIds.has(w)).length;
+    const bulkHasSomething = bulkModIds.length > 0 || bulkWorkshopIds.length > 0;
+
+    function openBulk() {
+        bulkCancelled.current = false;
+        setBulkText('');
+        setBulkPhase('input');
+        setBulkProgress({ done: 0, total: 0 });
+        setBulkWorkshopIds([]);
+        setBulkModIds([]);
+        setBulkMapFolders([]);
+        setBulkUnresolved([]);
+        setShowBulk(true);
+    }
+
+    function closeBulk() {
+        bulkCancelled.current = true;
+        setShowBulk(false);
+    }
+
+    async function prepareBulk() {
+        const parsed = parseModImport(bulkText);
+        setBulkMapFolders(parsed.mapFolders);
+
+        if (parsed.mode === 'ini') {
+            setBulkWorkshopIds(parsed.workshopIds);
+            setBulkModIds(parsed.modIds);
+            setBulkUnresolved([]);
+            setBulkPhase('ready');
+            return;
+        }
+
+        // IDs-only: resolve each Workshop ID's mod IDs via the Steam lookup endpoint.
+        // A single Workshop item can provide several mods, so collect them all.
+        bulkCancelled.current = false;
+        setBulkPhase('resolving');
+        setBulkProgress({ done: 0, total: parsed.workshopIds.length });
+
+        const workshopIds: string[] = [];
+        const modIds: string[] = [];
+        const mapFolders: string[] = [...parsed.mapFolders];
+        const unresolved: string[] = [];
+
+        for (let i = 0; i < parsed.workshopIds.length; i++) {
+            if (bulkCancelled.current) {
+                return;
+            }
+            const id = parsed.workshopIds[i];
+            const json = (await fetchAction('/admin/mods/lookup', {
+                data: { workshop_id: id },
+                silent: true,
+            })) as { found?: boolean; mod_ids?: string[]; map_folders?: string[] } | null;
+
+            const ids = json?.mod_ids ?? [];
+            if (json && json.found !== false && ids.length > 0) {
+                workshopIds.push(id);
+                modIds.push(...ids);
+                if (json.map_folders) {
+                    mapFolders.push(...json.map_folders);
+                }
+            } else {
+                unresolved.push(id);
+            }
+            setBulkProgress({ done: i + 1, total: parsed.workshopIds.length });
+        }
+
+        if (bulkCancelled.current) {
+            return;
+        }
+        setBulkWorkshopIds(workshopIds);
+        setBulkModIds(modIds);
+        setBulkMapFolders(mapFolders);
+        setBulkUnresolved(unresolved);
+        setBulkPhase('ready');
+    }
+
+    async function submitBulk() {
+        setImporting(true);
+        const result = await fetchAction('/admin/mods/import', {
+            data: {
+                workshop_ids: bulkWorkshopIds,
+                mod_ids: bulkModIds,
+                map: bulkMapFolders,
+            },
+            successMessage: t('admin.mods.bulk_toast_imported', {
+                count: String(bulkModIds.length || bulkWorkshopIds.length),
+            }),
+        });
+        setImporting(false);
+        if (result) {
+            closeBulk();
+            router.reload({ only: ['mods', 'pendingRestart', 'serverRunning'] });
+        }
+    }
 
     useEffect(() => {
         setOrderedMods(mods);
@@ -365,10 +477,16 @@ export default function Mods({
                             {t('admin.mods.mods_installed', { count: String(mods.length) })}
                         </p>
                     </div>
-                    <Button onClick={() => setShowAdd(true)}>
-                        <Plus className="mr-1.5 size-4" />
-                        {t('admin.mods.add_mod')}
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={openBulk} data-testid="bulk-import-button">
+                            <FileUp className="mr-1.5 size-4" />
+                            {t('admin.mods.bulk_import')}
+                        </Button>
+                        <Button onClick={() => setShowAdd(true)}>
+                            <Plus className="mr-1.5 size-4" />
+                            {t('admin.mods.add_mod')}
+                        </Button>
+                    </div>
                 </div>
 
                 <Card>
@@ -596,6 +714,128 @@ export default function Mods({
                         <Button disabled={loading || !workshopId || !modId || lookup.status === 'loading'} onClick={addMod}>
                             {t('admin.mods.add_mod')}
                         </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Bulk Import Dialog */}
+            <Dialog open={showBulk} onOpenChange={(open) => (open ? setShowBulk(true) : closeBulk())}>
+                <DialogContent className="max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>{t('admin.mods.bulk_dialog_title')}</DialogTitle>
+                        <DialogDescription>{t('admin.mods.bulk_dialog_description')}</DialogDescription>
+                    </DialogHeader>
+
+                    {bulkPhase === 'input' && (
+                        <div className="space-y-3">
+                            <Textarea
+                                value={bulkText}
+                                onChange={(e) => setBulkText(e.target.value)}
+                                rows={8}
+                                placeholder={t('admin.mods.bulk_placeholder')}
+                                className="font-mono text-xs"
+                                data-testid="bulk-import-textarea"
+                            />
+                            <p className="text-xs text-muted-foreground">{t('admin.mods.bulk_hint')}</p>
+                        </div>
+                    )}
+
+                    {bulkPhase === 'resolving' && (
+                        <div className="space-y-3 py-2">
+                            <div className="flex items-center gap-2 text-sm">
+                                <Loader2 className="size-4 animate-spin" />
+                                {t('admin.mods.bulk_resolving', {
+                                    done: String(bulkProgress.done),
+                                    total: String(bulkProgress.total),
+                                })}
+                            </div>
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                                <div
+                                    className="h-full bg-primary transition-all"
+                                    style={{
+                                        width: `${bulkProgress.total ? (bulkProgress.done / bulkProgress.total) * 100 : 0}%`,
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {bulkPhase === 'ready' && (
+                        <div className="space-y-3">
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                                <div className="rounded-md border p-2" data-testid="bulk-new-mods">
+                                    <div className="text-lg font-semibold text-emerald-600">{bulkNewMods}</div>
+                                    <div className="text-xs text-muted-foreground">{t('admin.mods.bulk_new_mods')}</div>
+                                </div>
+                                <div className="rounded-md border p-2">
+                                    <div className="text-lg font-semibold">{bulkNewWorkshop}</div>
+                                    <div className="text-xs text-muted-foreground">{t('admin.mods.bulk_new_workshop')}</div>
+                                </div>
+                                <div className="rounded-md border p-2">
+                                    <div className="text-lg font-semibold text-amber-600">{bulkUnresolved.length}</div>
+                                    <div className="text-xs text-muted-foreground">{t('admin.mods.bulk_unresolved')}</div>
+                                </div>
+                            </div>
+                            {bulkMapFolders.length > 0 && (
+                                <p className="text-xs text-muted-foreground">
+                                    {t('admin.mods.bulk_maps', { count: String(bulkMapFolders.length) })}
+                                </p>
+                            )}
+                            {bulkUnresolved.length > 0 && (
+                                <Alert className="border-amber-500/40 bg-amber-500/10">
+                                    <AlertTriangle className="size-4" />
+                                    <AlertDescription className="text-xs">
+                                        {t('admin.mods.bulk_unresolved_hint')}
+                                        <span className="mt-1 block break-all font-mono">
+                                            {bulkUnresolved.join('; ')}
+                                        </span>
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                            {!bulkHasSomething && (
+                                <p className="text-sm text-muted-foreground">{t('admin.mods.bulk_nothing')}</p>
+                            )}
+                        </div>
+                    )}
+
+                    <DialogFooter>
+                        {bulkPhase === 'input' && (
+                            <>
+                                <Button variant="outline" onClick={closeBulk}>
+                                    {t('common.cancel')}
+                                </Button>
+                                <Button
+                                    disabled={bulkText.trim() === ''}
+                                    onClick={prepareBulk}
+                                    data-testid="bulk-prepare-button"
+                                >
+                                    {t('admin.mods.bulk_prepare')}
+                                </Button>
+                            </>
+                        )}
+                        {bulkPhase === 'resolving' && (
+                            <Button variant="outline" onClick={closeBulk}>
+                                {t('common.cancel')}
+                            </Button>
+                        )}
+                        {bulkPhase === 'ready' && (
+                            <>
+                                <Button variant="outline" onClick={() => setBulkPhase('input')}>
+                                    {t('admin.mods.bulk_back')}
+                                </Button>
+                                <Button
+                                    disabled={importing || !bulkHasSomething}
+                                    onClick={submitBulk}
+                                    data-testid="bulk-import-submit"
+                                >
+                                    {importing
+                                        ? t('admin.mods.bulk_importing')
+                                        : t('admin.mods.bulk_do_import', {
+                                              count: String(bulkModIds.length || bulkWorkshopIds.length),
+                                          })}
+                                </Button>
+                            </>
+                        )}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
