@@ -62,14 +62,17 @@ return [
         'default_zoom' => 13,
         'center_x' => 10500.0,
         'center_y' => 9800.0,
-        'proxy_url' => env('PZ_MAP_PROXY_URL', 'https://map.projectzomboid.com/maps/SurvivalB417812L0/map_files/{z}/{x}_{y}.jpg'),
+        'proxy_url' => env('PZ_MAP_PROXY_URL', 'https://map.projectzomboid.com/maps/42.19.0/base/layer0_files/{z}/{x}_{y}.jpg'),
         'proxy_tile_size' => 1024,
+        // The official B42 pyramid omits its full-resolution level (`skip: 1`).
+        // These projection values are therefore half of map_info.json's x0,
+        // y0, and sqr values and match layer0.dzi's actual pixel dimensions.
         'proxy_dzi' => [
-            'width' => 2285184,
-            'height' => 990400,
-            'x0' => 1017856,
-            'y0' => -152032,
-            'sqr' => 128,
+            'width' => 1157216,
+            'height' => 509520,
+            'x0' => 518144,
+            'y0' => -69648,
+            'sqr' => 64,
         ],
     ],
 
