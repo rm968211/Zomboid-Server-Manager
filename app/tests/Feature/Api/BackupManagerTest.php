@@ -200,3 +200,96 @@ it('throws when pz data directory is missing', function () {
     $manager = app(BackupManager::class);
     $manager->createBackup(BackupType::Manual);
 })->throws(RuntimeException::class, 'PZ data directory not found');
+
+// ── Status Tracking ─────────────────────────────────────────────────
+
+it('marks a completed backup record completed', function () {
+    Process::fake([
+        '*' => Process::result(output: '', exitCode: 0),
+    ]);
+    $dirs = setupBackupDirs();
+    mockRconOfflineForBackup();
+
+    try {
+        $result = app(BackupManager::class)->createBackup(BackupType::Manual);
+
+        expect($result['backup']->status)->toBe(\App\Enums\BackupStatus::Completed);
+    } finally {
+        cleanupDirs($dirs);
+    }
+});
+
+it('updates a pre-created record instead of creating a new one', function () {
+    Process::fake([
+        '*' => Process::result(output: '', exitCode: 0),
+    ]);
+    $dirs = setupBackupDirs();
+    mockRconOfflineForBackup();
+
+    try {
+        $manager = app(BackupManager::class);
+        $record = $manager->startBackupRecord(BackupType::Manual, 'pending');
+
+        expect($record->status)->toBe(\App\Enums\BackupStatus::InProgress);
+
+        $result = $manager->createBackup(BackupType::Manual, 'pending', $record);
+
+        expect(Backup::count())->toBe(1)
+            ->and($result['backup']->id)->toBe($record->id)
+            ->and($result['backup']->status)->toBe(\App\Enums\BackupStatus::Completed);
+    } finally {
+        cleanupDirs($dirs);
+    }
+});
+
+it('marks the backup record failed when archive creation fails', function () {
+    Process::fake([
+        '*' => Process::result(output: '', errorOutput: 'tar: disk full', exitCode: 2),
+    ]);
+    $dirs = setupBackupDirs();
+    mockRconOfflineForBackup();
+
+    try {
+        $manager = app(BackupManager::class);
+
+        expect(fn () => $manager->createBackup(BackupType::Manual))
+            ->toThrow(RuntimeException::class);
+
+        $backup = Backup::first();
+        expect($backup->status)->toBe(\App\Enums\BackupStatus::Failed)
+            ->and($backup->error_message)->toContain('disk full');
+    } finally {
+        cleanupDirs($dirs);
+    }
+});
+
+it('marks the record failed when the queued job fails', function () {
+    $backup = Backup::factory()->create(['status' => 'in_progress']);
+
+    $job = new \App\Jobs\CreateBackupJob(BackupType::Manual, null, 'admin', null, $backup->id);
+    $job->failed(new RuntimeException('worker killed'));
+
+    $backup->refresh();
+    expect($backup->status)->toBe(\App\Enums\BackupStatus::Failed)
+        ->and($backup->error_message)->toBe('worker killed');
+});
+
+it('excludes non-completed backups from retention cleanup', function () {
+    config(['zomboid.backups.retention.manual' => 1]);
+
+    Backup::factory()->create(['type' => 'manual', 'status' => 'failed', 'created_at' => now()->subDays(3)]);
+    $oldCompleted = Backup::factory()->create(['type' => 'manual', 'status' => 'completed', 'created_at' => now()->subDays(2), 'path' => '/nonexistent']);
+    Backup::factory()->create(['type' => 'manual', 'status' => 'completed', 'created_at' => now(), 'path' => '/nonexistent']);
+
+    $deleted = app(BackupManager::class)->cleanupRetention(BackupType::Manual);
+
+    expect($deleted)->toBe(1)
+        ->and(Backup::find($oldCompleted->id))->toBeNull()
+        ->and(Backup::where('status', 'failed')->count())->toBe(1);
+});
+
+it('refuses to roll back a non-completed backup', function () {
+    $backup = Backup::factory()->create(['status' => 'failed']);
+
+    app(BackupManager::class)->validateBackupFile($backup);
+})->throws(RuntimeException::class, 'cannot be restored');
