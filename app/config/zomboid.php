@@ -55,6 +55,7 @@ return [
     'map' => [
         'tiles_path' => env('PZ_MAP_TILES_PATH', '/map-tiles'),
         'status_path' => storage_path('app/map-tile-status.json'),
+        'generation_timeout' => (int) env('PZ_MAP_GENERATION_TIMEOUT', 28800),
         'tile_size' => 256,
         'min_zoom' => 13,
         'max_zoom' => 17,

@@ -173,11 +173,12 @@ class GenerateMapTiles extends Command
         $this->line("Running pzmap2dzi: {$label}");
         $this->line("Output logged to: {$logFile}");
 
+        // Keep this below the scheduler's 12-hour overlap lock so a genuinely
+        // stuck renderer is stopped before another scheduled run is eligible.
+        $timeout = max(3600, (int) config('zomboid.map.generation_timeout', 28800));
+
         $result = Process::path($pzmap2dziDir)
-            // A first render can legitimately take many hours. The scheduler's
-            // overlap lock prevents concurrent runs, so a wall-clock timeout
-            // only destroys valid work and causes the next run to start over.
-            ->forever()
+            ->timeout($timeout)
             ->run(['python3', $pzmap2dziPath, '-c', $confPath, ...$arguments]);
         file_put_contents($logFile, $result->output().$result->errorOutput());
 

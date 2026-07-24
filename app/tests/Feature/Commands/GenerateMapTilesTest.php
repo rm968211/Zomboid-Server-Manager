@@ -19,6 +19,7 @@ beforeEach(function () {
         'zomboid.game_server_path' => $this->serverPath,
         'zomboid.map.tiles_path' => $this->tilesPath,
         'zomboid.map.status_path' => $this->statusPath,
+        'zomboid.map.generation_timeout' => 28800,
     ]);
 });
 
@@ -26,7 +27,7 @@ afterEach(function () {
     (new Filesystem)->deleteDirectory($this->mapGenerationRoot);
 });
 
-it('allows map rendering to run without a wall-clock timeout', function () {
+it('uses a high wall-clock timeout for map rendering', function () {
     Process::fake(function (PendingProcess $process) {
         if ($process->command === ['python3', '--version']) {
             return Process::result(output: 'Python 3.13.0');
@@ -44,7 +45,7 @@ it('allows map rendering to run without a wall-clock timeout', function () {
         '--workers' => 1,
     ])->assertSuccessful();
 
-    Process::assertRan(fn (PendingProcess $process) => $process->timeout === null
+    Process::assertRan(fn (PendingProcess $process) => $process->timeout === 28800
         && is_array($process->command)
         && in_array('render', $process->command, true));
 
