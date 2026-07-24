@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\AdminSetPasswordRequest;
 use App\Http\Requests\Admin\BanPlayerRequest;
 use App\Http\Requests\Admin\KickPlayerRequest;
 use App\Http\Requests\Admin\SetAccessLevelRequest;
+use App\Http\Requests\TeleportPlayerRequest;
 use App\Models\PlayerStat;
 use App\Models\User;
 use App\Services\AuditLogger;
@@ -164,6 +165,45 @@ class PlayerController extends Controller
         );
 
         return response()->json(['message' => "Set {$name} access to {$level}"]);
+    }
+
+    public function teleport(TeleportPlayerRequest $request, string $name): JsonResponse
+    {
+        $name = RconSanitizer::playerName($name);
+        $targetPlayer = $request->validated('target_player');
+
+        if ($targetPlayer) {
+            $safeTarget = RconSanitizer::playerName($targetPlayer);
+            $command = "teleportto \"{$name}\" \"{$safeTarget}\"";
+            $details = ['target_player' => $targetPlayer];
+        } else {
+            $x = (float) $request->validated('x');
+            $y = (float) $request->validated('y');
+            $z = (float) $request->validated('z', 0);
+            $command = "teleport \"{$name}\" {$x},{$y},{$z}";
+            $details = ['x' => $x, 'y' => $y, 'z' => $z];
+        }
+
+        try {
+            $this->rcon->connect();
+            $response = $this->rcon->command($command);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Failed: '.$e->getMessage()], 503);
+        }
+
+        $this->auditLogger->log(
+            actor: $request->user()->name ?? 'admin',
+            action: 'player.teleport',
+            target: $name,
+            details: [...$details, 'rcon_response' => $response, 'command' => $command],
+            ip: $request->ip(),
+        );
+
+        return response()->json([
+            'message' => "Teleported {$name}",
+            'rcon_response' => $response,
+            'command' => $command,
+        ]);
     }
 
     /**
