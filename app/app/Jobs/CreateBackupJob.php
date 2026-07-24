@@ -31,8 +31,6 @@ class CreateBackupJob implements ShouldQueue
     {
         $record = $this->backupId ? Backup::find($this->backupId) : null;
 
-        $record ??= $backupManager->startBackupRecord($this->type, $this->notes);
-
         $result = $backupManager->createBackup($this->type, $this->notes, $record);
 
         $backup = $result['backup'];
