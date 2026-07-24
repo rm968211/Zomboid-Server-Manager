@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
-import { useEffect, type PropsWithChildren } from 'react';
+import { useEffect } from 'react';
+import type { PropsWithChildren } from 'react';
 import { autoForeground, hexToOklch } from '@/lib/color-utils';
 
 /**
@@ -39,7 +40,10 @@ export function ThemeProvider({ children }: PropsWithChildren) {
 
         if (colors.sidebar_primary) {
             set('--sidebar-primary', hexToOklch(colors.sidebar_primary));
-            set('--sidebar-primary-foreground', autoForeground(colors.sidebar_primary));
+            set(
+                '--sidebar-primary-foreground',
+                autoForeground(colors.sidebar_primary),
+            );
         }
 
         return () => {

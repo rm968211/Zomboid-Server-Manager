@@ -1,11 +1,9 @@
 import { Deferred, Head, Link, router, usePoll } from '@inertiajs/react';
-import { formatDate, formatDateTime, formatTime } from '@/lib/dates';
 import {
     Archive,
     ArrowUpCircle,
     Circle,
     Clock,
-    Globe,
     HardDrive,
     Map,
     Pencil,
@@ -23,15 +21,25 @@ import {
     Zap,
 } from 'lucide-react';
 import { useState } from 'react';
-import { useTranslation } from '@/hooks/use-translation';
 import { ActivityFeed } from '@/components/activity-feed';
 import { AnimatedCounter } from '@/components/animated-counter';
 import { GameStateWidget } from '@/components/game-state-widget';
 import { Leaderboard } from '@/components/leaderboard';
-import { RestartDialog, StopDialog, UpdateDialog, WipeDialog } from '@/components/server-action-dialogs';
+import {
+    RestartDialog,
+    StopDialog,
+    UpdateDialog,
+    WipeDialog,
+} from '@/components/server-action-dialogs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import {
     Dialog,
     DialogClose,
@@ -45,7 +53,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
+import { formatDate, formatDateTime, formatTime } from '@/lib/dates';
 import { fetchAction } from '@/lib/fetch-action';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem, DashboardData } from '@/types';
@@ -62,7 +72,9 @@ export default function Dashboard({
     connection,
 }: DashboardData) {
     const { t } = useTranslation();
-    const breadcrumbs: BreadcrumbItem[] = [{ title: t('admin.dashboard.title'), href: dashboard().url }];
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: t('admin.dashboard.title'), href: dashboard().url },
+    ];
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [showRestartDialog, setShowRestartDialog] = useState(false);
     const [showStopDialog, setShowStopDialog] = useState(false);
@@ -105,7 +117,9 @@ export default function Dashboard({
             <Head title={t('admin.dashboard.title')} />
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4 lg:p-6">
                 {/* Server Status Banner */}
-                <div className={`flex flex-col gap-3 overflow-hidden rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between ${statusBgClass}`}>
+                <div
+                    className={`flex flex-col gap-3 overflow-hidden rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between ${statusBgClass}`}
+                >
                     <div className="flex min-w-0 flex-wrap items-center gap-3">
                         <Circle
                             className={`size-4 fill-current ${
@@ -126,41 +140,57 @@ export default function Dashboard({
                             </span>
                             {server.status !== 'offline' && server.uptime && (
                                 <span className="ml-2 text-sm text-muted-foreground">
-                                    {t('admin.dashboard.uptime', { uptime: server.uptime })}
+                                    {t('admin.dashboard.uptime', {
+                                        uptime: server.uptime,
+                                    })}
                                 </span>
                             )}
-                            {server.status === 'starting' && server.container_status === 'running' && (
-                                <p className="text-sm text-muted-foreground">
-                                    {t('admin.dashboard.container_waiting')}
-                                </p>
-                            )}
+                            {server.status === 'starting' &&
+                                server.container_status === 'running' && (
+                                    <p className="text-sm text-muted-foreground">
+                                        {t('admin.dashboard.container_waiting')}
+                                    </p>
+                                )}
                         </div>
                         {server.game_version && (
                             <Badge variant="secondary" className="shrink-0">
                                 v{server.game_version}
-                                {server.steam_branch && server.steam_branch !== 'public' && (
-                                    <span className="ml-1 opacity-70">({server.steam_branch})</span>
-                                )}
+                                {server.steam_branch &&
+                                    server.steam_branch !== 'public' && (
+                                        <span className="ml-1 opacity-70">
+                                            ({server.steam_branch})
+                                        </span>
+                                    )}
                             </Badge>
                         )}
-                        {auto_restart?.enabled && auto_restart.schedule?.length > 0 && (
-                            <div className="flex min-w-0 flex-wrap items-center gap-1">
-                                {auto_restart.schedule.map((time) => {
-                                    const isNext = auto_restart.next_restart_at &&
-                                        formatTime(new Date(auto_restart.next_restart_at)).slice(0, 5) === time;
-                                    return (
-                                        <Badge
-                                            key={time}
-                                            variant={isNext ? 'default' : 'outline'}
-                                            className="shrink-0 gap-1"
-                                        >
-                                            <Timer className="size-3" />
-                                            {time}
-                                        </Badge>
-                                    );
-                                })}
-                            </div>
-                        )}
+                        {auto_restart?.enabled &&
+                            auto_restart.schedule?.length > 0 && (
+                                <div className="flex min-w-0 flex-wrap items-center gap-1">
+                                    {auto_restart.schedule.map((time) => {
+                                        const isNext =
+                                            auto_restart.next_restart_at &&
+                                            formatTime(
+                                                new Date(
+                                                    auto_restart.next_restart_at,
+                                                ),
+                                            ).slice(0, 5) === time;
+                                        return (
+                                            <Badge
+                                                key={time}
+                                                variant={
+                                                    isNext
+                                                        ? 'default'
+                                                        : 'outline'
+                                                }
+                                                className="shrink-0 gap-1"
+                                            >
+                                                <Timer className="size-3" />
+                                                {time}
+                                            </Badge>
+                                        );
+                                    })}
+                                </div>
+                            )}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         {server.online ? (
@@ -225,13 +255,17 @@ export default function Dashboard({
                 </div>
 
                 {/* Game State Widget */}
-                {server.status !== 'offline' && <GameStateWidget gameState={game_state} />}
+                {server.status !== 'offline' && (
+                    <GameStateWidget gameState={game_state} />
+                )}
 
                 {/* Stats Cards */}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">{t('admin.dashboard.players_online')}</CardTitle>
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                {t('admin.dashboard.players_online')}
+                            </CardTitle>
                             <Users className="size-4 text-blue-500" />
                         </CardHeader>
                         <CardContent>
@@ -243,37 +277,49 @@ export default function Dashboard({
                                     </span>
                                 )}
                             </div>
-                            {server.max_players !== null && server.max_players > 0 && (
-                                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                                    <div
-                                        className="h-full rounded-full bg-blue-500 transition-all"
-                                        style={{ width: `${Math.min((server.player_count / server.max_players) * 100, 100)}%` }}
-                                    />
-                                </div>
-                            )}
+                            {server.max_players !== null &&
+                                server.max_players > 0 && (
+                                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                        <div
+                                            className="h-full rounded-full bg-blue-500 transition-all"
+                                            style={{
+                                                width: `${Math.min((server.player_count / server.max_players) * 100, 100)}%`,
+                                            }}
+                                        />
+                                    </div>
+                                )}
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">{t('admin.dashboard.map')}</CardTitle>
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                {t('admin.dashboard.map')}
+                            </CardTitle>
                             <Map className="size-4 text-green-500" />
                         </CardHeader>
                         <CardContent>
-                            <div className="truncate text-3xl font-bold">{server.map || t('admin.dashboard.na')}</div>
+                            <div className="truncate text-3xl font-bold">
+                                {server.map || t('admin.dashboard.na')}
+                            </div>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">{t('admin.dashboard.connection')}</CardTitle>
-                            <Dialog open={connOpen} onOpenChange={(open) => {
-                                setConnOpen(open);
-                                if (open) {
-                                    setConnIp(connection.server_ip);
-                                    setConnPort(connection.server_port);
-                                }
-                            }}>
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                {t('admin.dashboard.connection')}
+                            </CardTitle>
+                            <Dialog
+                                open={connOpen}
+                                onOpenChange={(open) => {
+                                    setConnOpen(open);
+                                    if (open) {
+                                        setConnIp(connection.server_ip);
+                                        setConnPort(connection.server_port);
+                                    }
+                                }}
+                            >
                                 <DialogTrigger asChild>
                                     <button className="text-muted-foreground hover:text-foreground">
                                         <Pencil className="size-4" />
@@ -281,37 +327,58 @@ export default function Dashboard({
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-md">
                                     <DialogHeader>
-                                        <DialogTitle>{t('admin.dashboard.connection_settings')}</DialogTitle>
+                                        <DialogTitle>
+                                            {t(
+                                                'admin.dashboard.connection_settings',
+                                            )}
+                                        </DialogTitle>
                                         <DialogDescription>
-                                            {t('admin.dashboard.connection_description')}
+                                            {t(
+                                                'admin.dashboard.connection_description',
+                                            )}
                                         </DialogDescription>
                                     </DialogHeader>
                                     <div className="space-y-4 py-2">
                                         <div className="space-y-2">
-                                            <Label htmlFor="conn-ip">{t('admin.dashboard.server_ip')}</Label>
+                                            <Label htmlFor="conn-ip">
+                                                {t('admin.dashboard.server_ip')}
+                                            </Label>
                                             <Input
                                                 id="conn-ip"
                                                 value={connIp}
-                                                onChange={(e) => setConnIp(e.target.value)}
+                                                onChange={(e) =>
+                                                    setConnIp(e.target.value)
+                                                }
                                                 placeholder="123.45.67.89"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="conn-port">{t('admin.dashboard.port')}</Label>
+                                            <Label htmlFor="conn-port">
+                                                {t('admin.dashboard.port')}
+                                            </Label>
                                             <Input
                                                 id="conn-port"
                                                 value={connPort}
-                                                onChange={(e) => setConnPort(e.target.value)}
+                                                onChange={(e) =>
+                                                    setConnPort(e.target.value)
+                                                }
                                                 placeholder="16261"
                                             />
                                         </div>
                                     </div>
                                     <DialogFooter>
                                         <DialogClose asChild>
-                                            <Button variant="outline">{t('common.cancel')}</Button>
+                                            <Button variant="outline">
+                                                {t('common.cancel')}
+                                            </Button>
                                         </DialogClose>
-                                        <Button onClick={saveConnection} disabled={connSaving}>
-                                            {connSaving ? t('common.saving') : t('common.save')}
+                                        <Button
+                                            onClick={saveConnection}
+                                            disabled={connSaving}
+                                        >
+                                            {connSaving
+                                                ? t('common.saving')
+                                                : t('common.save')}
                                         </Button>
                                     </DialogFooter>
                                 </DialogContent>
@@ -320,61 +387,87 @@ export default function Dashboard({
                         <CardContent>
                             {connection.server_ip ? (
                                 <div className="truncate font-mono text-sm font-bold">
-                                    {connection.server_ip}:{connection.server_port}
+                                    {connection.server_ip}:
+                                    {connection.server_port}
                                 </div>
                             ) : (
-                                <p className="text-sm text-muted-foreground">{t('admin.dashboard.not_configured')}</p>
+                                <p className="text-sm text-muted-foreground">
+                                    {t('admin.dashboard.not_configured')}
+                                </p>
                             )}
                         </CardContent>
                     </Card>
 
-                    <Deferred data="backup_summary" fallback={
-                        <>
-                            <Card>
-                                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                    <CardTitle className="text-sm font-medium text-muted-foreground">{t('admin.dashboard.backups')}</CardTitle>
-                                    <Archive className="size-4 text-purple-500" />
-                                </CardHeader>
-                                <CardContent>
-                                    <Skeleton className="h-9 w-12" />
-                                    <Skeleton className="mt-1 h-3 w-20" />
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                    <CardTitle className="text-sm font-medium text-muted-foreground">{t('admin.dashboard.last_backup')}</CardTitle>
-                                    <HardDrive className="size-4 text-orange-500" />
-                                </CardHeader>
-                                <CardContent>
-                                    <Skeleton className="h-9 w-24" />
-                                </CardContent>
-                            </Card>
-                        </>
-                    }>
+                    <Deferred
+                        data="backup_summary"
+                        fallback={
+                            <>
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                                            {t('admin.dashboard.backups')}
+                                        </CardTitle>
+                                        <Archive className="size-4 text-purple-500" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Skeleton className="h-9 w-12" />
+                                        <Skeleton className="mt-1 h-3 w-20" />
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                                            {t('admin.dashboard.last_backup')}
+                                        </CardTitle>
+                                        <HardDrive className="size-4 text-orange-500" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Skeleton className="h-9 w-24" />
+                                    </CardContent>
+                                </Card>
+                            </>
+                        }
+                    >
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">{t('admin.dashboard.backups')}</CardTitle>
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    {t('admin.dashboard.backups')}
+                                </CardTitle>
                                 <Archive className="size-4 text-purple-500" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-3xl font-bold">{backup_summary?.total_count}</div>
-                                <p className="text-xs text-muted-foreground">{t('admin.dashboard.total_size', { size: backup_summary?.total_size_human ?? '' })}</p>
+                                <div className="text-3xl font-bold">
+                                    {backup_summary?.total_count}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    {t('admin.dashboard.total_size', {
+                                        size:
+                                            backup_summary?.total_size_human ??
+                                            '',
+                                    })}
+                                </p>
                             </CardContent>
                         </Card>
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">{t('admin.dashboard.last_backup')}</CardTitle>
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    {t('admin.dashboard.last_backup')}
+                                </CardTitle>
                                 <HardDrive className="size-4 text-orange-500" />
                             </CardHeader>
                             <CardContent>
                                 <div className="truncate text-3xl font-bold">
                                     {backup_summary?.last_backup
-                                        ? formatDate(backup_summary.last_backup.created_at)
+                                        ? formatDate(
+                                              backup_summary.last_backup
+                                                  .created_at,
+                                          )
                                         : t('admin.dashboard.never')}
                                 </div>
                                 {backup_summary?.last_backup && (
                                     <p className="text-xs text-muted-foreground">
-                                        {backup_summary.last_backup.size_human} ({backup_summary.last_backup.type})
+                                        {backup_summary.last_backup.size_human}{' '}
+                                        ({backup_summary.last_backup.type})
                                     </p>
                                 )}
                             </CardContent>
@@ -383,19 +476,25 @@ export default function Dashboard({
                 </div>
 
                 {/* Server Totals Ribbon */}
-                <Deferred data="server_totals" fallback={
-                    <div className="grid gap-3 sm:grid-cols-3">
-                        {Array.from({ length: 3 }).map((_, i) => (
-                            <div key={i} className="flex items-center gap-3 rounded-lg border border-border/50 bg-card px-4 py-3">
-                                <Skeleton className="size-8 rounded" />
-                                <div className="space-y-1">
-                                    <Skeleton className="h-3 w-16" />
-                                    <Skeleton className="h-5 w-12" />
+                <Deferred
+                    data="server_totals"
+                    fallback={
+                        <div className="grid gap-3 sm:grid-cols-3">
+                            {Array.from({ length: 3 }).map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="flex items-center gap-3 rounded-lg border border-border/50 bg-card px-4 py-3"
+                                >
+                                    <Skeleton className="size-8 rounded" />
+                                    <div className="space-y-1">
+                                        <Skeleton className="h-3 w-16" />
+                                        <Skeleton className="h-5 w-12" />
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                }>
+                            ))}
+                        </div>
+                    }
+                >
                     {server_totals && (
                         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
                             <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-card px-4 py-3">
@@ -403,9 +502,13 @@ export default function Dashboard({
                                     <Users className="size-4 text-blue-500" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-muted-foreground">{t('admin.dashboard.total_players')}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('admin.dashboard.total_players')}
+                                    </p>
                                     <p className="text-lg font-semibold tabular-nums">
-                                        <AnimatedCounter value={server_totals.total_players} />
+                                        <AnimatedCounter
+                                            value={server_totals.total_players}
+                                        />
                                     </p>
                                 </div>
                             </div>
@@ -414,9 +517,15 @@ export default function Dashboard({
                                     <Skull className="size-4 text-red-500" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-muted-foreground">{t('admin.dashboard.total_kills')}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('admin.dashboard.total_kills')}
+                                    </p>
                                     <p className="text-lg font-semibold tabular-nums">
-                                        <AnimatedCounter value={server_totals.total_zombie_kills} />
+                                        <AnimatedCounter
+                                            value={
+                                                server_totals.total_zombie_kills
+                                            }
+                                        />
                                     </p>
                                 </div>
                             </div>
@@ -425,9 +534,17 @@ export default function Dashboard({
                                     <Clock className="size-4 text-green-500" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-muted-foreground">{t('admin.dashboard.total_hours')}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('admin.dashboard.total_hours')}
+                                    </p>
                                     <p className="text-lg font-semibold tabular-nums">
-                                        <AnimatedCounter value={server_totals.total_hours_survived} decimals={1} suffix="h" />
+                                        <AnimatedCounter
+                                            value={
+                                                server_totals.total_hours_survived
+                                            }
+                                            decimals={1}
+                                            suffix="h"
+                                        />
                                     </p>
                                 </div>
                             </div>
@@ -436,9 +553,13 @@ export default function Dashboard({
                                     <Skull className="size-4 text-orange-500" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-muted-foreground">{t('admin.dashboard.total_deaths')}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('admin.dashboard.total_deaths')}
+                                    </p>
                                     <p className="text-lg font-semibold tabular-nums">
-                                        <AnimatedCounter value={server_totals.total_deaths} />
+                                        <AnimatedCounter
+                                            value={server_totals.total_deaths}
+                                        />
                                     </p>
                                 </div>
                             </div>
@@ -447,9 +568,15 @@ export default function Dashboard({
                                     <Swords className="size-4 text-purple-500" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-muted-foreground">{t('admin.dashboard.pvp_kills')}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('admin.dashboard.pvp_kills')}
+                                    </p>
                                     <p className="text-lg font-semibold tabular-nums">
-                                        <AnimatedCounter value={server_totals.total_pvp_kills} />
+                                        <AnimatedCounter
+                                            value={
+                                                server_totals.total_pvp_kills
+                                            }
+                                        />
                                     </p>
                                 </div>
                             </div>
@@ -474,7 +601,9 @@ export default function Dashboard({
                                 </Link>
                             </div>
                             <CardDescription>
-                                {t('admin.dashboard.connected', { count: String(server.player_count) })}
+                                {t('admin.dashboard.connected', {
+                                    count: String(server.player_count),
+                                })}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -488,24 +617,47 @@ export default function Dashboard({
                                         >
                                             <div className="flex items-center gap-2">
                                                 <Circle className="size-2 fill-green-500 text-green-500" />
-                                                <span className="text-sm font-medium">{player.username}</span>
+                                                <span className="text-sm font-medium">
+                                                    {player.username}
+                                                </span>
                                                 {player.profession && (
-                                                    <Badge variant="secondary" className="text-xs">
+                                                    <Badge
+                                                        variant="secondary"
+                                                        className="text-xs"
+                                                    >
                                                         {player.profession}
                                                     </Badge>
                                                 )}
                                             </div>
                                             <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                                {player.zombie_kills != null && (
-                                                    <span className="flex items-center gap-1" title={t('admin.dashboard.zombie_kills')}>
+                                                {player.zombie_kills !=
+                                                    null && (
+                                                    <span
+                                                        className="flex items-center gap-1"
+                                                        title={t(
+                                                            'admin.dashboard.zombie_kills',
+                                                        )}
+                                                    >
                                                         <Skull className="size-3" />
                                                         {player.zombie_kills.toLocaleString()}
                                                     </span>
                                                 )}
-                                                {player.hours_survived != null && (
-                                                    <span className="flex items-center gap-1" title={t('admin.dashboard.hours_survived')}>
+                                                {player.hours_survived !=
+                                                    null && (
+                                                    <span
+                                                        className="flex items-center gap-1"
+                                                        title={t(
+                                                            'admin.dashboard.hours_survived',
+                                                        )}
+                                                    >
                                                         <Clock className="size-3" />
-                                                        {player.hours_survived.toLocaleString(undefined, { maximumFractionDigits: 1 })}h
+                                                        {player.hours_survived.toLocaleString(
+                                                            undefined,
+                                                            {
+                                                                maximumFractionDigits: 1,
+                                                            },
+                                                        )}
+                                                        h
                                                     </span>
                                                 )}
                                             </div>
@@ -517,8 +669,12 @@ export default function Dashboard({
                                     {server.status === 'online'
                                         ? t('admin.dashboard.no_players')
                                         : server.status === 'starting'
-                                          ? t('admin.dashboard.server_starting_msg')
-                                          : t('admin.dashboard.server_offline_msg')}
+                                          ? t(
+                                                'admin.dashboard.server_starting_msg',
+                                            )
+                                          : t(
+                                                'admin.dashboard.server_offline_msg',
+                                            )}
                                 </p>
                             )}
                         </CardContent>
@@ -531,29 +687,45 @@ export default function Dashboard({
                                 <ScrollText className="size-5" />
                                 {t('admin.dashboard.recent_activity')}
                             </CardTitle>
-                            <CardDescription>{t('admin.dashboard.latest_actions')}</CardDescription>
+                            <CardDescription>
+                                {t('admin.dashboard.latest_actions')}
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Deferred data="recent_audit" fallback={
-                                <div className="space-y-3">
-                                    {Array.from({ length: 5 }).map((_, i) => (
-                                        <div key={i} className="flex items-start gap-2">
-                                            <Skeleton className="h-5 w-24 shrink-0" />
-                                            <div className="flex-1 space-y-1">
-                                                <Skeleton className="h-4 w-32" />
-                                                <Skeleton className="h-3 w-48" />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            }>
+                            <Deferred
+                                data="recent_audit"
+                                fallback={
+                                    <div className="space-y-3">
+                                        {Array.from({ length: 5 }).map(
+                                            (_, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="flex items-start gap-2"
+                                                >
+                                                    <Skeleton className="h-5 w-24 shrink-0" />
+                                                    <div className="flex-1 space-y-1">
+                                                        <Skeleton className="h-4 w-32" />
+                                                        <Skeleton className="h-3 w-48" />
+                                                    </div>
+                                                </div>
+                                            ),
+                                        )}
+                                    </div>
+                                }
+                            >
                                 {recent_audit?.length > 0 ? (
                                     <div className="space-y-3">
                                         {recent_audit.map((entry) => (
-                                            <div key={entry.id} className="flex items-start justify-between gap-2">
+                                            <div
+                                                key={entry.id}
+                                                className="flex items-start justify-between gap-2"
+                                            >
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex items-center gap-2">
-                                                        <Badge variant="outline" className="shrink-0 text-xs">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="shrink-0 text-xs"
+                                                        >
                                                             {entry.action}
                                                         </Badge>
                                                         {entry.target && (
@@ -565,7 +737,13 @@ export default function Dashboard({
                                                     <p className="mt-0.5 text-xs text-muted-foreground">
                                                         {entry.actor}
                                                         {entry.created_at && (
-                                                            <> &middot; {formatDateTime(entry.created_at)}</>
+                                                            <>
+                                                                {' '}
+                                                                &middot;{' '}
+                                                                {formatDateTime(
+                                                                    entry.created_at,
+                                                                )}
+                                                            </>
                                                         )}
                                                     </p>
                                                 </div>
@@ -573,7 +751,9 @@ export default function Dashboard({
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-muted-foreground">{t('admin.dashboard.no_activity')}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {t('admin.dashboard.no_activity')}
+                                    </p>
                                 )}
                             </Deferred>
                         </CardContent>
@@ -582,26 +762,39 @@ export default function Dashboard({
 
                 {/* Leaderboard + Game Events side-by-side */}
                 <div className="grid gap-6 lg:grid-cols-2">
-                    <Deferred data="leaderboard" fallback={
-                        <Card>
-                            <CardHeader>
-                                <Skeleton className="h-6 w-32" />
-                                <Skeleton className="mt-1 h-4 w-40" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid gap-6 sm:grid-cols-2">
-                                    {Array.from({ length: 2 }).map((_, col) => (
-                                        <div key={col} className="space-y-2">
-                                            <Skeleton className="h-4 w-28" />
-                                            {Array.from({ length: 5 }).map((_, i) => (
-                                                <Skeleton key={i} className="h-6 w-full" />
-                                            ))}
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    }>
+                    <Deferred
+                        data="leaderboard"
+                        fallback={
+                            <Card>
+                                <CardHeader>
+                                    <Skeleton className="h-6 w-32" />
+                                    <Skeleton className="mt-1 h-4 w-40" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid gap-6 sm:grid-cols-2">
+                                        {Array.from({ length: 2 }).map(
+                                            (_, col) => (
+                                                <div
+                                                    key={col}
+                                                    className="space-y-2"
+                                                >
+                                                    <Skeleton className="h-4 w-28" />
+                                                    {Array.from({
+                                                        length: 5,
+                                                    }).map((_, i) => (
+                                                        <Skeleton
+                                                            key={i}
+                                                            className="h-6 w-full"
+                                                        />
+                                                    ))}
+                                                </div>
+                                            ),
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        }
+                    >
                         <div>
                             <Leaderboard data={leaderboard} />
                             <Link
@@ -620,22 +813,32 @@ export default function Dashboard({
                                 <Zap className="size-5" />
                                 {t('admin.dashboard.game_events')}
                             </CardTitle>
-                            <CardDescription>{t('admin.dashboard.game_events_description')}</CardDescription>
+                            <CardDescription>
+                                {t('admin.dashboard.game_events_description')}
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Deferred data="game_events" fallback={
-                                <div className="space-y-2">
-                                    {Array.from({ length: 5 }).map((_, i) => (
-                                        <div key={i} className="flex items-start gap-2.5">
-                                            <Skeleton className="mt-0.5 size-4 shrink-0 rounded" />
-                                            <div className="flex-1 space-y-1">
-                                                <Skeleton className="h-4 w-48" />
-                                                <Skeleton className="h-3 w-16" />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            }>
+                            <Deferred
+                                data="game_events"
+                                fallback={
+                                    <div className="space-y-2">
+                                        {Array.from({ length: 5 }).map(
+                                            (_, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="flex items-start gap-2.5"
+                                                >
+                                                    <Skeleton className="mt-0.5 size-4 shrink-0 rounded" />
+                                                    <div className="flex-1 space-y-1">
+                                                        <Skeleton className="h-4 w-48" />
+                                                        <Skeleton className="h-3 w-16" />
+                                                    </div>
+                                                </div>
+                                            ),
+                                        )}
+                                    </div>
+                                }
+                            >
                                 <ActivityFeed events={game_events ?? []} />
                             </Deferred>
                         </CardContent>
@@ -643,15 +846,24 @@ export default function Dashboard({
                 </div>
             </div>
 
-            <RestartDialog open={showRestartDialog} onOpenChange={setShowRestartDialog} />
-            <StopDialog open={showStopDialog} onOpenChange={setShowStopDialog} />
+            <RestartDialog
+                open={showRestartDialog}
+                onOpenChange={setShowRestartDialog}
+            />
+            <StopDialog
+                open={showStopDialog}
+                onOpenChange={setShowStopDialog}
+            />
             <UpdateDialog
                 open={showUpdateDialog}
                 onOpenChange={setShowUpdateDialog}
                 currentBranch={server.steam_branch ?? 'public'}
                 currentVersion={server.game_version}
             />
-            <WipeDialog open={showWipeDialog} onOpenChange={setShowWipeDialog} />
+            <WipeDialog
+                open={showWipeDialog}
+                onOpenChange={setShowWipeDialog}
+            />
         </AppLayout>
     );
 }

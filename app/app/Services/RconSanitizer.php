@@ -31,7 +31,7 @@ class RconSanitizer
     public static function playerName(string $name): string
     {
         if (! preg_match(self::PLAYER_NAME_PATTERN, $name)) {
-            throw new InvalidArgumentException("Invalid player name: contains disallowed characters or exceeds length limit.");
+            throw new InvalidArgumentException('Invalid player name: contains disallowed characters or exceeds length limit.');
         }
 
         return $name;
@@ -54,7 +54,7 @@ class RconSanitizer
     public static function itemId(string $itemId): string
     {
         if (! preg_match(self::ITEM_ID_PATTERN, $itemId)) {
-            throw new InvalidArgumentException("Invalid item ID: must contain only alphanumeric characters, dots, and underscores.");
+            throw new InvalidArgumentException('Invalid item ID: must contain only alphanumeric characters, dots, and underscores.');
         }
 
         return $itemId;
@@ -68,7 +68,7 @@ class RconSanitizer
     public static function skill(string $skill): string
     {
         if (! preg_match(self::SKILL_PATTERN, $skill)) {
-            throw new InvalidArgumentException("Invalid skill name: must contain only alphanumeric characters.");
+            throw new InvalidArgumentException('Invalid skill name: must contain only alphanumeric characters.');
         }
 
         return $skill;
@@ -82,7 +82,7 @@ class RconSanitizer
     public static function accessLevel(string $level): string
     {
         if (! in_array($level, self::VALID_ACCESS_LEVELS, true)) {
-            throw new InvalidArgumentException("Invalid access level: must be one of ".implode(', ', self::VALID_ACCESS_LEVELS).'.');
+            throw new InvalidArgumentException('Invalid access level: must be one of '.implode(', ', self::VALID_ACCESS_LEVELS).'.');
         }
 
         return $level;

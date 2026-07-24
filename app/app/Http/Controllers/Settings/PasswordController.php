@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Services\PzPasswordSyncService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,11 +31,23 @@ class PasswordController extends Controller
     {
         $user = $request->user();
 
+        $pzUsername = $user->whitelistEntries()
+            ->where('active', true)
+            ->value('pz_username');
+
+        if ($pzUsername !== null) {
+            try {
+                $this->pzPasswordSync->sync($pzUsername, $request->password);
+            } catch (\Throwable) {
+                throw ValidationException::withMessages([
+                    'password' => 'The game account password could not be updated. Please try again when the game server data is available.',
+                ]);
+            }
+        }
+
         $user->update([
             'password' => $request->password,
         ]);
-
-        $this->pzPasswordSync->sync($user->username, $request->password);
 
         return back();
     }

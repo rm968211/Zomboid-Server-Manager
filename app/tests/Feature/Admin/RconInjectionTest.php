@@ -1,9 +1,7 @@
 <?php
 
-use App\Enums\UserRole;
 use App\Models\User;
 use App\Services\DockerManager;
-use App\Services\RconClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -66,7 +64,7 @@ it('rejects server restart message with injection', function () {
     $this->actingAs($this->admin)
         ->postJson('/admin/server/restart', [
             'countdown' => 60,
-            'message' => "Restarting\"; quit; \"",
+            'message' => 'Restarting"; quit; "',
         ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors('message');

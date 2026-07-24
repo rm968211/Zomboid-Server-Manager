@@ -53,7 +53,10 @@ Route::middleware(['auth', 'admin', 'throttle:admin'])->group(function () {
         Route::get('players/{username}/inventory/status', [Admin\InventoryController::class, 'deliveryStatus'])->name('players.inventory.status');
 
         // Map Tiles
-        Route::get('map-tiles/{level}/{tile}', [Admin\PlayerMapController::class, 'tile'])->name('map.tile')->where('tile', '.*');
+        Route::get('map-tiles/{level}/{tile}', [Admin\PlayerMapController::class, 'tile'])
+            ->name('map.tile')
+            ->whereNumber('level')
+            ->where('tile', '\d+_\d+\.(?:webp|jpg)');
 
         // Config
         Route::get('config', [Admin\ConfigController::class, 'index'])->name('config');

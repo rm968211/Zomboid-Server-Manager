@@ -55,14 +55,23 @@ export function parseModImport(text: string): ParseModImportResult {
     const mapFolders = mapLine !== null ? dedupe(splitList(mapLine)) : [];
 
     if (workshopLine !== null || modsLine !== null) {
-        const workshopIds = dedupe((workshopLine !== null ? splitList(workshopLine) : []).filter((id) => WORKSHOP_ID.test(id)));
+        const workshopIds = dedupe(
+            (workshopLine !== null ? splitList(workshopLine) : []).filter(
+                (id) => WORKSHOP_ID.test(id),
+            ),
+        );
         const modIds = dedupe(modsLine !== null ? splitList(modsLine) : []);
 
         return { mode: 'ini', workshopIds, modIds, mapFolders };
     }
 
     // IDs-only: keep every distinct Workshop ID in the order it appears.
-    const workshopIds = dedupe(text.split(/[;,\s]+/).map((t) => t.trim()).filter((id) => WORKSHOP_ID.test(id)));
+    const workshopIds = dedupe(
+        text
+            .split(/[;,\s]+/)
+            .map((t) => t.trim())
+            .filter((id) => WORKSHOP_ID.test(id)),
+    );
 
     return { mode: 'ids', workshopIds, modIds: [], mapFolders };
 }

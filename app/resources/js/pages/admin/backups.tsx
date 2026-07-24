@@ -1,10 +1,30 @@
 import { Deferred, Head, router } from '@inertiajs/react';
-import { AlertTriangle, Archive, ChevronDown, ChevronLeft, ChevronRight, Download, HelpCircle, Loader2, Plus, RotateCcw, Search, Trash2, Upload } from 'lucide-react';
+import {
+    AlertTriangle,
+    Archive,
+    ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+    Download,
+    HelpCircle,
+    Loader2,
+    Plus,
+    RotateCcw,
+    Search,
+    Trash2,
+    Upload,
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { SortableHeader } from '@/components/sortable-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
@@ -24,7 +44,14 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { useServerSort } from '@/hooks/use-server-sort';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
@@ -74,7 +101,12 @@ type BackupsProps = {
 
 type SortKey = 'filename' | 'type' | 'size_bytes' | 'created_at';
 
-export default function Backups({ backups, current_version, current_branch, filters }: BackupsProps) {
+export default function Backups({
+    backups,
+    current_version,
+    current_branch,
+    filters,
+}: BackupsProps) {
     const { t } = useTranslation();
     const breadcrumbs: BreadcrumbItem[] = [
         { title: t('nav.dashboard'), href: '/dashboard' },
@@ -87,7 +119,9 @@ export default function Backups({ backups, current_version, current_branch, filt
         defaultSort: 'created_at',
         defaultDir: 'desc',
     });
-    const [rollbackTarget, setRollbackTarget] = useState<BackupEntry | null>(null);
+    const [rollbackTarget, setRollbackTarget] = useState<BackupEntry | null>(
+        null,
+    );
     const [deleteTarget, setDeleteTarget] = useState<BackupEntry | null>(null);
     const [notes, setNotes] = useState('');
     const [notifyPlayers, setNotifyPlayers] = useState(false);
@@ -125,7 +159,9 @@ export default function Backups({ backups, current_version, current_branch, filt
         return () => clearInterval(interval);
     }, [hasInProgress]);
 
-    const allSelected = filteredBackups.length > 0 && filteredBackups.every((b) => selectedIds.has(b.id));
+    const allSelected =
+        filteredBackups.length > 0 &&
+        filteredBackups.every((b) => selectedIds.has(b.id));
 
     function toggleSelect(id: string) {
         setSelectedIds((prev) => {
@@ -178,14 +214,23 @@ export default function Backups({ backups, current_version, current_branch, filt
                 data.message = rollbackMessage.trim();
             }
         }
-        if (switchBranch && backup.steam_branch && backup.steam_branch !== current_branch) {
+        if (
+            switchBranch &&
+            backup.steam_branch &&
+            backup.steam_branch !== current_branch
+        ) {
             data.switch_branch = backup.steam_branch;
         }
         await fetchAction(`/admin/backups/${backup.id}/rollback`, {
             data,
-            successMessage: countdown > 0
-                ? t('admin.backups.toast_rollback_scheduled', { seconds: String(countdown) })
-                : t('admin.backups.toast_rollback_initiated', { filename: backup.filename }),
+            successMessage:
+                countdown > 0
+                    ? t('admin.backups.toast_rollback_scheduled', {
+                          seconds: String(countdown),
+                      })
+                    : t('admin.backups.toast_rollback_initiated', {
+                          filename: backup.filename,
+                      }),
         });
         setLoading(false);
         setRollbackTarget(null);
@@ -219,7 +264,9 @@ export default function Backups({ backups, current_version, current_branch, filt
         await fetchAction('/admin/backups', {
             method: 'DELETE',
             data: { ids: Array.from(selectedIds) },
-            successMessage: t('admin.backups.toast_bulk_deleted', { count: String(selectedIds.size) }),
+            successMessage: t('admin.backups.toast_bulk_deleted', {
+                count: String(selectedIds.size),
+            }),
         });
         setLoading(false);
         setShowBulkDelete(false);
@@ -231,7 +278,9 @@ export default function Backups({ backups, current_version, current_branch, filt
         if (!importFile) return;
         setImportLoading(true);
 
-        const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+        const csrfToken =
+            document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+                ?.content ?? '';
         const formData = new FormData();
         formData.append('file', importFile);
         formData.append('confirm', importConfirm ? '1' : '0');
@@ -239,21 +288,30 @@ export default function Backups({ backups, current_version, current_branch, filt
         try {
             const res = await fetch('/admin/backups/import', {
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    Accept: 'application/json',
+                },
                 body: formData,
             });
             const json = await res.json().catch(() => ({}));
 
             if (res.ok) {
                 const { toast } = await import('sonner');
-                toast.success(json.message || t('admin.backups.toast_import_success'));
+                toast.success(
+                    json.message || t('admin.backups.toast_import_success'),
+                );
                 setShowImport(false);
                 setImportFile(null);
                 setImportConfirm(false);
                 router.reload();
             } else {
                 const { toast } = await import('sonner');
-                toast.error(json.error || json.message || t('admin.backups.toast_import_failed'));
+                toast.error(
+                    json.error ||
+                        json.message ||
+                        t('admin.backups.toast_import_failed'),
+                );
             }
         } catch {
             const { toast } = await import('sonner');
@@ -264,7 +322,7 @@ export default function Backups({ backups, current_version, current_branch, filt
     }
 
     function goToPage(page: number) {
-        const params: Record<string, unknown> = { page };
+        const params: Record<string, string | number> = { page };
         if (backups?.per_page && backups.per_page !== 15) {
             params.per_page = backups.per_page;
         }
@@ -274,7 +332,10 @@ export default function Backups({ backups, current_version, current_branch, filt
     }
 
     function changePerPage(value: string) {
-        const params: Record<string, unknown> = { per_page: value, page: 1 };
+        const params: Record<string, string | number> = {
+            per_page: value,
+            page: 1,
+        };
         if (filters?.sort) params.sort = filters.sort;
         if (filters?.direction) params.direction = filters.direction;
         router.get('/admin/backups', params, { preserveState: true });
@@ -286,8 +347,16 @@ export default function Backups({ backups, current_version, current_branch, filt
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">{t('admin.backups.title')}</h1>
-                        <p className="text-muted-foreground">{backups ? t('admin.backups.backup_count', { count: String(backups.total) }) : t('common.loading')}</p>
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            {t('admin.backups.title')}
+                        </h1>
+                        <p className="text-muted-foreground">
+                            {backups
+                                ? t('admin.backups.backup_count', {
+                                      count: String(backups.total),
+                                  })
+                                : t('common.loading')}
+                        </p>
                     </div>
                     <div className="flex items-center gap-2">
                         {selectedIds.size > 0 && (
@@ -296,10 +365,15 @@ export default function Backups({ backups, current_version, current_branch, filt
                                 onClick={() => setShowBulkDelete(true)}
                             >
                                 <Trash2 className="mr-1.5 size-4" />
-                                {t('admin.backups.delete_selected', { count: String(selectedIds.size) })}
+                                {t('admin.backups.delete_selected', {
+                                    count: String(selectedIds.size),
+                                })}
                             </Button>
                         )}
-                        <Button variant="outline" onClick={() => setShowImport(true)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowImport(true)}
+                        >
                             <Upload className="mr-1.5 size-4" />
                             {t('admin.backups.import_world')}
                         </Button>
@@ -318,12 +392,16 @@ export default function Backups({ backups, current_version, current_branch, filt
                                     <Archive className="size-5" />
                                     {t('admin.backups.card_title')}
                                 </CardTitle>
-                                <CardDescription>{t('admin.backups.card_description')}</CardDescription>
+                                <CardDescription>
+                                    {t('admin.backups.card_description')}
+                                </CardDescription>
                             </div>
                             <div className="relative">
-                                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                                <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
                                 <Input
-                                    placeholder={t('admin.backups.search_placeholder')}
+                                    placeholder={t(
+                                        'admin.backups.search_placeholder',
+                                    )}
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="pl-9 sm:w-[200px]"
@@ -332,41 +410,80 @@ export default function Backups({ backups, current_version, current_branch, filt
                         </div>
                     </CardHeader>
                     <CardContent className="overflow-x-auto">
-                        <Deferred data="backups" fallback={
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-10" />
-                                        <TableHead>{t('admin.backups.table_filename')}</TableHead>
-                                        <TableHead className="hidden sm:table-cell">{t('admin.backups.table_type')}</TableHead>
-                                        <TableHead className="hidden md:table-cell">{t('admin.backups.table_version')}</TableHead>
-                                        <TableHead className="hidden sm:table-cell">{t('admin.backups.table_size')}</TableHead>
-                                        <TableHead className="hidden md:table-cell">{t('admin.backups.table_date')}</TableHead>
-                                        <TableHead className="hidden lg:table-cell">{t('admin.backups.table_notes')}</TableHead>
-                                        <TableHead className="text-right">{t('admin.backups.table_actions')}</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {Array.from({ length: 5 }).map((_, i) => (
-                                        <TableRow key={i}>
-                                            <TableCell><Skeleton className="h-4 w-4" /></TableCell>
-                                            <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                                            <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-                                            <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
-                                            <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
-                                            <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-28" /></TableCell>
-                                            <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-32" /></TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-1">
-                                                    <Skeleton className="h-8 w-24 rounded-md" />
-                                                    <Skeleton className="h-8 w-8 rounded-md" />
-                                                </div>
-                                            </TableCell>
+                        <Deferred
+                            data="backups"
+                            fallback={
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="w-10" />
+                                            <TableHead>
+                                                {t(
+                                                    'admin.backups.table_filename',
+                                                )}
+                                            </TableHead>
+                                            <TableHead className="hidden sm:table-cell">
+                                                {t('admin.backups.table_type')}
+                                            </TableHead>
+                                            <TableHead className="hidden md:table-cell">
+                                                {t(
+                                                    'admin.backups.table_version',
+                                                )}
+                                            </TableHead>
+                                            <TableHead className="hidden sm:table-cell">
+                                                {t('admin.backups.table_size')}
+                                            </TableHead>
+                                            <TableHead className="hidden md:table-cell">
+                                                {t('admin.backups.table_date')}
+                                            </TableHead>
+                                            <TableHead className="hidden lg:table-cell">
+                                                {t('admin.backups.table_notes')}
+                                            </TableHead>
+                                            <TableHead className="text-right">
+                                                {t(
+                                                    'admin.backups.table_actions',
+                                                )}
+                                            </TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        }>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {Array.from({ length: 5 }).map(
+                                            (_, i) => (
+                                                <TableRow key={i}>
+                                                    <TableCell>
+                                                        <Skeleton className="h-4 w-4" />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Skeleton className="h-4 w-48" />
+                                                    </TableCell>
+                                                    <TableCell className="hidden sm:table-cell">
+                                                        <Skeleton className="h-5 w-16 rounded-full" />
+                                                    </TableCell>
+                                                    <TableCell className="hidden md:table-cell">
+                                                        <Skeleton className="h-4 w-16" />
+                                                    </TableCell>
+                                                    <TableCell className="hidden sm:table-cell">
+                                                        <Skeleton className="h-4 w-16" />
+                                                    </TableCell>
+                                                    <TableCell className="hidden md:table-cell">
+                                                        <Skeleton className="h-4 w-28" />
+                                                    </TableCell>
+                                                    <TableCell className="hidden lg:table-cell">
+                                                        <Skeleton className="h-4 w-32" />
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex items-center justify-end gap-1">
+                                                            <Skeleton className="h-8 w-24 rounded-md" />
+                                                            <Skeleton className="h-8 w-8 rounded-md" />
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ),
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            }
+                        >
                             {filteredBackups.length > 0 ? (
                                 <Table>
                                     <TableHeader>
@@ -374,81 +491,161 @@ export default function Backups({ backups, current_version, current_branch, filt
                                             <TableHead className="w-10">
                                                 <Checkbox
                                                     checked={allSelected}
-                                                    onCheckedChange={toggleSelectAll}
+                                                    onCheckedChange={
+                                                        toggleSelectAll
+                                                    }
                                                     aria-label="Select all"
                                                 />
                                             </TableHead>
                                             <TableHead>
-                                                <SortableHeader column="filename" label={t('admin.backups.table_filename')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                                                <SortableHeader
+                                                    column="filename"
+                                                    label={t(
+                                                        'admin.backups.table_filename',
+                                                    )}
+                                                    sortKey={sortKey}
+                                                    sortDir={sortDir}
+                                                    onSort={toggleSort}
+                                                />
                                             </TableHead>
                                             <TableHead className="hidden sm:table-cell">
-                                                <SortableHeader column="type" label={t('admin.backups.table_type')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-                                            </TableHead>
-                                            <TableHead className="hidden md:table-cell">{t('admin.backups.table_version')}</TableHead>
-                                            <TableHead className="hidden sm:table-cell">
-                                                <SortableHeader column="size_bytes" label={t('admin.backups.table_size')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                                                <SortableHeader
+                                                    column="type"
+                                                    label={t(
+                                                        'admin.backups.table_type',
+                                                    )}
+                                                    sortKey={sortKey}
+                                                    sortDir={sortDir}
+                                                    onSort={toggleSort}
+                                                />
                                             </TableHead>
                                             <TableHead className="hidden md:table-cell">
-                                                <SortableHeader column="created_at" label={t('admin.backups.table_date')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                                                {t(
+                                                    'admin.backups.table_version',
+                                                )}
                                             </TableHead>
-                                            <TableHead className="hidden lg:table-cell">{t('admin.backups.table_notes')}</TableHead>
-                                            <TableHead className="text-right">{t('admin.backups.table_actions')}</TableHead>
+                                            <TableHead className="hidden sm:table-cell">
+                                                <SortableHeader
+                                                    column="size_bytes"
+                                                    label={t(
+                                                        'admin.backups.table_size',
+                                                    )}
+                                                    sortKey={sortKey}
+                                                    sortDir={sortDir}
+                                                    onSort={toggleSort}
+                                                />
+                                            </TableHead>
+                                            <TableHead className="hidden md:table-cell">
+                                                <SortableHeader
+                                                    column="created_at"
+                                                    label={t(
+                                                        'admin.backups.table_date',
+                                                    )}
+                                                    sortKey={sortKey}
+                                                    sortDir={sortDir}
+                                                    onSort={toggleSort}
+                                                />
+                                            </TableHead>
+                                            <TableHead className="hidden lg:table-cell">
+                                                {t('admin.backups.table_notes')}
+                                            </TableHead>
+                                            <TableHead className="text-right">
+                                                {t(
+                                                    'admin.backups.table_actions',
+                                                )}
+                                            </TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {filteredBackups.map((backup) => (
-                                            <TableRow key={backup.id} data-state={selectedIds.has(backup.id) ? 'selected' : undefined}>
+                                            <TableRow
+                                                key={backup.id}
+                                                data-state={
+                                                    selectedIds.has(backup.id)
+                                                        ? 'selected'
+                                                        : undefined
+                                                }
+                                            >
                                                 <TableCell>
                                                     <Checkbox
-                                                        checked={selectedIds.has(backup.id)}
-                                                        onCheckedChange={() => toggleSelect(backup.id)}
+                                                        checked={selectedIds.has(
+                                                            backup.id,
+                                                        )}
+                                                        onCheckedChange={() =>
+                                                            toggleSelect(
+                                                                backup.id,
+                                                            )
+                                                        }
                                                         aria-label={`Select ${backup.filename}`}
                                                     />
                                                 </TableCell>
-                                                <TableCell className="font-medium text-sm">
+                                                <TableCell className="text-sm font-medium">
                                                     <div className="flex items-center gap-2">
-                                                        <span>{backup.filename}</span>
-                                                        {backup.status === 'in_progress' && (
-                                                            <Badge className="bg-blue-500/10 text-blue-500 text-xs">
+                                                        <span>
+                                                            {backup.filename}
+                                                        </span>
+                                                        {backup.status ===
+                                                            'in_progress' && (
+                                                            <Badge className="bg-blue-500/10 text-xs text-blue-500">
                                                                 <Loader2 className="mr-1 size-3 animate-spin" />
-                                                                {t('admin.backups.status_in_progress')}
+                                                                {t(
+                                                                    'admin.backups.status_in_progress',
+                                                                )}
                                                             </Badge>
                                                         )}
-                                                        {backup.status === 'failed' && (
-                                                            <Badge className="bg-red-500/10 text-red-500 text-xs">
+                                                        {backup.status ===
+                                                            'failed' && (
+                                                            <Badge className="bg-red-500/10 text-xs text-red-500">
                                                                 <AlertTriangle className="mr-1 size-3" />
-                                                                {t('admin.backups.status_failed')}
+                                                                {t(
+                                                                    'admin.backups.status_failed',
+                                                                )}
                                                             </Badge>
                                                         )}
                                                     </div>
-                                                    {backup.status === 'failed' && backup.error_message && (
-                                                        <p className="mt-1 max-w-md text-xs font-normal text-red-500/90">
-                                                            {backup.error_message}
-                                                        </p>
-                                                    )}
+                                                    {backup.status ===
+                                                        'failed' &&
+                                                        backup.error_message && (
+                                                            <p className="mt-1 max-w-md text-xs font-normal text-red-500/90">
+                                                                {
+                                                                    backup.error_message
+                                                                }
+                                                            </p>
+                                                        )}
                                                 </TableCell>
                                                 <TableCell className="hidden sm:table-cell">
-                                                    <Badge className={`text-xs ${typeColors[backup.type] ?? ''}`}>
+                                                    <Badge
+                                                        className={`text-xs ${typeColors[backup.type] ?? ''}`}
+                                                    >
                                                         {backup.type}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="hidden md:table-cell">
                                                     <span className="text-sm text-muted-foreground">
-                                                        {backup.game_version ? `v${backup.game_version}` : t('admin.backups.version_unknown')}
+                                                        {backup.game_version
+                                                            ? `v${backup.game_version}`
+                                                            : t(
+                                                                  'admin.backups.version_unknown',
+                                                              )}
                                                     </span>
                                                 </TableCell>
                                                 <TableCell className="hidden tabular-nums sm:table-cell">
                                                     {backup.size_human}
                                                 </TableCell>
                                                 <TableCell className="hidden md:table-cell">
-                                                    {formatDateTime(backup.created_at)}
+                                                    {formatDateTime(
+                                                        backup.created_at,
+                                                    )}
                                                 </TableCell>
                                                 <TableCell className="hidden lg:table-cell">
-                                                    <span className="text-muted-foreground">{backup.notes ?? '-'}</span>
+                                                    <span className="text-muted-foreground">
+                                                        {backup.notes ?? '-'}
+                                                    </span>
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex items-center justify-end gap-1">
-                                                        {backup.status === 'completed' && (
+                                                        {backup.status ===
+                                                            'completed' && (
                                                             <>
                                                                 <Button
                                                                     variant="ghost"
@@ -466,28 +663,45 @@ export default function Backups({ backups, current_version, current_branch, filt
                                                                 <Button
                                                                     variant="outline"
                                                                     size="sm"
-                                                                    onClick={() => setRollbackTarget(backup)}
+                                                                    onClick={() =>
+                                                                        setRollbackTarget(
+                                                                            backup,
+                                                                        )
+                                                                    }
                                                                 >
                                                                     <RotateCcw className="mr-1.5 size-3.5" />
-                                                                    {t('admin.backups.rollback_button')}
+                                                                    {t(
+                                                                        'admin.backups.rollback_button',
+                                                                    )}
                                                                 </Button>
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
                                                                     className="text-destructive hover:text-destructive"
-                                                                    onClick={() => setDeleteTarget(backup)}
+                                                                    onClick={() =>
+                                                                        setDeleteTarget(
+                                                                            backup,
+                                                                        )
+                                                                    }
                                                                 >
                                                                     <Trash2 className="size-4" />
                                                                 </Button>
                                                             </>
                                                         )}
-                                                        {backup.status === 'failed' && (
+                                                        {backup.status ===
+                                                            'failed' && (
                                                             <Button
                                                                 variant="outline"
                                                                 size="sm"
-                                                                onClick={() => dismissFailed(backup)}
+                                                                onClick={() =>
+                                                                    dismissFailed(
+                                                                        backup,
+                                                                    )
+                                                                }
                                                             >
-                                                                {t('admin.backups.dismiss_button')}
+                                                                {t(
+                                                                    'admin.backups.dismiss_button',
+                                                                )}
                                                             </Button>
                                                         )}
                                                     </div>
@@ -498,7 +712,9 @@ export default function Backups({ backups, current_version, current_branch, filt
                                 </Table>
                             ) : (
                                 <p className="py-8 text-center text-muted-foreground">
-                                    {search ? t('admin.backups.empty_search') : t('admin.backups.empty')}
+                                    {search
+                                        ? t('admin.backups.empty_search')
+                                        : t('admin.backups.empty')}
                                 </p>
                             )}
 
@@ -506,7 +722,9 @@ export default function Backups({ backups, current_version, current_branch, filt
                             {backups && backups.total > 0 && (
                                 <div className="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <span>{t('admin.backups.rows_per_page')}</span>
+                                        <span>
+                                            {t('admin.backups.rows_per_page')}
+                                        </span>
                                         <Select
                                             value={String(backups.per_page)}
                                             onValueChange={changePerPage}
@@ -516,16 +734,37 @@ export default function Backups({ backups, current_version, current_branch, filt
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {PER_PAGE_OPTIONS.map((opt) => (
-                                                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                                    <SelectItem
+                                                        key={opt}
+                                                        value={opt}
+                                                    >
+                                                        {opt}
+                                                    </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
                                         <span>
-                                            {t('admin.backups.pagination_range', {
-                                                from: String((backups.current_page - 1) * backups.per_page + 1),
-                                                to: String(Math.min(backups.current_page * backups.per_page, backups.total)),
-                                                total: String(backups.total),
-                                            })}
+                                            {t(
+                                                'admin.backups.pagination_range',
+                                                {
+                                                    from: String(
+                                                        (backups.current_page -
+                                                            1) *
+                                                            backups.per_page +
+                                                            1,
+                                                    ),
+                                                    to: String(
+                                                        Math.min(
+                                                            backups.current_page *
+                                                                backups.per_page,
+                                                            backups.total,
+                                                        ),
+                                                    ),
+                                                    total: String(
+                                                        backups.total,
+                                                    ),
+                                                },
+                                            )}
                                         </span>
                                     </div>
                                     {backups.last_page > 1 && (
@@ -533,17 +772,34 @@ export default function Backups({ backups, current_version, current_branch, filt
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                disabled={backups.current_page <= 1}
-                                                onClick={() => goToPage(backups.current_page - 1)}
+                                                disabled={
+                                                    backups.current_page <= 1
+                                                }
+                                                onClick={() =>
+                                                    goToPage(
+                                                        backups.current_page -
+                                                            1,
+                                                    )
+                                                }
                                             >
                                                 <ChevronLeft className="size-4" />
                                             </Button>
-                                            {Array.from({ length: backups.last_page }, (_, i) => i + 1).map((page) => (
+                                            {Array.from(
+                                                { length: backups.last_page },
+                                                (_, i) => i + 1,
+                                            ).map((page) => (
                                                 <Button
                                                     key={page}
-                                                    variant={page === backups.current_page ? 'default' : 'outline'}
+                                                    variant={
+                                                        page ===
+                                                        backups.current_page
+                                                            ? 'default'
+                                                            : 'outline'
+                                                    }
                                                     size="sm"
-                                                    onClick={() => goToPage(page)}
+                                                    onClick={() =>
+                                                        goToPage(page)
+                                                    }
                                                 >
                                                     {page}
                                                 </Button>
@@ -551,8 +807,16 @@ export default function Backups({ backups, current_version, current_branch, filt
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                disabled={backups.current_page >= backups.last_page}
-                                                onClick={() => goToPage(backups.current_page + 1)}
+                                                disabled={
+                                                    backups.current_page >=
+                                                    backups.last_page
+                                                }
+                                                onClick={() =>
+                                                    goToPage(
+                                                        backups.current_page +
+                                                            1,
+                                                    )
+                                                }
                                             >
                                                 <ChevronRight className="size-4" />
                                             </Button>
@@ -569,46 +833,70 @@ export default function Backups({ backups, current_version, current_branch, filt
             <Dialog open={showCreate} onOpenChange={setShowCreate}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('admin.backups.create_dialog_title')}</DialogTitle>
+                        <DialogTitle>
+                            {t('admin.backups.create_dialog_title')}
+                        </DialogTitle>
                         <DialogDescription>
                             {t('admin.backups.create_dialog_description')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="backup-notes">{t('admin.backups.notes_label')}</Label>
+                            <Label htmlFor="backup-notes">
+                                {t('admin.backups.notes_label')}
+                            </Label>
                             <Input
                                 id="backup-notes"
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
-                                placeholder={t('admin.backups.notes_placeholder')}
+                                placeholder={t(
+                                    'admin.backups.notes_placeholder',
+                                )}
                             />
                         </div>
                         <div className="flex items-center gap-2">
                             <Checkbox
                                 id="notify-players"
                                 checked={notifyPlayers}
-                                onCheckedChange={(checked) => setNotifyPlayers(checked === true)}
+                                onCheckedChange={(checked) =>
+                                    setNotifyPlayers(checked === true)
+                                }
                             />
-                            <Label htmlFor="notify-players" className="cursor-pointer">
+                            <Label
+                                htmlFor="notify-players"
+                                className="cursor-pointer"
+                            >
                                 {t('admin.backups.notify_players')}
                             </Label>
                         </div>
                         {notifyPlayers && (
                             <div className="grid gap-2">
-                                <Label htmlFor="backup-message">{t('admin.backups.notification_message_label')}</Label>
+                                <Label htmlFor="backup-message">
+                                    {t(
+                                        'admin.backups.notification_message_label',
+                                    )}
+                                </Label>
                                 <Input
                                     id="backup-message"
                                     value={backupMessage}
-                                    onChange={(e) => setBackupMessage(e.target.value)}
-                                    placeholder={t('admin.backups.notification_message_placeholder')}
+                                    onChange={(e) =>
+                                        setBackupMessage(e.target.value)
+                                    }
+                                    placeholder={t(
+                                        'admin.backups.notification_message_placeholder',
+                                    )}
                                     maxLength={500}
                                 />
                             </div>
                         )}
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowCreate(false)}>{t('common.cancel')}</Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowCreate(false)}
+                        >
+                            {t('common.cancel')}
+                        </Button>
                         <Button disabled={loading} onClick={createBackup}>
                             {t('admin.backups.create_backup')}
                         </Button>
@@ -617,58 +905,108 @@ export default function Backups({ backups, current_version, current_branch, filt
             </Dialog>
 
             {/* Rollback Confirmation */}
-            <Dialog open={rollbackTarget !== null} onOpenChange={() => {
-                setRollbackTarget(null);
-                setRollbackCountdown('0');
-                setRollbackMessage('');
-                setSwitchBranch(false);
-            }}>
+            <Dialog
+                open={rollbackTarget !== null}
+                onOpenChange={() => {
+                    setRollbackTarget(null);
+                    setRollbackCountdown('0');
+                    setRollbackMessage('');
+                    setSwitchBranch(false);
+                }}
+            >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('admin.backups.rollback_dialog_title')}</DialogTitle>
+                        <DialogTitle>
+                            {t('admin.backups.rollback_dialog_title')}
+                        </DialogTitle>
                         <DialogDescription>
-                            {t('admin.backups.rollback_dialog_description', { filename: rollbackTarget?.filename ?? '' })}
+                            {t('admin.backups.rollback_dialog_description', {
+                                filename: rollbackTarget?.filename ?? '',
+                            })}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         {/* Version mismatch warning */}
-                        {rollbackTarget && current_version && rollbackTarget.game_version && rollbackTarget.game_version !== current_version && (
-                            <div className="flex items-start gap-2 rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
-                                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-                                <div>
-                                    <p className="font-medium">{t('admin.backups.version_mismatch_title')}</p>
-                                    <p>
-                                        {t('admin.backups.version_mismatch_description', {
-                                            backup_version: rollbackTarget.game_version ?? '',
-                                            backup_branch: rollbackTarget.steam_branch ?? '',
-                                            current_version: current_version ?? '',
-                                            current_branch: current_branch ?? '',
-                                        })}
-                                    </p>
-                                    {rollbackTarget.steam_branch && rollbackTarget.steam_branch !== current_branch && (
-                                        <div className="mt-2 flex items-center gap-2">
-                                            <Checkbox
-                                                id="switch-branch"
-                                                checked={switchBranch}
-                                                onCheckedChange={(checked) => setSwitchBranch(checked === true)}
-                                            />
-                                            <Label htmlFor="switch-branch" className="cursor-pointer text-sm">
-                                                {t('admin.backups.switch_branch_label', { branch: rollbackTarget.steam_branch ?? '' })}
-                                            </Label>
-                                        </div>
-                                    )}
+                        {rollbackTarget &&
+                            current_version &&
+                            rollbackTarget.game_version &&
+                            rollbackTarget.game_version !== current_version && (
+                                <div className="flex items-start gap-2 rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
+                                    <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                                    <div>
+                                        <p className="font-medium">
+                                            {t(
+                                                'admin.backups.version_mismatch_title',
+                                            )}
+                                        </p>
+                                        <p>
+                                            {t(
+                                                'admin.backups.version_mismatch_description',
+                                                {
+                                                    backup_version:
+                                                        rollbackTarget.game_version ??
+                                                        '',
+                                                    backup_branch:
+                                                        rollbackTarget.steam_branch ??
+                                                        '',
+                                                    current_version:
+                                                        current_version ?? '',
+                                                    current_branch:
+                                                        current_branch ?? '',
+                                                },
+                                            )}
+                                        </p>
+                                        {rollbackTarget.steam_branch &&
+                                            rollbackTarget.steam_branch !==
+                                                current_branch && (
+                                                <div className="mt-2 flex items-center gap-2">
+                                                    <Checkbox
+                                                        id="switch-branch"
+                                                        checked={switchBranch}
+                                                        onCheckedChange={(
+                                                            checked,
+                                                        ) =>
+                                                            setSwitchBranch(
+                                                                checked ===
+                                                                    true,
+                                                            )
+                                                        }
+                                                    />
+                                                    <Label
+                                                        htmlFor="switch-branch"
+                                                        className="cursor-pointer text-sm"
+                                                    >
+                                                        {t(
+                                                            'admin.backups.switch_branch_label',
+                                                            {
+                                                                branch:
+                                                                    rollbackTarget.steam_branch ??
+                                                                    '',
+                                                            },
+                                                        )}
+                                                    </Label>
+                                                </div>
+                                            )}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
                         <div className="grid gap-2">
-                            <Label htmlFor="rollback-countdown">{t('admin.backups.countdown_label')}</Label>
-                            <Select value={rollbackCountdown} onValueChange={setRollbackCountdown}>
+                            <Label htmlFor="rollback-countdown">
+                                {t('admin.backups.countdown_label')}
+                            </Label>
+                            <Select
+                                value={rollbackCountdown}
+                                onValueChange={setRollbackCountdown}
+                            >
                                 <SelectTrigger id="rollback-countdown">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {COUNTDOWN_OPTIONS.map((opt) => (
-                                        <SelectItem key={opt.value} value={opt.value}>
+                                        <SelectItem
+                                            key={opt.value}
+                                            value={opt.value}
+                                        >
                                             {opt.label}
                                         </SelectItem>
                                     ))}
@@ -677,49 +1015,78 @@ export default function Backups({ backups, current_version, current_branch, filt
                         </div>
                         {rollbackCountdown !== '0' && (
                             <div className="grid gap-2">
-                                <Label htmlFor="rollback-message">{t('admin.backups.warning_message_label')}</Label>
+                                <Label htmlFor="rollback-message">
+                                    {t('admin.backups.warning_message_label')}
+                                </Label>
                                 <Input
                                     id="rollback-message"
-                                    placeholder={t('admin.backups.warning_message_placeholder')}
+                                    placeholder={t(
+                                        'admin.backups.warning_message_placeholder',
+                                    )}
                                     value={rollbackMessage}
-                                    onChange={(e) => setRollbackMessage(e.target.value)}
+                                    onChange={(e) =>
+                                        setRollbackMessage(e.target.value)
+                                    }
                                     maxLength={500}
                                 />
                             </div>
                         )}
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => {
-                            setRollbackTarget(null);
-                            setRollbackCountdown('0');
-                            setRollbackMessage('');
-                        }}>{t('common.cancel')}</Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setRollbackTarget(null);
+                                setRollbackCountdown('0');
+                                setRollbackMessage('');
+                            }}
+                        >
+                            {t('common.cancel')}
+                        </Button>
                         <Button
                             variant="destructive"
                             disabled={loading}
-                            onClick={() => rollbackTarget && rollback(rollbackTarget)}
+                            onClick={() =>
+                                rollbackTarget && rollback(rollbackTarget)
+                            }
                         >
-                            {rollbackCountdown === '0' ? t('admin.backups.rollback_now') : t('admin.backups.schedule_rollback')}
+                            {rollbackCountdown === '0'
+                                ? t('admin.backups.rollback_now')
+                                : t('admin.backups.schedule_rollback')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
             {/* Delete Single Confirmation */}
-            <Dialog open={deleteTarget !== null} onOpenChange={() => setDeleteTarget(null)}>
+            <Dialog
+                open={deleteTarget !== null}
+                onOpenChange={() => setDeleteTarget(null)}
+            >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('admin.backups.delete_dialog_title')}</DialogTitle>
+                        <DialogTitle>
+                            {t('admin.backups.delete_dialog_title')}
+                        </DialogTitle>
                         <DialogDescription>
-                            {t('admin.backups.delete_dialog_description', { filename: deleteTarget?.filename ?? '' })}
+                            {t('admin.backups.delete_dialog_description', {
+                                filename: deleteTarget?.filename ?? '',
+                            })}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeleteTarget(null)}>{t('common.cancel')}</Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setDeleteTarget(null)}
+                        >
+                            {t('common.cancel')}
+                        </Button>
                         <Button
                             variant="destructive"
                             disabled={loading}
-                            onClick={() => deleteTarget && deleteBackup(deleteTarget)}
+                            onClick={() =>
+                                deleteTarget && deleteBackup(deleteTarget)
+                            }
                         >
                             {t('common.delete')}
                         </Button>
@@ -731,35 +1098,53 @@ export default function Backups({ backups, current_version, current_branch, filt
             <Dialog open={showBulkDelete} onOpenChange={setShowBulkDelete}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('admin.backups.bulk_delete_dialog_title', { count: String(selectedIds.size) })}</DialogTitle>
+                        <DialogTitle>
+                            {t('admin.backups.bulk_delete_dialog_title', {
+                                count: String(selectedIds.size),
+                            })}
+                        </DialogTitle>
                         <DialogDescription>
-                            {t('admin.backups.bulk_delete_dialog_description', { count: String(selectedIds.size) })}
+                            {t('admin.backups.bulk_delete_dialog_description', {
+                                count: String(selectedIds.size),
+                            })}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowBulkDelete(false)}>{t('common.cancel')}</Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowBulkDelete(false)}
+                        >
+                            {t('common.cancel')}
+                        </Button>
                         <Button
                             variant="destructive"
                             disabled={loading}
                             onClick={deleteBulk}
                         >
-                            {t('admin.backups.bulk_delete_confirm', { count: String(selectedIds.size) })}
+                            {t('admin.backups.bulk_delete_confirm', {
+                                count: String(selectedIds.size),
+                            })}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
             {/* Import World Dialog */}
-            <Dialog open={showImport} onOpenChange={(open) => {
-                setShowImport(open);
-                if (!open) {
-                    setImportFile(null);
-                    setImportConfirm(false);
-                    setShowImportHelp(false);
-                }
-            }}>
+            <Dialog
+                open={showImport}
+                onOpenChange={(open) => {
+                    setShowImport(open);
+                    if (!open) {
+                        setImportFile(null);
+                        setImportConfirm(false);
+                        setShowImportHelp(false);
+                    }
+                }}
+            >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('admin.backups.import_dialog_title')}</DialogTitle>
+                        <DialogTitle>
+                            {t('admin.backups.import_dialog_title')}
+                        </DialogTitle>
                         <DialogDescription>
                             {t('admin.backups.import_dialog_description')}
                         </DialogDescription>
@@ -768,53 +1153,98 @@ export default function Backups({ backups, current_version, current_branch, filt
                         <div className="flex items-start gap-2 rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
                             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                             <div className="space-y-1">
-                                <p className="font-medium">{t('admin.backups.import_warning_title')}</p>
-                                <p>{t('admin.backups.import_warning_description')}</p>
+                                <p className="font-medium">
+                                    {t('admin.backups.import_warning_title')}
+                                </p>
+                                <p>
+                                    {t(
+                                        'admin.backups.import_warning_description',
+                                    )}
+                                </p>
                                 {current_version && (
                                     <p>
-                                        {t('admin.backups.import_version_warning', { version: current_version })}
-                                        {current_branch && <> ({current_branch})</>}
+                                        {t(
+                                            'admin.backups.import_version_warning',
+                                            { version: current_version },
+                                        )}
+                                        {current_branch && (
+                                            <> ({current_branch})</>
+                                        )}
                                     </p>
                                 )}
                             </div>
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="import-file">{t('admin.backups.import_file_label')}</Label>
+                            <Label htmlFor="import-file">
+                                {t('admin.backups.import_file_label')}
+                            </Label>
                             <Input
                                 id="import-file"
                                 type="file"
                                 accept=".zip"
-                                onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+                                onChange={(e) =>
+                                    setImportFile(e.target.files?.[0] ?? null)
+                                }
                             />
                             {importFile && (
                                 <p className="text-xs text-muted-foreground">
-                                    {importFile.name} ({(importFile.size / 1024 / 1024).toFixed(1)} MB)
+                                    {importFile.name} (
+                                    {(importFile.size / 1024 / 1024).toFixed(1)}{' '}
+                                    MB)
                                 </p>
                             )}
                         </div>
                         <button
                             type="button"
-                            className="flex w-full items-center gap-2 rounded-md border p-2.5 text-left text-xs text-muted-foreground hover:bg-accent/50 transition-colors"
+                            className="flex w-full items-center gap-2 rounded-md border p-2.5 text-left text-xs text-muted-foreground transition-colors hover:bg-accent/50"
                             onClick={() => setShowImportHelp(!showImportHelp)}
                         >
                             <HelpCircle className="size-3.5 shrink-0" />
-                            <span className="flex-1 font-medium">{t('admin.backups.import_help_toggle')}</span>
-                            <ChevronDown className={`size-3.5 transition-transform ${showImportHelp ? 'rotate-180' : ''}`} />
+                            <span className="flex-1 font-medium">
+                                {t('admin.backups.import_help_toggle')}
+                            </span>
+                            <ChevronDown
+                                className={`size-3.5 transition-transform ${showImportHelp ? 'rotate-180' : ''}`}
+                            />
                         </button>
                         {showImportHelp && (
-                            <div className="rounded-md border p-3 text-xs text-muted-foreground space-y-2.5 max-h-[40vh] overflow-y-auto">
+                            <div className="max-h-[40vh] space-y-2.5 overflow-y-auto rounded-md border p-3 text-xs text-muted-foreground">
                                 <p>
-                                    On your existing PZ server, find the Zomboid data folder
-                                    (typically <code className="rounded bg-muted px-1">~/Zomboid/</code> on Linux
-                                    or <code className="rounded bg-muted px-1">C:\Users\YourName\Zomboid\</code> on Windows).
-                                    Zip the contents using one of these layouts:
+                                    On your existing PZ server, find the Zomboid
+                                    data folder (typically{' '}
+                                    <code className="rounded bg-muted px-1">
+                                        ~/Zomboid/
+                                    </code>{' '}
+                                    on Linux or{' '}
+                                    <code className="rounded bg-muted px-1">
+                                        C:\Users\YourName\Zomboid\
+                                    </code>{' '}
+                                    on Windows). Zip the contents using one of
+                                    these layouts:
                                 </p>
                                 <div className="space-y-2">
                                     <div>
-                                        <p className="font-medium text-foreground">Option 1: Full server (recommended)</p>
-                                        <p>Zip the <code className="rounded bg-muted px-1">Server/</code>, <code className="rounded bg-muted px-1">Saves/</code>, and <code className="rounded bg-muted px-1">db/</code> folders together. This imports config, world, and whitelist.</p>
+                                        <p className="font-medium text-foreground">
+                                            Option 1: Full server (recommended)
+                                        </p>
+                                        <p>
+                                            Zip the{' '}
+                                            <code className="rounded bg-muted px-1">
+                                                Server/
+                                            </code>
+                                            ,{' '}
+                                            <code className="rounded bg-muted px-1">
+                                                Saves/
+                                            </code>
+                                            , and{' '}
+                                            <code className="rounded bg-muted px-1">
+                                                db/
+                                            </code>{' '}
+                                            folders together. This imports
+                                            config, world, and whitelist.
+                                        </p>
                                         <pre className="mt-1 rounded bg-muted p-1.5 text-[11px] leading-relaxed">
-{`your-server.zip
+                                            {`your-server.zip
 ├── Server/
 │   ├── YourServer.ini
 │   └── YourServer_SandboxVars.lua
@@ -829,10 +1259,19 @@ export default function Backups({ backups, current_version, current_branch, filt
                                         </pre>
                                     </div>
                                     <div>
-                                        <p className="font-medium text-foreground">Option 2: World save only</p>
-                                        <p>Zip just the <code className="rounded bg-muted px-1">Saves/</code> folder. Config and whitelist stay unchanged.</p>
+                                        <p className="font-medium text-foreground">
+                                            Option 2: World save only
+                                        </p>
+                                        <p>
+                                            Zip just the{' '}
+                                            <code className="rounded bg-muted px-1">
+                                                Saves/
+                                            </code>{' '}
+                                            folder. Config and whitelist stay
+                                            unchanged.
+                                        </p>
                                         <pre className="mt-1 rounded bg-muted p-1.5 text-[11px] leading-relaxed">
-{`your-world.zip
+                                            {`your-world.zip
 └── Saves/
     └── Multiplayer/
         └── YourServer/
@@ -842,31 +1281,52 @@ export default function Backups({ backups, current_version, current_branch, filt
                                         </pre>
                                     </div>
                                     <div>
-                                        <p className="font-medium text-foreground">Option 3: Flat save files</p>
-                                        <p>Zip the contents of the save folder directly (map files, players.db at the root of the zip).</p>
+                                        <p className="font-medium text-foreground">
+                                            Option 3: Flat save files
+                                        </p>
+                                        <p>
+                                            Zip the contents of the save folder
+                                            directly (map files, players.db at
+                                            the root of the zip).
+                                        </p>
                                     </div>
                                 </div>
-                                <p>If the server name in the zip differs from the current server, it will be renamed automatically.</p>
+                                <p>
+                                    If the server name in the zip differs from
+                                    the current server, it will be renamed
+                                    automatically.
+                                </p>
                             </div>
                         )}
                         <div className="flex items-center gap-2">
                             <Checkbox
                                 id="import-confirm"
                                 checked={importConfirm}
-                                onCheckedChange={(checked) => setImportConfirm(checked === true)}
+                                onCheckedChange={(checked) =>
+                                    setImportConfirm(checked === true)
+                                }
                             />
-                            <Label htmlFor="import-confirm" className="cursor-pointer text-sm">
+                            <Label
+                                htmlFor="import-confirm"
+                                className="cursor-pointer text-sm"
+                            >
                                 {t('admin.backups.import_confirm_label')}
                             </Label>
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowImport(false)} disabled={importLoading}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowImport(false)}
+                            disabled={importLoading}
+                        >
                             {t('common.cancel')}
                         </Button>
                         <Button
                             variant="destructive"
-                            disabled={!importFile || !importConfirm || importLoading}
+                            disabled={
+                                !importFile || !importConfirm || importLoading
+                            }
                             onClick={importWorld}
                         >
                             {importLoading ? (

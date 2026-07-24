@@ -40,7 +40,9 @@ export default function Login({
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="username">{t('auth.username')}</Label>
+                                <Label htmlFor="username">
+                                    {t('auth.username')}
+                                </Label>
                                 <Input
                                     id="username"
                                     type="text"
@@ -56,7 +58,9 @@ export default function Login({
 
                             <div className="grid gap-2">
                                 <div className="flex items-center">
-                                    <Label htmlFor="password">{t('auth.password')}</Label>
+                                    <Label htmlFor="password">
+                                        {t('auth.password')}
+                                    </Label>
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}

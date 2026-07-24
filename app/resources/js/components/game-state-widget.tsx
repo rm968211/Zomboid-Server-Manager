@@ -15,10 +15,26 @@ import { useTranslation } from '@/hooks/use-translation';
 import type { GameState } from '@/types';
 
 const seasonConfig = {
-    spring: { icon: Flower2, labelKey: 'game_state.spring', color: 'text-green-500' },
-    summer: { icon: Sun, labelKey: 'game_state.summer', color: 'text-yellow-500' },
-    autumn: { icon: Leaf, labelKey: 'game_state.autumn', color: 'text-orange-500' },
-    winter: { icon: Snowflake, labelKey: 'game_state.winter', color: 'text-blue-400' },
+    spring: {
+        icon: Flower2,
+        labelKey: 'game_state.spring',
+        color: 'text-green-500',
+    },
+    summer: {
+        icon: Sun,
+        labelKey: 'game_state.summer',
+        color: 'text-yellow-500',
+    },
+    autumn: {
+        icon: Leaf,
+        labelKey: 'game_state.autumn',
+        color: 'text-orange-500',
+    },
+    winter: {
+        icon: Snowflake,
+        labelKey: 'game_state.winter',
+        color: 'text-blue-400',
+    },
 };
 
 const weatherIcons: Record<string, typeof Sun> = {
@@ -39,14 +55,20 @@ const weatherLabelKeys: Record<string, string> = {
     night: 'game_state.night',
 };
 
-export function GameStateWidget({ gameState }: { gameState: GameState | null }) {
+export function GameStateWidget({
+    gameState,
+}: {
+    gameState: GameState | null;
+}) {
     const { t } = useTranslation();
 
     if (!gameState) {
         return (
             <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-card px-4 py-3">
                 <TreeDeciduous className="size-5 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{t('game_state.unavailable')}</span>
+                <span className="text-sm text-muted-foreground">
+                    {t('game_state.unavailable')}
+                </span>
             </div>
         );
     }
@@ -54,12 +76,17 @@ export function GameStateWidget({ gameState }: { gameState: GameState | null }) 
     const { time, season, weather } = gameState;
     const SeasonIcon = seasonConfig[season]?.icon ?? Sun;
     const seasonColor = seasonConfig[season]?.color ?? 'text-muted-foreground';
-    const seasonLabel = seasonConfig[season] ? t(seasonConfig[season].labelKey) : season;
+    const seasonLabel = seasonConfig[season]
+        ? t(seasonConfig[season].labelKey)
+        : season;
 
-    const WeatherIcon = weather ? (weatherIcons[weather.condition] ?? Cloud) : Cloud;
-    const weatherLabel = weather && weatherLabelKeys[weather.condition]
-        ? t(weatherLabelKeys[weather.condition])
-        : weather?.condition.replace('_', ' ') ?? '';
+    const WeatherIcon = weather
+        ? (weatherIcons[weather.condition] ?? Cloud)
+        : Cloud;
+    const weatherLabel =
+        weather && weatherLabelKeys[weather.condition]
+            ? t(weatherLabelKeys[weather.condition])
+            : (weather?.condition.replace('_', ' ') ?? '');
 
     return (
         <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border/50 bg-card px-4 py-3">
@@ -71,7 +98,9 @@ export function GameStateWidget({ gameState }: { gameState: GameState | null }) 
                     <Sun className="size-4 text-yellow-500" />
                 )}
                 <div>
-                    <span className="font-semibold tabular-nums">{time.formatted}</span>
+                    <span className="font-semibold tabular-nums">
+                        {time.formatted}
+                    </span>
                     <span className="ml-1.5 text-sm text-muted-foreground">
                         {t('game_state.day', { day: String(time.day_of_year) })}
                     </span>

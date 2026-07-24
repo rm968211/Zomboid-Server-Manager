@@ -7,6 +7,7 @@ use App\Enums\TransactionSource;
 use App\Exceptions\InsufficientBalanceException;
 use App\Models\ShopDelivery;
 use App\Models\ShopPurchase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ShopDeliveryService
@@ -102,6 +103,10 @@ class ShopDeliveryService
                 ->first();
 
             if (! $delivery) {
+                continue;
+            }
+
+            if (in_array($delivery->status, [DeliveryStatus::Delivered, DeliveryStatus::Failed], true)) {
                 continue;
             }
 
@@ -226,22 +231,40 @@ class ShopDeliveryService
     private function finalizeVerifiedPurchase(ShopPurchase $purchase): void
     {
         try {
-            $wallet = $this->walletService->getOrCreateWallet($purchase->user);
+            DB::transaction(function () use ($purchase): void {
+                $lockedPurchase = ShopPurchase::query()
+                    ->with(['deliveries', 'user.wallet', 'purchasable'])
+                    ->lockForUpdate()
+                    ->findOrFail($purchase->id);
 
-            $itemName = $purchase->metadata['item_name']
-                ?? $purchase->purchasable?->name
-                ?? 'shop item';
+                if ($lockedPurchase->wallet_transaction_id !== null) {
+                    return;
+                }
 
-            $transaction = $this->walletService->debit(
-                $wallet,
-                (float) $purchase->total_price,
-                TransactionSource::Purchase,
-                "Purchased {$purchase->quantity_bought}x {$itemName}",
-            );
+                if (! $lockedPurchase->deliveries->every(
+                    fn ($delivery) => $delivery->status === DeliveryStatus::Delivered
+                )) {
+                    return;
+                }
 
-            $purchase->update([
-                'wallet_transaction_id' => $transaction->id,
-            ]);
+                $wallet = $this->walletService->getOrCreateWallet($lockedPurchase->user);
+                $itemName = $lockedPurchase->metadata['item_name']
+                    ?? $lockedPurchase->purchasable?->name
+                    ?? 'shop item';
+
+                $transaction = $this->walletService->debit(
+                    $wallet,
+                    (float) $lockedPurchase->total_price,
+                    TransactionSource::Purchase,
+                    "Purchased {$lockedPurchase->quantity_bought}x {$itemName}",
+                    ShopPurchase::class,
+                    $lockedPurchase->id,
+                );
+
+                $lockedPurchase->update([
+                    'wallet_transaction_id' => $transaction->id,
+                ]);
+            });
 
             Log::info("[ShopDelivery] Purchase {$purchase->id} finalized: debited {$purchase->total_price}");
         } catch (InsufficientBalanceException $e) {

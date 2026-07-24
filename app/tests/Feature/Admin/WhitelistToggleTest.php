@@ -163,12 +163,12 @@ describe('Whitelist toggle', function () {
             ->exists();
         expect($exists)->toBeTrue();
 
-        // Verify password is bcrypt-hashed in PZ SQLite
+        // Verify password uses PZ's bcrypt(md5(password)) scheme.
         $pzEntry = DB::connection('pz_sqlite')
             ->table('whitelist')
             ->where('username', 'toggle_add')
             ->first();
-        expect(str_starts_with($pzEntry->password, '$2y$'))->toBeTrue();
+        expect(password_verify(md5('secret123'), $pzEntry->password))->toBeTrue();
 
         // Verify in PostgreSQL
         expect(WhitelistEntry::where('pz_username', 'toggle_add')->where('active', true)->exists())->toBeTrue();

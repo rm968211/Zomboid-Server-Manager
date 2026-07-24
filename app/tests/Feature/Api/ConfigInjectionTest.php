@@ -12,7 +12,9 @@ function injectionApiKey(): array
 beforeEach(function () {
     config(['zomboid.api_key' => 'test-key-12345']);
 
-    $this->iniPath = tempnam(sys_get_temp_dir(), 'pz_ini_');
+    $this->dataPath = sys_get_temp_dir().'/pz_config_test_'.uniqid();
+    mkdir($this->dataPath.'/Server', 0755, true);
+    $this->iniPath = $this->dataPath.'/Server/ZomboidServer.ini';
     $this->luaPath = tempnam(sys_get_temp_dir(), 'pz_lua_');
     copy(base_path('tests/fixtures/server.ini'), $this->iniPath);
     copy(base_path('tests/fixtures/sandbox.lua'), $this->luaPath);
@@ -24,6 +26,10 @@ beforeEach(function () {
 afterEach(function () {
     @unlink($this->iniPath);
     @unlink($this->luaPath);
+    @unlink($this->dataPath.'/.config_state');
+    @unlink($this->dataPath.'/.config_state.lock');
+    @rmdir($this->dataPath.'/Server');
+    @rmdir($this->dataPath);
 });
 
 // ── Server Config (INI) Injection ──────────────────────────────────

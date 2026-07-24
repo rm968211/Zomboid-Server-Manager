@@ -131,7 +131,6 @@ describe('Game-first player instant login', function () {
         expect($entry->user_id)->toBe($user->id);
         expect($entry->active)->toBeTrue();
 
-
     });
 
     it('auto-creates web account from PZ SQLite with plain text password', function () {
@@ -150,7 +149,6 @@ describe('Game-first player instant login', function () {
         expect($user)->not->toBeNull();
         expect(Hash::check('plainpass', $user->password))->toBeTrue();
 
-
     });
 
     it('rejects wrong password and does not create account', function () {
@@ -164,7 +162,6 @@ describe('Game-first player instant login', function () {
         $this->assertGuest();
         expect(User::where('username', 'pz_user')->exists())->toBeFalse();
 
-
     });
 
     it('rejects login for username not in PZ SQLite', function () {
@@ -174,7 +171,6 @@ describe('Game-first player instant login', function () {
         ]);
 
         $this->assertGuest();
-
 
     });
 });
@@ -209,7 +205,6 @@ describe('Sync-created user login', function () {
         // Web password should now be fixed to standard Laravel hash
         $user->refresh();
         expect(Hash::check('gamepass', $user->password))->toBeTrue();
-
 
     });
 });
@@ -257,7 +252,6 @@ describe('Sync command fixes networkPlayers race condition', function () {
         expect($entry->user_id)->toBe($user->id);
         expect($entry->active)->toBeTrue();
 
-
     });
 
     it('does not duplicate WhitelistEntry if one already exists', function () {
@@ -277,7 +271,6 @@ describe('Sync command fixes networkPlayers race condition', function () {
             ->assertSuccessful();
 
         expect(WhitelistEntry::where('pz_username', 'linked_player')->count())->toBe(1);
-
 
     });
 });

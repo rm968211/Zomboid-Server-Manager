@@ -1,10 +1,16 @@
 import { Head } from '@inertiajs/react';
 import { ArrowDownLeft, ArrowUpRight, Coins, RotateCcw } from 'lucide-react';
-import { formatDateTime } from '@/lib/dates';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
+import { formatDateTime } from '@/lib/dates';
 import type { BreadcrumbItem } from '@/types';
 import type { WalletTransaction } from '@/types/server';
 
@@ -43,16 +49,24 @@ export default function MyWallet({ balance, transactions }: Props) {
             <Head title={t('wallet.title')} />
             <div className="mx-auto max-w-2xl space-y-6 p-4 lg:p-6">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">{t('wallet.title')}</h1>
-                    <p className="text-muted-foreground text-sm">{t('wallet.description')}</p>
+                    <h1 className="text-2xl font-bold tracking-tight">
+                        {t('wallet.title')}
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        {t('wallet.description')}
+                    </p>
                 </div>
 
                 {/* Balance card */}
                 <Card>
                     <CardContent className="flex flex-col items-center gap-2 py-8">
                         <Coins className="size-10 text-amber-500" />
-                        <span className="text-4xl font-bold tabular-nums">{Math.round(balance)}</span>
-                        <span className="text-muted-foreground text-sm">{t('wallet.current_balance')}</span>
+                        <span className="text-4xl font-bold tabular-nums">
+                            {Math.round(balance)}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                            {t('wallet.current_balance')}
+                        </span>
                     </CardContent>
                 </Card>
 
@@ -60,7 +74,9 @@ export default function MyWallet({ balance, transactions }: Props) {
                 <Card>
                     <CardHeader>
                         <CardTitle>{t('wallet.transaction_history')}</CardTitle>
-                        <CardDescription>{t('wallet.recent_transactions')}</CardDescription>
+                        <CardDescription>
+                            {t('wallet.recent_transactions')}
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {transactions.data.length > 0 ? (
@@ -74,39 +90,60 @@ export default function MyWallet({ balance, transactions }: Props) {
                                             <TransactionIcon type={tx.type} />
                                             <div>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-medium capitalize">{tx.type}</span>
-                                                    <Badge variant="outline" className="text-xs">
-                                                        {tx.source.replace('_', ' ')}
+                                                    <span className="text-sm font-medium capitalize">
+                                                        {tx.type}
+                                                    </span>
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="text-xs"
+                                                    >
+                                                        {tx.source.replace(
+                                                            '_',
+                                                            ' ',
+                                                        )}
                                                     </Badge>
                                                 </div>
                                                 {tx.description && (
-                                                    <p className="text-muted-foreground text-xs">{tx.description}</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {tx.description}
+                                                    </p>
                                                 )}
-                                                <p className="text-muted-foreground text-xs">
-                                                    {formatDateTime(tx.created_at)}
+                                                <p className="text-xs text-muted-foreground">
+                                                    {formatDateTime(
+                                                        tx.created_at,
+                                                    )}
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="text-right">
                                             <span
                                                 className={`text-sm font-semibold tabular-nums ${
-                                                    tx.type === 'credit' || tx.type === 'refund'
+                                                    tx.type === 'credit' ||
+                                                    tx.type === 'refund'
                                                         ? 'text-green-600'
                                                         : 'text-red-600'
                                                 }`}
                                             >
-                                                {tx.type === 'debit' ? '-' : '+'}
-                                                {Math.round(parseFloat(tx.amount))}
+                                                {tx.type === 'debit'
+                                                    ? '-'
+                                                    : '+'}
+                                                {Math.round(
+                                                    parseFloat(tx.amount),
+                                                )}
                                             </span>
-                                            <p className="text-muted-foreground text-xs tabular-nums">
-                                                {Math.round(parseFloat(tx.balance_after))}
+                                            <p className="text-xs text-muted-foreground tabular-nums">
+                                                {Math.round(
+                                                    parseFloat(
+                                                        tx.balance_after,
+                                                    ),
+                                                )}
                                             </p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-muted-foreground py-8 text-center text-sm">
+                            <p className="py-8 text-center text-sm text-muted-foreground">
                                 {t('wallet.no_transactions')}
                             </p>
                         )}

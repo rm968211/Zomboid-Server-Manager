@@ -22,7 +22,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TranslationController extends Controller
 {
-
     public function __construct(
         private readonly AuditLogger $auditLogger,
     ) {}
@@ -240,7 +239,7 @@ class TranslationController extends Controller
         $data = json_decode($contents, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            return response()->json(['message' => 'Invalid JSON: ' . json_last_error_msg()], 422);
+            return response()->json(['message' => 'Invalid JSON: '.json_last_error_msg()], 422);
         }
 
         if (! is_array($data)) {

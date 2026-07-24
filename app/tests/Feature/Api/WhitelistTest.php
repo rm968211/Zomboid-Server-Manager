@@ -87,6 +87,12 @@ it('adds a user to whitelist', function () {
         ->exists();
     expect($exists)->toBeTrue();
 
+    $hash = DB::connection('pz_sqlite')
+        ->table('whitelist')
+        ->where('username', 'newplayer')
+        ->value('password');
+    expect(password_verify(md5('secret123'), $hash))->toBeTrue();
+
     // Verify in PostgreSQL
     expect(WhitelistEntry::where('pz_username', 'newplayer')->where('active', true)->exists())->toBeTrue();
 

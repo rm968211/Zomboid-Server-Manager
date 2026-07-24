@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Actions\Fortify\CreateNewUser;
 use App\Models\WhitelistEntry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -81,6 +82,28 @@ class RegistrationTest extends TestCase
         $this->assertNotNull($entry->user_id);
         $this->assertNotNull($entry->pz_password_hash);
         $this->assertTrue(str_starts_with($entry->pz_password_hash, '$2'));
+    }
+
+    public function test_registration_does_not_create_a_web_account_when_pz_account_creation_fails()
+    {
+        config(['database.connections.pz_sqlite.database' => '/nonexistent/pz/whitelist.db']);
+        DB::purge('pz_sqlite');
+
+        $thrown = false;
+
+        try {
+            app(CreateNewUser::class)->create([
+                'username' => 'orphanedplayer',
+                'password' => 'secretpw',
+                'password_confirmation' => 'secretpw',
+            ]);
+        } catch (\Throwable) {
+            $thrown = true;
+        }
+
+        $this->assertTrue($thrown);
+        $this->assertDatabaseMissing('users', ['username' => 'orphanedplayer']);
+        $this->assertDatabaseMissing('whitelist_entries', ['pz_username' => 'orphanedplayer']);
     }
 
     public function test_registration_with_optional_email()

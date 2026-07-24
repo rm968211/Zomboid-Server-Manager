@@ -17,35 +17,41 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     ServerName: {
         type: 'string',
         group: 'General',
-        description: 'The name of the server as it appears in the server browser.',
+        description:
+            'The name of the server as it appears in the server browser.',
         default: 'servertest',
     },
     PublicName: {
         type: 'string',
         group: 'General',
-        description: 'Name of the server displayed in the in-game browser and, if applicable, the Steam browser.',
+        description:
+            'Name of the server displayed in the in-game browser and, if applicable, the Steam browser.',
     },
     PublicDescription: {
         type: 'string',
         group: 'General',
-        description: 'Description displayed in the in-game public server browser.',
+        description:
+            'Description displayed in the in-game public server browser.',
     },
     Public: {
         type: 'boolean',
         group: 'General',
-        description: 'Whether the server is visible in the public server browser. Steam-enabled servers are always visible in the Steam server browser.',
+        description:
+            'Whether the server is visible in the public server browser. Steam-enabled servers are always visible in the Steam server browser.',
         default: true,
     },
     Open: {
         type: 'boolean',
         group: 'General',
-        description: 'Allow new players to join. Set to false to only allow whitelisted players.',
+        description:
+            'Allow new players to join. Set to false to only allow whitelisted players.',
         default: true,
     },
     AutoCreateUserInWhiteList: {
         type: 'boolean',
         group: 'General',
-        description: 'Automatically store player credentials when they join. Required for web login sync.',
+        description:
+            'Automatically store player credentials when they join. Required for web login sync.',
         default: true,
     },
     PauseEmpty: {
@@ -57,7 +63,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     Password: {
         type: 'string',
         group: 'General',
-        description: 'Password required to join the server. Leave empty for no password.',
+        description:
+            'Password required to join the server. Leave empty for no password.',
         sensitive: true,
     },
     AdminPassword: {
@@ -69,25 +76,29 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     ServerWelcomeMessage: {
         type: 'string',
         group: 'General',
-        description: 'Welcome message shown in the chat panel after a player logs in. Supports <RGB:r,g,b> colours and <LINE> for line breaks.',
+        description:
+            'Welcome message shown in the chat panel after a player logs in. Supports <RGB:r,g,b> colours and <LINE> for line breaks.',
     },
     MaxAccountsPerUser: {
         type: 'number',
         group: 'General',
-        description: 'Limits the number of different accounts a single Steam user may create on this server (0 = unlimited).',
+        description:
+            'Limits the number of different accounts a single Steam user may create on this server (0 = unlimited).',
         default: 0,
         min: 0,
     },
     DropOffWhiteListAfterDeath: {
         type: 'boolean',
         group: 'General',
-        description: 'Remove player accounts from the whitelist after death. Prevents players creating a new character after death on Open=false servers.',
+        description:
+            'Remove player accounts from the whitelist after death. Prevents players creating a new character after death on Open=false servers.',
         default: false,
     },
     AllowNonAsciiUsername: {
         type: 'boolean',
         group: 'General',
-        description: 'Allow use of non-ASCII (cyrillic etc.) characters in usernames.',
+        description:
+            'Allow use of non-ASCII (cyrillic etc.) characters in usernames.',
         default: false,
     },
     AllowCoop: {
@@ -111,7 +122,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     LoginQueueConnectTimeout: {
         type: 'number',
         group: 'General',
-        description: 'Seconds a queued player has to connect before losing their place in the login queue.',
+        description:
+            'Seconds a queued player has to connect before losing their place in the login queue.',
         default: 60,
         min: 20,
         max: 1200,
@@ -151,18 +163,21 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     UPnP: {
         type: 'boolean',
         group: 'Network',
-        description: 'Attempt to configure a UPnP-enabled internet gateway to automatically set up port forwarding. Falls back to default ports if this fails.',
+        description:
+            'Attempt to configure a UPnP-enabled internet gateway to automatically set up port forwarding. Falls back to default ports if this fails.',
         default: true,
     },
     server_browser_announced_ip: {
         type: 'string',
         group: 'Network',
-        description: 'The IP from which the server is broadcast, for network configurations with multiple IP addresses.',
+        description:
+            'The IP from which the server is broadcast, for network configurations with multiple IP addresses.',
     },
     PingLimit: {
         type: 'number',
         group: 'Network',
-        description: 'Ping limit in milliseconds before a player is kicked (0 = disabled).',
+        description:
+            'Ping limit in milliseconds before a player is kicked (0 = disabled).',
         default: 0,
         min: 0,
     },
@@ -177,7 +192,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     MultiplayerStatisticsPeriod: {
         type: 'number',
         group: 'Network',
-        description: 'Multiplayer statistics update period in seconds (0 = statistics disabled).',
+        description:
+            'Multiplayer statistics update period in seconds (0 = statistics disabled).',
         default: 1,
         min: 0,
         max: 10,
@@ -185,7 +201,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     SwitchZombiesOwnershipEachUpdate: {
         type: 'boolean',
         group: 'Network',
-        description: 'Reassign zombie simulation ownership between clients on each update. Affects multiplayer zombie sync behavior.',
+        description:
+            'Reassign zombie simulation ownership between clients on each update. Affects multiplayer zombie sync behavior.',
         default: false,
     },
 
@@ -193,7 +210,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     MaxPlayers: {
         type: 'number',
         group: 'Players',
-        description: 'Maximum number of players allowed on the server, excluding admins. Counts above 32 may cause poor map streaming and desync.',
+        description:
+            'Maximum number of players allowed on the server, excluding admins. Counts above 32 may cause poor map streaming and desync.',
         default: 16,
         min: 1,
         max: 100,
@@ -213,7 +231,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     MouseOverToSeeDisplayName: {
         type: 'boolean',
         group: 'Players',
-        description: 'Players must mouse over someone to see their display name.',
+        description:
+            'Players must mouse over someone to see their display name.',
         default: true,
     },
     HidePlayersBehindYou: {
@@ -225,7 +244,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     UsernameDisguises: {
         type: 'boolean',
         group: 'Players',
-        description: 'Allow players to disguise their displayed username using the disguise system.',
+        description:
+            'Allow players to disguise their displayed username using the disguise system.',
         default: false,
     },
     HideDisguisedUserName: {
@@ -237,48 +257,56 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     SpawnPoint: {
         type: 'string',
         group: 'Players',
-        description: 'Force every new player to spawn at these x,y,z world coordinates (ignored when 0,0,0). Find coordinates at map.projectzomboid.com.',
+        description:
+            'Force every new player to spawn at these x,y,z world coordinates (ignored when 0,0,0). Find coordinates at map.projectzomboid.com.',
         default: '0,0,0',
     },
     SpawnItems: {
         type: 'string',
         group: 'Players',
-        description: 'Item types new players spawn with, comma-separated. Example: Base.Axe,Base.Bag_BigHikingBag',
+        description:
+            'Item types new players spawn with, comma-separated. Example: Base.Axe,Base.Bag_BigHikingBag',
     },
     PlayerRespawnWithSelf: {
         type: 'boolean',
         group: 'Players',
-        description: 'Players can respawn in-game at the coordinates where they died.',
+        description:
+            'Players can respawn in-game at the coordinates where they died.',
         default: false,
     },
     PlayerRespawnWithOther: {
         type: 'boolean',
         group: 'Players',
-        description: 'Players can respawn in-game at a split screen / Remote Play player\'s location.',
+        description:
+            "Players can respawn in-game at a split screen / Remote Play player's location.",
         default: false,
     },
     PlayerBumpPlayer: {
         type: 'boolean',
         group: 'Players',
-        description: 'Players bump (and knock over) other players when running through them.',
+        description:
+            'Players bump (and knock over) other players when running through them.',
         default: false,
     },
     SleepAllowed: {
         type: 'boolean',
         group: 'Players',
-        description: 'Players are allowed to sleep when tired, but do not need to sleep.',
+        description:
+            'Players are allowed to sleep when tired, but do not need to sleep.',
         default: false,
     },
     SleepNeeded: {
         type: 'boolean',
         group: 'Players',
-        description: 'Players get tired and need to sleep (ignored if SleepAllowed is false).',
+        description:
+            'Players get tired and need to sleep (ignored if SleepAllowed is false).',
         default: false,
     },
     KnockedDownAllowed: {
         type: 'boolean',
         group: 'Players',
-        description: 'WIP: allow players to be knocked down. May cause visual desynchronization of player positions.',
+        description:
+            'WIP: allow players to be knocked down. May cause visual desynchronization of player positions.',
         default: false,
     },
     SneakModeHideFromOtherPlayers: {
@@ -298,7 +326,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     UltraSpeedDoesnotAffectToAnimals: {
         type: 'boolean',
         group: 'Players',
-        description: 'Fast-forwarding time (ultra speed) does not speed up animals.',
+        description:
+            'Fast-forwarding time (ultra speed) does not speed up animals.',
         default: false,
     },
     MapRemotePlayerVisibility: {
@@ -354,19 +383,22 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     SafetySystem: {
         type: 'boolean',
         group: 'PVP',
-        description: 'Players can enter and leave PVP mode individually. A player can only hurt another when at least one of them is in PVP mode. When false, players can hurt each other any time if PVP is enabled.',
+        description:
+            'Players can enter and leave PVP mode individually. A player can only hurt another when at least one of them is in PVP mode. When false, players can hurt each other any time if PVP is enabled.',
         default: true,
     },
     ShowSafety: {
         type: 'boolean',
         group: 'PVP',
-        description: 'Display a skull icon over the head of players who have entered PVP mode.',
+        description:
+            'Display a skull icon over the head of players who have entered PVP mode.',
         default: true,
     },
     SafetyToggleTimer: {
         type: 'number',
         group: 'PVP',
-        description: 'The time it takes for a player to enter and leave PVP mode.',
+        description:
+            'The time it takes for a player to enter and leave PVP mode.',
         default: 2,
         min: 0,
         max: 1000,
@@ -374,7 +406,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     SafetyCooldownTimer: {
         type: 'number',
         group: 'PVP',
-        description: 'The delay before a player can enter or leave PVP mode again, having recently done so.',
+        description:
+            'The delay before a player can enter or leave PVP mode again, having recently done so.',
         default: 3,
         min: 0,
         max: 1000,
@@ -382,7 +415,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     SafetyDisconnectDelay: {
         type: 'number',
         group: 'PVP',
-        description: 'Delay in seconds applied when a player in PVP mode disconnects.',
+        description:
+            'Delay in seconds applied when a player in PVP mode disconnects.',
         default: 60,
         min: 0,
         max: 60,
@@ -390,7 +424,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     PVPMeleeWhileHitReaction: {
         type: 'boolean',
         group: 'PVP',
-        description: 'Players can hit again while reacting to being struck by another player.',
+        description:
+            'Players can hit again while reacting to being struck by another player.',
         default: false,
     },
     PVPMeleeDamageModifier: {
@@ -412,13 +447,15 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     UsePhysicsHitReaction: {
         type: 'boolean',
         group: 'PVP',
-        description: 'Use physics-based (ragdoll) hit reactions when players are hit.',
+        description:
+            'Use physics-based (ragdoll) hit reactions when players are hit.',
         default: false,
     },
     War: {
         type: 'boolean',
         group: 'PVP',
-        description: 'Enable the faction war system, allowing factions to declare war and raid safehouses.',
+        description:
+            'Enable the faction war system, allowing factions to declare war and raid safehouses.',
         default: false,
     },
     WarStartDelay: {
@@ -459,7 +496,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     SafehouseAllowTrepass: {
         type: 'boolean',
         group: 'Safehouses',
-        description: 'Allow non-members to enter a safehouse without being invited.',
+        description:
+            'Allow non-members to enter a safehouse without being invited.',
         default: true,
     },
     SafehouseAllowFire: {
@@ -477,27 +515,31 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     SafehouseAllowRespawn: {
         type: 'boolean',
         group: 'Safehouses',
-        description: 'Players will respawn in a safehouse they were a member of before they died.',
+        description:
+            'Players will respawn in a safehouse they were a member of before they died.',
         default: false,
     },
     SafehouseDaySurvivedToClaim: {
         type: 'number',
         group: 'Safehouses',
-        description: 'Players must have survived this number of in-game days before they can claim a safehouse.',
+        description:
+            'Players must have survived this number of in-game days before they can claim a safehouse.',
         default: 0,
         min: 0,
     },
     SafeHouseRemovalTime: {
         type: 'number',
         group: 'Safehouses',
-        description: 'Players are automatically removed from a safehouse they have not visited for this many real-world hours.',
+        description:
+            'Players are automatically removed from a safehouse they have not visited for this many real-world hours.',
         default: 144,
         min: 0,
     },
     SafehouseAllowNonResidential: {
         type: 'boolean',
         group: 'Safehouses',
-        description: 'Governs whether players can claim non-residential buildings.',
+        description:
+            'Governs whether players can claim non-residential buildings.',
         default: false,
     },
     SafehouseDisableDisguises: {
@@ -509,13 +551,15 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     SafehousePreventsLootRespawn: {
         type: 'boolean',
         group: 'Safehouses',
-        description: 'Items will not respawn in buildings that players have claimed as a safehouse.',
+        description:
+            'Items will not respawn in buildings that players have claimed as a safehouse.',
         default: true,
     },
     DisableSafehouseWhenOwnerConnected: {
         type: 'boolean',
         group: 'Safehouses',
-        description: 'Safehouse acts like a normal house if an owner is connected (only secure while the owner is offline).',
+        description:
+            'Safehouse acts like a normal house if an owner is connected (only secure while the owner is offline).',
         default: false,
     },
     MaxSafezoneSize: {
@@ -528,13 +572,15 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     AllowDestructionBySledgehammer: {
         type: 'boolean',
         group: 'Safehouses',
-        description: 'Allow players to destroy world objects with sledgehammers.',
+        description:
+            'Allow players to destroy world objects with sledgehammers.',
         default: true,
     },
     SledgehammerOnlyInSafehouse: {
         type: 'boolean',
         group: 'Safehouses',
-        description: 'Allow players to destroy world objects only in their safehouse (requires AllowDestructionBySledgehammer).',
+        description:
+            'Allow players to destroy world objects only in their safehouse (requires AllowDestructionBySledgehammer).',
         default: false,
     },
 
@@ -548,14 +594,16 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     FactionDaySurvivedToCreate: {
         type: 'number',
         group: 'Factions',
-        description: 'Players must survive this number of in-game days before being allowed to create a faction.',
+        description:
+            'Players must survive this number of in-game days before being allowed to create a faction.',
         default: 0,
         min: 0,
     },
     FactionPlayersRequiredForTag: {
         type: 'number',
         group: 'Factions',
-        description: 'Number of faction members required before the faction owner can create a group tag.',
+        description:
+            'Number of faction members required before the faction owner can create a group tag.',
         default: 1,
         min: 1,
     },
@@ -570,7 +618,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     ChatStreams: {
         type: 'string',
         group: 'Chat & Voice',
-        description: 'Comma-separated list of enabled chat streams: s (say), r (radio), a (admin), w (whisper), y (yell), sh (shout), f (faction), all (general).',
+        description:
+            'Comma-separated list of enabled chat streams: s (say), r (radio), a (admin), w (whisper), y (yell), sh (shout), f (faction), all (general).',
         default: 's,r,a,w,y,sh,f,all',
     },
     ChatMessageCharacterLimit: {
@@ -616,7 +665,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     VoiceMinDistance: {
         type: 'number',
         group: 'Chat & Voice',
-        description: 'The minimum tile distance over which VOIP sounds can be heard.',
+        description:
+            'The minimum tile distance over which VOIP sounds can be heard.',
         default: 10.0,
         min: 0,
         max: 100000,
@@ -624,7 +674,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     VoiceMaxDistance: {
         type: 'number',
         group: 'Chat & Voice',
-        description: 'The maximum tile distance over which VOIP sounds can be heard.',
+        description:
+            'The maximum tile distance over which VOIP sounds can be heard.',
         default: 100.0,
         min: 0,
         max: 100000,
@@ -638,12 +689,14 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     BadWordListFile: {
         type: 'string',
         group: 'Chat & Voice',
-        description: 'Path to a file with a list of prohibited words, one per line.',
+        description:
+            'Path to a file with a list of prohibited words, one per line.',
     },
     GoodWordListFile: {
         type: 'string',
         group: 'Chat & Voice',
-        description: 'Path to a file with words that should be allowed even if they contain a bad word, one per line.',
+        description:
+            'Path to a file with words that should be allowed even if they contain a bad word, one per line.',
     },
     BadWordPolicy: {
         type: 'enum',
@@ -668,31 +721,36 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     DisableRadioStaff: {
         type: 'boolean',
         group: 'Radio',
-        description: 'Disable radio transmissions from players with any access level.',
+        description:
+            'Disable radio transmissions from players with any access level.',
         default: false,
     },
     DisableRadioAdmin: {
         type: 'boolean',
         group: 'Radio',
-        description: "Disable radio transmissions from players with 'admin' access level.",
+        description:
+            "Disable radio transmissions from players with 'admin' access level.",
         default: true,
     },
     DisableRadioGM: {
         type: 'boolean',
         group: 'Radio',
-        description: "Disable radio transmissions from players with 'gm' access level.",
+        description:
+            "Disable radio transmissions from players with 'gm' access level.",
         default: true,
     },
     DisableRadioOverseer: {
         type: 'boolean',
         group: 'Radio',
-        description: "Disable radio transmissions from players with 'overseer' access level.",
+        description:
+            "Disable radio transmissions from players with 'overseer' access level.",
         default: false,
     },
     DisableRadioModerator: {
         type: 'boolean',
         group: 'Radio',
-        description: "Disable radio transmissions from players with 'moderator' access level.",
+        description:
+            "Disable radio transmissions from players with 'moderator' access level.",
         default: false,
     },
     DisableRadioInvisible: {
@@ -706,7 +764,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     DiscordEnable: {
         type: 'boolean',
         group: 'Discord',
-        description: 'Enable global text chat integration with a Discord channel.',
+        description:
+            'Enable global text chat integration with a Discord channel.',
         default: false,
     },
     DiscordToken: {
@@ -753,7 +812,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     ItemNumbersLimitPerContainer: {
         type: 'number',
         group: 'Gameplay',
-        description: 'Maximum number of items in a container (0 = no limit). Note: counts individual small items such as nails.',
+        description:
+            'Maximum number of items in a container (0 = no limit). Note: counts individual small items such as nails.',
         default: 0,
         min: 0,
         max: 9000,
@@ -761,7 +821,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     BloodSplatLifespanDays: {
         type: 'number',
         group: 'Gameplay',
-        description: 'Days before old blood splats are removed when map chunks load (0 = never).',
+        description:
+            'Days before old blood splats are removed when map chunks load (0 = never).',
         default: 0,
         min: 0,
         max: 365,
@@ -769,13 +830,15 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     RemovePlayerCorpsesOnCorpseRemoval: {
         type: 'boolean',
         group: 'Gameplay',
-        description: "Also remove players' corpses from the ground when HoursForCorpseRemoval triggers.",
+        description:
+            "Also remove players' corpses from the ground when HoursForCorpseRemoval triggers.",
         default: false,
     },
     CarEngineAttractionModifier: {
         type: 'number',
         group: 'Gameplay',
-        description: 'Modify the range of zombie attraction to cars. Lower values can help with lag.',
+        description:
+            'Modify the range of zombie attraction to cars. Lower values can help with lag.',
         default: 0.5,
         min: 0,
         max: 10,
@@ -817,7 +880,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     SaveWorldEveryMinutes: {
         type: 'number',
         group: 'Saves',
-        description: 'Loaded parts of the map are saved after this many real-world minutes (0 = only when clients leave a loaded area).',
+        description:
+            'Loaded parts of the map are saved after this many real-world minutes (0 = only when clients leave a loaded area).',
         default: 15,
         min: 0,
         max: 120,
@@ -825,14 +889,16 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     ResetID: {
         type: 'number',
         group: 'Saves',
-        description: 'Determines if the server has undergone a soft reset — if this number does not match the client, the client must create a new character. Back this ID up somewhere.',
+        description:
+            'Determines if the server has undergone a soft reset — if this number does not match the client, the client must create a new character. Back this ID up somewhere.',
         default: 0,
         min: 0,
     },
     ServerPlayerID: {
         type: 'number',
         group: 'Saves',
-        description: 'Determines if a character is from another server or single player. May change on soft resets; used with ResetID. Back this ID up somewhere.',
+        description:
+            'Determines if a character is from another server or single player. May change on soft resets; used with ResetID. Back this ID up somewhere.',
         min: 0,
     },
 
@@ -860,7 +926,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     BackupsPeriod: {
         type: 'number',
         group: 'Backups',
-        description: 'Minutes between periodic automatic backups (0 = disabled).',
+        description:
+            'Minutes between periodic automatic backups (0 = disabled).',
         default: 0,
         min: 0,
         max: 1500,
@@ -870,18 +937,21 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     PerkLogs: {
         type: 'boolean',
         group: 'Logging',
-        description: 'Track changes in player perk levels in the PerkLog.txt server log.',
+        description:
+            'Track changes in player perk levels in the PerkLog.txt server log.',
         default: true,
     },
     ClientCommandFilter: {
         type: 'string',
         group: 'Logging',
-        description: 'Semicolon-separated list of commands that will not be written to the cmd.txt server log. Prefix with - to exclude and + to include (e.g. -vehicle.*;+vehicle.installPart).',
+        description:
+            'Semicolon-separated list of commands that will not be written to the cmd.txt server log. Prefix with - to exclude and + to include (e.g. -vehicle.*;+vehicle.installPart).',
     },
     ClientActionLogs: {
         type: 'string',
         group: 'Logging',
-        description: 'Semicolon-separated list of actions written to the ClientActionLogs.txt server log.',
+        description:
+            'Semicolon-separated list of actions written to the ClientActionLogs.txt server log.',
     },
 
     // Security
@@ -920,7 +990,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     AntiCheatPermission: {
         type: 'number',
         group: 'Security',
-        description: 'Anti-cheat protection level for player permission checks.',
+        description:
+            'Anti-cheat protection level for player permission checks.',
     },
     AntiCheatXP: {
         type: 'number',
@@ -958,7 +1029,8 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     WorkshopItems: {
         type: 'list',
         group: 'Mods',
-        description: 'Steam Workshop item IDs for active mods. Managed on the Mods page.',
+        description:
+            'Steam Workshop item IDs for active mods. Managed on the Mods page.',
         readOnly: true,
     },
 
@@ -966,13 +1038,15 @@ export const SERVER_INI_META: Record<string, SettingMeta> = {
     Map: {
         type: 'string',
         group: 'Map',
-        description: 'Map name. PZ uses semicolons to separate multiple map entries.',
+        description:
+            'Map name. PZ uses semicolons to separate multiple map entries.',
         default: 'Muldraugh, KY',
     },
     Seed: {
         type: 'string',
         group: 'Map',
-        description: 'The worldgen seed used to generate the world. To change it, set a new value and delete map_worldgen.bin in the save directory.',
+        description:
+            'The worldgen seed used to generate the world. To change it, set a new value and delete map_worldgen.bin in the save directory.',
     },
 };
 
@@ -1041,7 +1115,7 @@ export const SANDBOX_META: Record<string, SettingMeta> = {
         options: [
             { value: '1', label: 'Blood + Saliva' },
             { value: '2', label: 'Saliva Only' },
-            { value: '3', label: 'Everyone\'s Infected' },
+            { value: '3', label: "Everyone's Infected" },
             { value: '4', label: 'None' },
         ],
     },
@@ -1305,7 +1379,8 @@ export const SANDBOX_META: Record<string, SettingMeta> = {
     ElecShut: {
         type: 'number',
         group: 'World',
-        description: 'Day when electricity shuts off (0 = instant, -1 = never).',
+        description:
+            'Day when electricity shuts off (0 = instant, -1 = never).',
         default: 14,
         min: -1,
         max: 365,
@@ -1434,8 +1509,14 @@ export function groupSettings(
     settings: Record<string, string>,
     meta: Record<string, SettingMeta>,
     groupOrder: string[],
-): { group: string; entries: { key: string; value: string; meta?: SettingMeta }[] }[] {
-    const groups = new Map<string, { key: string; value: string; meta?: SettingMeta }[]>();
+): {
+    group: string;
+    entries: { key: string; value: string; meta?: SettingMeta }[];
+}[] {
+    const groups = new Map<
+        string,
+        { key: string; value: string; meta?: SettingMeta }[]
+    >();
 
     // Initialize ordered groups
     for (const g of groupOrder) {
@@ -1452,7 +1533,10 @@ export function groupSettings(
     }
 
     // Return in order, filtering empty groups
-    const result: { group: string; entries: { key: string; value: string; meta?: SettingMeta }[] }[] = [];
+    const result: {
+        group: string;
+        entries: { key: string; value: string; meta?: SettingMeta }[];
+    }[] = [];
     for (const g of groupOrder) {
         const entries = groups.get(g);
         if (entries && entries.length > 0) {

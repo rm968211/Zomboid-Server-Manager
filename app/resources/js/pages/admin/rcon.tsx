@@ -1,13 +1,19 @@
 import { Head } from '@inertiajs/react';
 import { Send, Terminal } from 'lucide-react';
-import { formatTime } from '@/lib/dates';
 import { useEffect, useRef, useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/hooks/use-translation';
+import AppLayout from '@/layouts/app-layout';
+import { formatTime } from '@/lib/dates';
 import type { BreadcrumbItem } from '@/types';
 
 type HistoryEntry = {
@@ -31,7 +37,9 @@ export default function Rcon() {
     const outputRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+    const csrfToken =
+        document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+            ?.content ?? '';
 
     useEffect(() => {
         if (outputRef.current) {
@@ -40,7 +48,10 @@ export default function Rcon() {
     }, [history]);
 
     function addEntry(type: HistoryEntry['type'], text: string) {
-        setHistory((prev) => [...prev, { type, text, timestamp: formatTime() }]);
+        setHistory((prev) => [
+            ...prev,
+            { type, text, timestamp: formatTime() },
+        ]);
     }
 
     function executeCommand() {
@@ -55,7 +66,10 @@ export default function Rcon() {
 
         fetch('/admin/rcon', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
             body: JSON.stringify({ command: cmd }),
         })
             .then((r) => r.json())
@@ -63,7 +77,10 @@ export default function Rcon() {
                 if (data.error) {
                     addEntry('error', data.error);
                 } else {
-                    addEntry('response', data.response || t('common.no_output'));
+                    addEntry(
+                        'response',
+                        data.response || t('common.no_output'),
+                    );
                 }
             })
             .catch((err) => {
@@ -80,7 +97,10 @@ export default function Rcon() {
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             if (commandHistory.length > 0) {
-                const newIndex = Math.min(historyIndex + 1, commandHistory.length - 1);
+                const newIndex = Math.min(
+                    historyIndex + 1,
+                    commandHistory.length - 1,
+                );
                 setHistoryIndex(newIndex);
                 setCommand(commandHistory[newIndex]);
             }
@@ -102,7 +122,9 @@ export default function Rcon() {
             <Head title={t('admin.rcon.title')} />
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">{t('admin.rcon.title')}</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">
+                        {t('admin.rcon.title')}
+                    </h1>
                     <p className="text-muted-foreground">
                         {t('admin.rcon.description')}
                     </p>
@@ -122,7 +144,7 @@ export default function Rcon() {
                         {/* Output */}
                         <div
                             ref={outputRef}
-                            className="flex-1 overflow-auto rounded-t-lg bg-zinc-950 p-4 font-mono text-sm min-h-[400px]"
+                            className="min-h-[400px] flex-1 overflow-auto rounded-t-lg bg-zinc-950 p-4 font-mono text-sm"
                         >
                             {history.length === 0 ? (
                                 <p className="text-zinc-500">
@@ -131,21 +153,31 @@ export default function Rcon() {
                             ) : (
                                 history.map((entry, i) => (
                                     <div key={i} className="mb-1">
-                                        <span className="text-zinc-500 text-xs mr-2">[{entry.timestamp}]</span>
+                                        <span className="mr-2 text-xs text-zinc-500">
+                                            [{entry.timestamp}]
+                                        </span>
                                         {entry.type === 'command' && (
-                                            <span className="text-green-400">&gt; {entry.text}</span>
+                                            <span className="text-green-400">
+                                                &gt; {entry.text}
+                                            </span>
                                         )}
                                         {entry.type === 'response' && (
-                                            <span className="whitespace-pre-wrap text-zinc-300">{entry.text}</span>
+                                            <span className="whitespace-pre-wrap text-zinc-300">
+                                                {entry.text}
+                                            </span>
                                         )}
                                         {entry.type === 'error' && (
-                                            <span className="text-red-400">{entry.text}</span>
+                                            <span className="text-red-400">
+                                                {entry.text}
+                                            </span>
                                         )}
                                     </div>
                                 ))
                             )}
                             {loading && (
-                                <div className="text-zinc-500 animate-pulse">{t('admin.rcon.executing')}</div>
+                                <div className="animate-pulse text-zinc-500">
+                                    {t('admin.rcon.executing')}
+                                </div>
                             )}
                         </div>
 

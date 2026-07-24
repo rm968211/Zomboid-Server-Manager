@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\BackupType;
 use App\Enums\UserRole;
 use App\Jobs\CreateBackupJob;
 use App\Jobs\RollbackGameServer;

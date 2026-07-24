@@ -50,6 +50,29 @@ it('credits a wallet', function () {
         ->and((float) $wallet->fresh()->total_earned)->toBe(50.0);
 });
 
+it('credits an external reference only once', function () {
+    $wallet = Wallet::factory()->create(['balance' => 0, 'total_earned' => 0]);
+
+    $first = $this->walletService->creditOnce(
+        $wallet,
+        50.0,
+        TransactionSource::InGameDeposit,
+        'deposit',
+        'request-123',
+    );
+    $second = $this->walletService->creditOnce(
+        $wallet,
+        50.0,
+        TransactionSource::InGameDeposit,
+        'deposit',
+        'request-123',
+    );
+
+    expect($second->id)->toBe($first->id)
+        ->and((float) $wallet->fresh()->balance)->toBe(50.0)
+        ->and($wallet->transactions()->count())->toBe(1);
+});
+
 it('debits a wallet', function () {
     $wallet = Wallet::factory()->create(['balance' => 100, 'total_earned' => 100, 'total_spent' => 0]);
 

@@ -38,7 +38,14 @@ const statusDotColor: Record<PlayerMarker['status'], string> = {
     dead: 'fill-red-500 text-red-500',
 };
 
-const ZONE_COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899'];
+const ZONE_COLORS = [
+    '#3b82f6',
+    '#ef4444',
+    '#22c55e',
+    '#f59e0b',
+    '#8b5cf6',
+    '#ec4899',
+];
 
 export default function PlayerMap({
     markers,
@@ -53,11 +60,24 @@ export default function PlayerMap({
 }: Props) {
     const { t } = useTranslation();
     usePoll(5000, {
-        only: ['markers', 'onlineCount', 'serverStatus', 'hasTiles', 'usingLocalTiles', 'tilesGenerating', 'tileError', 'safeZones'],
+        only: [
+            'markers',
+            'onlineCount',
+            'serverStatus',
+            'hasTiles',
+            'usingLocalTiles',
+            'tilesGenerating',
+            'tileError',
+            'safeZones',
+        ],
     });
 
     const zoneOverlays: ZoneOverlay[] = useMemo(
-        () => safeZones.map((zone, i) => ({ ...zone, color: ZONE_COLORS[i % ZONE_COLORS.length] })),
+        () =>
+            safeZones.map((zone, i) => ({
+                ...zone,
+                color: ZONE_COLORS[i % ZONE_COLORS.length],
+            })),
         [safeZones],
     );
 
@@ -66,7 +86,10 @@ export default function PlayerMap({
     const [accessTarget, setAccessTarget] = useState<string | null>(null);
 
     const counts = useMemo(() => {
-        const online = Math.max(onlineCount, markers.filter((m) => m.status === 'online').length);
+        const online = Math.max(
+            onlineCount,
+            markers.filter((m) => m.status === 'online').length,
+        );
         const offline = markers.filter((m) => m.status === 'offline').length;
         const dead = markers.filter((m) => m.status === 'dead').length;
         return { online, offline, dead, total: markers.length };
@@ -101,24 +124,34 @@ export default function PlayerMap({
             <div className="flex flex-1 flex-col gap-4 p-4 lg:p-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">{t('admin.player_map.title')}</h1>
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            {t('admin.player_map.title')}
+                        </h1>
                         <p className="text-muted-foreground">
-                            {t('admin.player_map.players_tracked', { count: String(counts.total) })}
+                            {t('admin.player_map.players_tracked', {
+                                count: String(counts.total),
+                            })}
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline" className="text-sm">
                             <Circle className="mr-1.5 size-2 fill-green-500 text-green-500" />
-                            {t('admin.player_map.online_count', { count: String(counts.online) })}
+                            {t('admin.player_map.online_count', {
+                                count: String(counts.online),
+                            })}
                         </Badge>
                         <Badge variant="outline" className="text-sm">
                             <Circle className="mr-1.5 size-2 fill-muted text-muted" />
-                            {t('admin.player_map.offline_count', { count: String(counts.offline) })}
+                            {t('admin.player_map.offline_count', {
+                                count: String(counts.offline),
+                            })}
                         </Badge>
                         {counts.dead > 0 && (
                             <Badge variant="outline" className="text-sm">
                                 <Circle className="mr-1.5 size-2 fill-red-500 text-red-500" />
-                                {t('admin.player_map.dead_count', { count: String(counts.dead) })}
+                                {t('admin.player_map.dead_count', {
+                                    count: String(counts.dead),
+                                })}
                             </Badge>
                         )}
                     </div>
@@ -148,7 +181,9 @@ export default function PlayerMap({
                                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
                                     <div className="h-full w-full animate-pulse rounded-full bg-primary/30" />
                                 </div>
-                                <p className="text-muted-foreground mt-1 text-xs">{t('admin.player_map.preparing_render')}</p>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    {t('admin.player_map.preparing_render')}
+                                </p>
                             </div>
                         )}
                         {!usingLocalTiles && !tilesGenerating && tileError && (
@@ -157,17 +192,24 @@ export default function PlayerMap({
                                     <AlertTriangle className="size-4 shrink-0" />
                                     {t('admin.player_map.tile_error')}
                                 </div>
-                                <pre className="text-muted-foreground mt-1.5 max-h-24 overflow-auto rounded bg-muted/50 p-1.5 font-mono text-[11px] whitespace-pre-wrap">
+                                <pre className="mt-1.5 max-h-24 overflow-auto rounded bg-muted/50 p-1.5 font-mono text-[11px] whitespace-pre-wrap text-muted-foreground">
                                     {tileError}
                                 </pre>
-                                <p className="text-muted-foreground mt-1.5 text-xs">
-                                    {t('admin.player_map.tile_error_hint')} <code className="font-mono">{t('admin.player_map.no_tiles_command')}</code>
+                                <p className="mt-1.5 text-xs text-muted-foreground">
+                                    {t('admin.player_map.tile_error_hint')}{' '}
+                                    <code className="font-mono">
+                                        {t('admin.player_map.no_tiles_command')}
+                                    </code>
                                 </p>
                             </div>
                         )}
                         {!usingLocalTiles && !tilesGenerating && !tileError && (
-                            <div className="bg-muted/80 text-muted-foreground absolute top-2 left-1/2 z-[1000] -translate-x-1/2 rounded-md px-3 py-1.5 text-xs backdrop-blur-sm">
-                                {t('admin.player_map.no_tiles')} <code className="font-mono">{t('admin.player_map.no_tiles_command')}</code> {t('admin.player_map.no_tiles_suffix')}
+                            <div className="absolute top-2 left-1/2 z-[1000] -translate-x-1/2 rounded-md bg-muted/80 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur-sm">
+                                {t('admin.player_map.no_tiles')}{' '}
+                                <code className="font-mono">
+                                    {t('admin.player_map.no_tiles_command')}
+                                </code>{' '}
+                                {t('admin.player_map.no_tiles_suffix')}
                             </div>
                         )}
                         <PzMap
@@ -184,7 +226,9 @@ export default function PlayerMap({
                 {markers.length > 0 && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>{t('admin.player_map.player_positions')}</CardTitle>
+                            <CardTitle>
+                                {t('admin.player_map.player_positions')}
+                            </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -194,11 +238,16 @@ export default function PlayerMap({
                                         className="flex items-center justify-between rounded-lg border border-border/50 px-3 py-2"
                                     >
                                         <div className="flex items-center gap-2">
-                                            <Circle className={`size-2 ${statusDotColor[marker.status]}`} />
-                                            <span className="text-sm font-medium">{marker.name}</span>
+                                            <Circle
+                                                className={`size-2 ${statusDotColor[marker.status]}`}
+                                            />
+                                            <span className="text-sm font-medium">
+                                                {marker.name}
+                                            </span>
                                         </div>
                                         <span className="font-mono text-xs text-muted-foreground">
-                                            {marker.x.toFixed(0)}, {marker.y.toFixed(0)}
+                                            {marker.x.toFixed(0)},{' '}
+                                            {marker.y.toFixed(0)}
                                         </span>
                                     </div>
                                 ))}

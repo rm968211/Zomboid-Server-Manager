@@ -4,6 +4,7 @@ use App\Models\AuditLog;
 use App\Models\Backup;
 use App\Models\User;
 use App\Services\BackupManager;
+use App\Services\ConfigStateManager;
 use App\Services\ModManager;
 use App\Services\OnlinePlayersReader;
 use App\Services\PlayerPositionReader;
@@ -82,6 +83,10 @@ function mockAdminIniParser(array $config = []): void
     $parser->shouldReceive('write')->byDefault();
 
     app()->instance(ServerIniParser::class, $parser);
+
+    $state = Mockery::mock(ConfigStateManager::class);
+    $state->shouldReceive('persistSettings')->byDefault();
+    app()->instance(ConfigStateManager::class, $state);
 }
 
 function mockAdminLuaParser(array $config = []): void
@@ -107,6 +112,14 @@ function mockAdminWhitelist(array $entries = []): void
 function mockAdminBackupManager(): void
 {
     $bm = Mockery::mock(BackupManager::class);
+    $bm->shouldReceive('startBackupRecord')->andReturnUsing(fn () => Backup::create([
+        'filename' => 'pending-backup.tar.gz',
+        'path' => '/backups/pending-backup.tar.gz',
+        'size_bytes' => 0,
+        'type' => 'manual',
+        'status' => 'in_progress',
+        'created_at' => now(),
+    ]))->byDefault();
     $bm->shouldReceive('createBackup')->andReturn([
         'backup' => Backup::create([
             'filename' => 'test-backup.tar.gz',

@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
 import { useInView } from 'motion/react';
+import { useEffect, useRef, useState } from 'react';
 
 interface AnimatedCounterProps {
     value: number;
@@ -42,17 +42,21 @@ export function AnimatedCounter({
         requestAnimationFrame(animate);
     }, [isInView, value, duration]);
 
-    const formatted = decimals > 0
-        ? displayValue.toFixed(decimals)
-        : Math.round(displayValue).toString();
+    const formatted =
+        decimals > 0
+            ? displayValue.toFixed(decimals)
+            : Math.round(displayValue).toString();
 
     const display = format
-        ? Number(formatted).toLocaleString(undefined, { maximumFractionDigits: decimals })
+        ? Number(formatted).toLocaleString(undefined, {
+              maximumFractionDigits: decimals,
+          })
         : formatted;
 
     return (
         <span ref={ref}>
-            {display}{suffix}
+            {display}
+            {suffix}
         </span>
     );
 }

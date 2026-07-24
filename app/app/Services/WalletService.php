@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\DeliveryStatus;
 use App\Enums\TransactionSource;
 use App\Enums\TransactionType;
 use App\Exceptions\InsufficientBalanceException;
-use App\Enums\DeliveryStatus;
 use App\Models\ShopPurchase;
 use App\Models\User;
 use App\Models\Wallet;
@@ -41,6 +41,50 @@ class WalletService
     ): WalletTransaction {
         return DB::transaction(function () use ($wallet, $amount, $source, $description, $referenceType, $referenceId, $metadata) {
             $wallet = Wallet::query()->lockForUpdate()->find($wallet->id);
+
+            $wallet->balance = (float) $wallet->balance + $amount;
+            $wallet->total_earned = (float) $wallet->total_earned + $amount;
+            $wallet->save();
+
+            return $wallet->transactions()->create([
+                'type' => TransactionType::Credit,
+                'amount' => $amount,
+                'balance_after' => $wallet->balance,
+                'source' => $source,
+                'reference_type' => $referenceType,
+                'reference_id' => $referenceId,
+                'description' => $description,
+                'metadata' => $metadata,
+            ]);
+        });
+    }
+
+    /**
+     * Credit a wallet once for an external reference.
+     *
+     * The wallet row lock serializes concurrent processors for the same user,
+     * and the reference is checked again while that lock is held.
+     */
+    public function creditOnce(
+        Wallet $wallet,
+        float $amount,
+        TransactionSource $source,
+        string $referenceType,
+        string $referenceId,
+        ?string $description = null,
+        ?array $metadata = null,
+    ): WalletTransaction {
+        return DB::transaction(function () use ($wallet, $amount, $source, $referenceType, $referenceId, $description, $metadata) {
+            $wallet = Wallet::query()->lockForUpdate()->findOrFail($wallet->id);
+
+            $existing = $wallet->transactions()
+                ->where('reference_type', $referenceType)
+                ->where('reference_id', $referenceId)
+                ->first();
+
+            if ($existing) {
+                return $existing;
+            }
 
             $wallet->balance = (float) $wallet->balance + $amount;
             $wallet->total_earned = (float) $wallet->total_earned + $amount;

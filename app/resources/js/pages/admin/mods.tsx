@@ -1,14 +1,46 @@
-import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors  } from '@dnd-kit/core';
-import type {DragEndEvent} from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import {
+    closestCenter,
+    DndContext,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Head, router } from '@inertiajs/react';
-import { AlertTriangle, CheckCircle2, Clock, FileUp, GripVertical, Loader2, Package, Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
+import {
+    AlertTriangle,
+    CheckCircle2,
+    Clock,
+    FileUp,
+    GripVertical,
+    Loader2,
+    Package,
+    Pencil,
+    Plus,
+    RotateCcw,
+    Search,
+    Trash2,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -26,7 +58,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
@@ -46,9 +85,20 @@ type LookupResult = {
 type LookupState =
     | { status: 'idle' }
     | { status: 'loading' }
-    | { status: 'success'; title: string; previewUrl: string | null; modIds: string[]; mapFolders: string[] }
+    | {
+          status: 'success';
+          title: string;
+          previewUrl: string | null;
+          modIds: string[];
+          mapFolders: string[];
+      }
     | { status: 'not_found' }
-    | { status: 'no_mod_ids'; title: string; previewUrl: string | null; mapFolders: string[] }
+    | {
+          status: 'no_mod_ids';
+          title: string;
+          previewUrl: string | null;
+          mapFolders: string[];
+      }
     | { status: 'error' };
 
 function StatusBadge({ status }: { status: ModEntry['status'] }) {
@@ -81,7 +131,11 @@ function StatusBadge({ status }: { status: ModEntry['status'] }) {
     }
 
     return (
-        <Badge variant="outline" className="gap-1 text-muted-foreground" data-testid="mod-status-stopped">
+        <Badge
+            variant="outline"
+            className="gap-1 text-muted-foreground"
+            data-testid="mod-status-stopped"
+        >
             {t('admin.mods.status_stopped')}
         </Badge>
     );
@@ -101,7 +155,14 @@ function SortableModRow({
     isProtected: boolean;
 }) {
     const { t } = useTranslation();
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({
         id: mod.workshop_id,
         disabled: isDragDisabled,
     });
@@ -113,20 +174,26 @@ function SortableModRow({
     };
 
     return (
-        <TableRow ref={setNodeRef} style={style} className={isDragging ? 'bg-muted' : undefined}>
+        <TableRow
+            ref={setNodeRef}
+            style={style}
+            className={isDragging ? 'bg-muted' : undefined}
+        >
             <TableCell className="w-[50px]">
                 {!isDragDisabled ? (
                     <button
                         type="button"
                         aria-label={`Reorder ${mod.mod_id}`}
-                        className="cursor-grab touch-none text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        className="cursor-grab touch-none text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                         {...attributes}
                         {...listeners}
                     >
                         <GripVertical className="size-4" />
                     </button>
                 ) : (
-                    <span className="font-mono text-xs text-muted-foreground">{index + 1}</span>
+                    <span className="font-mono text-xs text-muted-foreground">
+                        {index + 1}
+                    </span>
                 )}
             </TableCell>
             <TableCell className="font-medium">
@@ -175,7 +242,10 @@ export default function Mods({
     serverRunning?: boolean;
 }) {
     const { t } = useTranslation();
-    const protectedSet = useMemo(() => new Set(protectedWorkshopIds), [protectedWorkshopIds]);
+    const protectedSet = useMemo(
+        () => new Set(protectedWorkshopIds),
+        [protectedWorkshopIds],
+    );
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: t('nav.dashboard'), href: '/dashboard' },
@@ -195,12 +265,20 @@ export default function Mods({
     const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lookupAbort = useRef<AbortController | null>(null);
 
-    const existingWorkshopIds = useMemo(() => new Set(mods.map((m) => m.workshop_id).filter(Boolean)), [mods]);
-    const existingModIds = useMemo(() => new Set(mods.map((m) => m.mod_id).filter(Boolean)), [mods]);
+    const existingWorkshopIds = useMemo(
+        () => new Set(mods.map((m) => m.workshop_id).filter(Boolean)),
+        [mods],
+    );
+    const existingModIds = useMemo(
+        () => new Set(mods.map((m) => m.mod_id).filter(Boolean)),
+        [mods],
+    );
 
     const [showBulk, setShowBulk] = useState(false);
     const [bulkText, setBulkText] = useState('');
-    const [bulkPhase, setBulkPhase] = useState<'input' | 'resolving' | 'ready'>('input');
+    const [bulkPhase, setBulkPhase] = useState<'input' | 'resolving' | 'ready'>(
+        'input',
+    );
     const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
     const [bulkWorkshopIds, setBulkWorkshopIds] = useState<string[]>([]);
     const [bulkModIds, setBulkModIds] = useState<string[]>([]);
@@ -212,8 +290,11 @@ export default function Mods({
     const isFiltering = search.length > 0;
 
     const bulkNewMods = bulkModIds.filter((m) => !existingModIds.has(m)).length;
-    const bulkNewWorkshop = bulkWorkshopIds.filter((w) => !existingWorkshopIds.has(w)).length;
-    const bulkHasSomething = bulkModIds.length > 0 || bulkWorkshopIds.length > 0;
+    const bulkNewWorkshop = bulkWorkshopIds.filter(
+        (w) => !existingWorkshopIds.has(w),
+    ).length;
+    const bulkHasSomething =
+        bulkModIds.length > 0 || bulkWorkshopIds.length > 0;
 
     function openBulk() {
         bulkCancelled.current = false;
@@ -263,7 +344,11 @@ export default function Mods({
             const json = (await fetchAction('/admin/mods/lookup', {
                 data: { workshop_id: id },
                 silent: true,
-            })) as { found?: boolean; mod_ids?: string[]; map_folders?: string[] } | null;
+            })) as {
+                found?: boolean;
+                mod_ids?: string[];
+                map_folders?: string[];
+            } | null;
 
             const ids = json?.mod_ids ?? [];
             if (json && json.found !== false && ids.length > 0) {
@@ -303,7 +388,9 @@ export default function Mods({
         setImporting(false);
         if (result) {
             closeBulk();
-            router.reload({ only: ['mods', 'pendingRestart', 'serverRunning'] });
+            router.reload({
+                only: ['mods', 'pendingRestart', 'serverRunning'],
+            });
         }
     }
 
@@ -399,20 +486,30 @@ export default function Mods({
     const filteredMods = useMemo(() => {
         if (!search) return orderedMods;
         const q = search.toLowerCase();
-        return orderedMods.filter((m) => m.mod_id.toLowerCase().includes(q) || m.workshop_id.toLowerCase().includes(q));
+        return orderedMods.filter(
+            (m) =>
+                m.mod_id.toLowerCase().includes(q) ||
+                m.workshop_id.toLowerCase().includes(q),
+        );
     }, [orderedMods, search]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        }),
     );
 
     async function handleDragEnd(event: DragEndEvent) {
         const { active, over } = event;
         if (!over || active.id === over.id) return;
 
-        const oldIndex = orderedMods.findIndex((m) => m.workshop_id === active.id);
-        const newIndex = orderedMods.findIndex((m) => m.workshop_id === over.id);
+        const oldIndex = orderedMods.findIndex(
+            (m) => m.workshop_id === active.id,
+        );
+        const newIndex = orderedMods.findIndex(
+            (m) => m.workshop_id === over.id,
+        );
         const reordered = arrayMove(orderedMods, oldIndex, newIndex);
 
         setOrderedMods(reordered);
@@ -420,7 +517,10 @@ export default function Mods({
         await fetchAction('/admin/mods/order', {
             method: 'PUT',
             data: {
-                mods: reordered.map((m) => ({ workshop_id: m.workshop_id, mod_id: m.mod_id })),
+                mods: reordered.map((m) => ({
+                    workshop_id: m.workshop_id,
+                    mod_id: m.mod_id,
+                })),
             },
             successMessage: t('admin.mods.toast_order_updated'),
         });
@@ -447,7 +547,11 @@ export default function Mods({
     async function addMod() {
         setLoading(true);
         await fetchAction('/admin/mods', {
-            data: { workshop_id: workshopId, mod_id: modId, map_folder: mapFolder || null },
+            data: {
+                workshop_id: workshopId,
+                mod_id: modId,
+                map_folder: mapFolder || null,
+            },
             successMessage: t('admin.mods.toast_added', { mod_id: modId }),
         });
         setLoading(false);
@@ -459,7 +563,9 @@ export default function Mods({
         setLoading(true);
         await fetchAction(`/admin/mods/${mod.workshop_id}`, {
             method: 'DELETE',
-            successMessage: t('admin.mods.toast_removed', { mod_id: mod.mod_id }),
+            successMessage: t('admin.mods.toast_removed', {
+                mod_id: mod.mod_id,
+            }),
         });
         setLoading(false);
         setDeleteTarget(null);
@@ -472,13 +578,21 @@ export default function Mods({
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">{t('admin.mods.title')}</h1>
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            {t('admin.mods.title')}
+                        </h1>
                         <p className="text-muted-foreground">
-                            {t('admin.mods.mods_installed', { count: String(mods.length) })}
+                            {t('admin.mods.mods_installed', {
+                                count: String(mods.length),
+                            })}
                         </p>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" onClick={openBulk} data-testid="bulk-import-button">
+                        <Button
+                            variant="outline"
+                            onClick={openBulk}
+                            data-testid="bulk-import-button"
+                        >
                             <FileUp className="mr-1.5 size-4" />
                             {t('admin.mods.bulk_import')}
                         </Button>
@@ -498,13 +612,23 @@ export default function Mods({
                                     {t('admin.mods.installed_mods')}
                                 </CardTitle>
                                 <CardDescription>
-                                    {t('admin.mods.installed_mods_description', { filtered: String(filteredMods.length), total: String(mods.length) })}
+                                    {t(
+                                        'admin.mods.installed_mods_description',
+                                        {
+                                            filtered: String(
+                                                filteredMods.length,
+                                            ),
+                                            total: String(mods.length),
+                                        },
+                                    )}
                                 </CardDescription>
                             </div>
                             <div className="relative">
-                                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                                <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
                                 <Input
-                                    placeholder={t('admin.mods.search_placeholder')}
+                                    placeholder={t(
+                                        'admin.mods.search_placeholder',
+                                    )}
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="pl-9 sm:w-[200px]"
@@ -520,7 +644,9 @@ export default function Mods({
                             >
                                 <AlertTriangle className="size-4" />
                                 <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <span>{t('admin.mods.pending_restart_banner')}</span>
+                                    <span>
+                                        {t('admin.mods.pending_restart_banner')}
+                                    </span>
                                     <Button
                                         size="sm"
                                         variant="outline"
@@ -528,26 +654,48 @@ export default function Mods({
                                         onClick={restartServer}
                                         data-testid="restart-server-button"
                                     >
-                                        <RotateCcw className={`mr-1.5 size-4 ${restarting ? 'animate-spin' : ''}`} />
-                                        {restarting ? t('admin.mods.restarting') : t('admin.mods.restart_now')}
+                                        <RotateCcw
+                                            className={`mr-1.5 size-4 ${restarting ? 'animate-spin' : ''}`}
+                                        />
+                                        {restarting
+                                            ? t('admin.mods.restarting')
+                                            : t('admin.mods.restart_now')}
                                     </Button>
                                 </AlertDescription>
                             </Alert>
                         )}
                         {filteredMods.length > 0 ? (
-                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={handleDragEnd}
+                            >
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="w-[50px]">{isFiltering ? '#' : ''}</TableHead>
-                                            <TableHead>{t('admin.mods.table_mod_id')}</TableHead>
-                                            <TableHead className="hidden sm:table-cell">{t('admin.mods.table_workshop_id')}</TableHead>
-                                            <TableHead>{t('admin.mods.table_status')}</TableHead>
-                                            <TableHead className="text-right">{t('common.actions')}</TableHead>
+                                            <TableHead className="w-[50px]">
+                                                {isFiltering ? '#' : ''}
+                                            </TableHead>
+                                            <TableHead>
+                                                {t('admin.mods.table_mod_id')}
+                                            </TableHead>
+                                            <TableHead className="hidden sm:table-cell">
+                                                {t(
+                                                    'admin.mods.table_workshop_id',
+                                                )}
+                                            </TableHead>
+                                            <TableHead>
+                                                {t('admin.mods.table_status')}
+                                            </TableHead>
+                                            <TableHead className="text-right">
+                                                {t('common.actions')}
+                                            </TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <SortableContext
-                                        items={filteredMods.map((m) => m.workshop_id)}
+                                        items={filteredMods.map(
+                                            (m) => m.workshop_id,
+                                        )}
                                         strategy={verticalListSortingStrategy}
                                     >
                                         <TableBody>
@@ -558,7 +706,9 @@ export default function Mods({
                                                     index={index}
                                                     onDelete={setDeleteTarget}
                                                     isDragDisabled={isFiltering}
-                                                    isProtected={protectedSet.has(mod.workshop_id)}
+                                                    isProtected={protectedSet.has(
+                                                        mod.workshop_id,
+                                                    )}
                                                 />
                                             ))}
                                         </TableBody>
@@ -567,7 +717,9 @@ export default function Mods({
                             </DndContext>
                         ) : (
                             <p className="py-8 text-center text-muted-foreground">
-                                {search ? t('admin.mods.no_mods_search') : t('admin.mods.no_mods')}
+                                {search
+                                    ? t('admin.mods.no_mods_search')
+                                    : t('admin.mods.no_mods')}
                             </p>
                         )}
                     </CardContent>
@@ -575,31 +727,45 @@ export default function Mods({
             </div>
 
             {/* Add Mod Dialog */}
-            <Dialog open={showAdd} onOpenChange={(open) => (open ? setShowAdd(true) : closeAddDialog())}>
+            <Dialog
+                open={showAdd}
+                onOpenChange={(open) =>
+                    open ? setShowAdd(true) : closeAddDialog()
+                }
+            >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('admin.mods.add_dialog_title')}</DialogTitle>
+                        <DialogTitle>
+                            {t('admin.mods.add_dialog_title')}
+                        </DialogTitle>
                         <DialogDescription>
                             {t('admin.mods.add_dialog_description')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="workshop-id">{t('admin.mods.table_workshop_id')}</Label>
+                            <Label htmlFor="workshop-id">
+                                {t('admin.mods.table_workshop_id')}
+                            </Label>
                             <div className="relative">
                                 <Input
                                     id="workshop-id"
                                     inputMode="numeric"
                                     value={workshopId}
-                                    onChange={(e) => setWorkshopId(e.target.value)}
-                                    placeholder={t('admin.mods.workshop_id_placeholder')}
+                                    onChange={(e) =>
+                                        setWorkshopId(e.target.value)
+                                    }
+                                    placeholder={t(
+                                        'admin.mods.workshop_id_placeholder',
+                                    )}
                                     data-testid="workshop-id-input"
                                 />
                                 {lookup.status === 'loading' && (
-                                    <Loader2 className="absolute right-2.5 top-2.5 size-4 animate-spin text-muted-foreground" />
+                                    <Loader2 className="absolute top-2.5 right-2.5 size-4 animate-spin text-muted-foreground" />
                                 )}
                             </div>
-                            {(lookup.status === 'success' || lookup.status === 'no_mod_ids') && (
+                            {(lookup.status === 'success' ||
+                                lookup.status === 'no_mod_ids') && (
                                 <div
                                     className="flex items-center gap-3 rounded-md border bg-muted/30 p-2"
                                     data-testid="workshop-preview"
@@ -635,24 +801,34 @@ export default function Mods({
 
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <Label htmlFor="mod-id">{t('admin.mods.table_mod_id')}</Label>
-                                {lookup.status === 'success' && !manualOverride && (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-auto px-2 py-0.5 text-xs"
-                                        onClick={() => setManualOverride(true)}
-                                        data-testid="mod-id-edit-manually"
-                                    >
-                                        <Pencil className="mr-1 size-3" />
-                                        {t('admin.mods.edit_manually')}
-                                    </Button>
-                                )}
+                                <Label htmlFor="mod-id">
+                                    {t('admin.mods.table_mod_id')}
+                                </Label>
+                                {lookup.status === 'success' &&
+                                    !manualOverride && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-auto px-2 py-0.5 text-xs"
+                                            onClick={() =>
+                                                setManualOverride(true)
+                                            }
+                                            data-testid="mod-id-edit-manually"
+                                        >
+                                            <Pencil className="mr-1 size-3" />
+                                            {t('admin.mods.edit_manually')}
+                                        </Button>
+                                    )}
                             </div>
-                            {lookup.status === 'success' && lookup.modIds.length > 1 && !manualOverride ? (
+                            {lookup.status === 'success' &&
+                            lookup.modIds.length > 1 &&
+                            !manualOverride ? (
                                 <Select value={modId} onValueChange={setModId}>
-                                    <SelectTrigger id="mod-id" data-testid="mod-id-select">
+                                    <SelectTrigger
+                                        id="mod-id"
+                                        data-testid="mod-id-select"
+                                    >
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -668,10 +844,13 @@ export default function Mods({
                                     id="mod-id"
                                     value={modId}
                                     onChange={(e) => setModId(e.target.value)}
-                                    placeholder={t('admin.mods.mod_id_placeholder')}
+                                    placeholder={t(
+                                        'admin.mods.mod_id_placeholder',
+                                    )}
                                     disabled={
                                         lookup.status === 'loading' ||
-                                        (lookup.status === 'success' && !manualOverride)
+                                        (lookup.status === 'success' &&
+                                            !manualOverride)
                                     }
                                     data-testid="mod-id-input"
                                 />
@@ -684,14 +863,24 @@ export default function Mods({
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="map-folder">{t('admin.mods.map_folder_label')}</Label>
-                            {lookup.status === 'success' && lookup.mapFolders.length > 1 ? (
-                                <Select value={mapFolder || '__none__'} onValueChange={(v) => setMapFolder(v === '__none__' ? '' : v)}>
+                            <Label htmlFor="map-folder">
+                                {t('admin.mods.map_folder_label')}
+                            </Label>
+                            {lookup.status === 'success' &&
+                            lookup.mapFolders.length > 1 ? (
+                                <Select
+                                    value={mapFolder || '__none__'}
+                                    onValueChange={(v) =>
+                                        setMapFolder(v === '__none__' ? '' : v)
+                                    }
+                                >
                                     <SelectTrigger id="map-folder">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="__none__">{t('admin.mods.map_folder_none')}</SelectItem>
+                                        <SelectItem value="__none__">
+                                            {t('admin.mods.map_folder_none')}
+                                        </SelectItem>
                                         {lookup.mapFolders.map((f) => (
                                             <SelectItem key={f} value={f}>
                                                 {f}
@@ -703,15 +892,29 @@ export default function Mods({
                                 <Input
                                     id="map-folder"
                                     value={mapFolder}
-                                    onChange={(e) => setMapFolder(e.target.value)}
-                                    placeholder={t('admin.mods.map_folder_placeholder')}
+                                    onChange={(e) =>
+                                        setMapFolder(e.target.value)
+                                    }
+                                    placeholder={t(
+                                        'admin.mods.map_folder_placeholder',
+                                    )}
                                 />
                             )}
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={closeAddDialog}>{t('common.cancel')}</Button>
-                        <Button disabled={loading || !workshopId || !modId || lookup.status === 'loading'} onClick={addMod}>
+                        <Button variant="outline" onClick={closeAddDialog}>
+                            {t('common.cancel')}
+                        </Button>
+                        <Button
+                            disabled={
+                                loading ||
+                                !workshopId ||
+                                !modId ||
+                                lookup.status === 'loading'
+                            }
+                            onClick={addMod}
+                        >
                             {t('admin.mods.add_mod')}
                         </Button>
                     </DialogFooter>
@@ -719,11 +922,20 @@ export default function Mods({
             </Dialog>
 
             {/* Bulk Import Dialog */}
-            <Dialog open={showBulk} onOpenChange={(open) => (open ? setShowBulk(true) : closeBulk())}>
+            <Dialog
+                open={showBulk}
+                onOpenChange={(open) =>
+                    open ? setShowBulk(true) : closeBulk()
+                }
+            >
                 <DialogContent className="max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>{t('admin.mods.bulk_dialog_title')}</DialogTitle>
-                        <DialogDescription>{t('admin.mods.bulk_dialog_description')}</DialogDescription>
+                        <DialogTitle>
+                            {t('admin.mods.bulk_dialog_title')}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {t('admin.mods.bulk_dialog_description')}
+                        </DialogDescription>
                     </DialogHeader>
 
                     {bulkPhase === 'input' && (
@@ -736,7 +948,9 @@ export default function Mods({
                                 className="font-mono text-xs"
                                 data-testid="bulk-import-textarea"
                             />
-                            <p className="text-xs text-muted-foreground">{t('admin.mods.bulk_hint')}</p>
+                            <p className="text-xs text-muted-foreground">
+                                {t('admin.mods.bulk_hint')}
+                            </p>
                         </div>
                     )}
 
@@ -763,22 +977,39 @@ export default function Mods({
                     {bulkPhase === 'ready' && (
                         <div className="space-y-3">
                             <div className="grid grid-cols-3 gap-2 text-center">
-                                <div className="rounded-md border p-2" data-testid="bulk-new-mods">
-                                    <div className="text-lg font-semibold text-emerald-600">{bulkNewMods}</div>
-                                    <div className="text-xs text-muted-foreground">{t('admin.mods.bulk_new_mods')}</div>
+                                <div
+                                    className="rounded-md border p-2"
+                                    data-testid="bulk-new-mods"
+                                >
+                                    <div className="text-lg font-semibold text-emerald-600">
+                                        {bulkNewMods}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {t('admin.mods.bulk_new_mods')}
+                                    </div>
                                 </div>
                                 <div className="rounded-md border p-2">
-                                    <div className="text-lg font-semibold">{bulkNewWorkshop}</div>
-                                    <div className="text-xs text-muted-foreground">{t('admin.mods.bulk_new_workshop')}</div>
+                                    <div className="text-lg font-semibold">
+                                        {bulkNewWorkshop}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {t('admin.mods.bulk_new_workshop')}
+                                    </div>
                                 </div>
                                 <div className="rounded-md border p-2">
-                                    <div className="text-lg font-semibold text-amber-600">{bulkUnresolved.length}</div>
-                                    <div className="text-xs text-muted-foreground">{t('admin.mods.bulk_unresolved')}</div>
+                                    <div className="text-lg font-semibold text-amber-600">
+                                        {bulkUnresolved.length}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {t('admin.mods.bulk_unresolved')}
+                                    </div>
                                 </div>
                             </div>
                             {bulkMapFolders.length > 0 && (
                                 <p className="text-xs text-muted-foreground">
-                                    {t('admin.mods.bulk_maps', { count: String(bulkMapFolders.length) })}
+                                    {t('admin.mods.bulk_maps', {
+                                        count: String(bulkMapFolders.length),
+                                    })}
                                 </p>
                             )}
                             {bulkUnresolved.length > 0 && (
@@ -786,14 +1017,16 @@ export default function Mods({
                                     <AlertTriangle className="size-4" />
                                     <AlertDescription className="text-xs">
                                         {t('admin.mods.bulk_unresolved_hint')}
-                                        <span className="mt-1 block break-all font-mono">
+                                        <span className="mt-1 block font-mono break-all">
                                             {bulkUnresolved.join('; ')}
                                         </span>
                                     </AlertDescription>
                                 </Alert>
                             )}
                             {!bulkHasSomething && (
-                                <p className="text-sm text-muted-foreground">{t('admin.mods.bulk_nothing')}</p>
+                                <p className="text-sm text-muted-foreground">
+                                    {t('admin.mods.bulk_nothing')}
+                                </p>
                             )}
                         </div>
                     )}
@@ -820,7 +1053,10 @@ export default function Mods({
                         )}
                         {bulkPhase === 'ready' && (
                             <>
-                                <Button variant="outline" onClick={() => setBulkPhase('input')}>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setBulkPhase('input')}
+                                >
                                     {t('admin.mods.bulk_back')}
                                 </Button>
                                 <Button
@@ -831,7 +1067,10 @@ export default function Mods({
                                     {importing
                                         ? t('admin.mods.bulk_importing')
                                         : t('admin.mods.bulk_do_import', {
-                                              count: String(bulkModIds.length || bulkWorkshopIds.length),
+                                              count: String(
+                                                  bulkModIds.length ||
+                                                      bulkWorkshopIds.length,
+                                              ),
                                           })}
                                 </Button>
                             </>
@@ -841,20 +1080,35 @@ export default function Mods({
             </Dialog>
 
             {/* Delete Confirmation Dialog */}
-            <Dialog open={deleteTarget !== null} onOpenChange={() => setDeleteTarget(null)}>
+            <Dialog
+                open={deleteTarget !== null}
+                onOpenChange={() => setDeleteTarget(null)}
+            >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('admin.mods.delete_dialog_title')}</DialogTitle>
+                        <DialogTitle>
+                            {t('admin.mods.delete_dialog_title')}
+                        </DialogTitle>
                         <DialogDescription>
-                            {t('admin.mods.delete_dialog_description', { mod_id: deleteTarget?.mod_id ?? '', workshop_id: deleteTarget?.workshop_id ?? '' })}
+                            {t('admin.mods.delete_dialog_description', {
+                                mod_id: deleteTarget?.mod_id ?? '',
+                                workshop_id: deleteTarget?.workshop_id ?? '',
+                            })}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeleteTarget(null)}>{t('common.cancel')}</Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setDeleteTarget(null)}
+                        >
+                            {t('common.cancel')}
+                        </Button>
                         <Button
                             variant="destructive"
                             disabled={loading}
-                            onClick={() => deleteTarget && removeMod(deleteTarget)}
+                            onClick={() =>
+                                deleteTarget && removeMod(deleteTarget)
+                            }
                         >
                             {t('admin.mods.delete_dialog_title')}
                         </Button>

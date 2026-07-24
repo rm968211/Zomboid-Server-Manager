@@ -38,7 +38,7 @@ class WhitelistManager
             return false;
         }
 
-        $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+        $hashedPassword = PzAccountAuthenticator::hashForPz($password);
 
         $this->insertToSqlite($username, $hashedPassword);
 

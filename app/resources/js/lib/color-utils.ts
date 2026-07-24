@@ -42,7 +42,11 @@ function srgbToLinear(c: number): number {
     return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
 }
 
-function linearRgbToOklab(r: number, g: number, b: number): [number, number, number] {
+function linearRgbToOklab(
+    r: number,
+    g: number,
+    b: number,
+): [number, number, number] {
     const l_ = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b;
     const m_ = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b;
     const s_ = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b;

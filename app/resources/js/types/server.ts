@@ -59,7 +59,13 @@ export type BackupEntry = {
     filename: string;
     size_bytes: number;
     size_human: string;
-    type: 'manual' | 'scheduled' | 'daily' | 'pre_rollback' | 'pre_update' | 'pre_import';
+    type:
+        | 'manual'
+        | 'scheduled'
+        | 'daily'
+        | 'pre_rollback'
+        | 'pre_update'
+        | 'pre_import';
     game_version: string | null;
     steam_branch: string | null;
     notes: string | null;
@@ -116,7 +122,13 @@ export type Leaderboard = {
 
 export type GameEventEntry = {
     id: number;
-    event_type: 'death' | 'pvp_hit' | 'pvp_kill' | 'craft' | 'connect' | 'disconnect';
+    event_type:
+        | 'death'
+        | 'pvp_hit'
+        | 'pvp_kill'
+        | 'craft'
+        | 'connect'
+        | 'disconnect';
     player: string;
     target: string | null;
     details: Record<string, unknown> | null;
@@ -421,7 +433,14 @@ export type WalletTransaction = {
     type: 'credit' | 'debit' | 'refund';
     amount: string;
     balance_after: string;
-    source: 'admin_award' | 'purchase' | 'refund' | 'system' | 'payment' | 'in_game_deposit' | 'admin_reset';
+    source:
+        | 'admin_award'
+        | 'purchase'
+        | 'refund'
+        | 'system'
+        | 'payment'
+        | 'in_game_deposit'
+        | 'admin_reset';
     description: string | null;
     created_at: string;
 };
@@ -435,7 +454,12 @@ export type ShopPurchase = {
     quantity_bought: number;
     total_price: string;
     discount_amount: string;
-    delivery_status: 'pending' | 'queued' | 'delivered' | 'partially_delivered' | 'failed';
+    delivery_status:
+        | 'pending'
+        | 'queued'
+        | 'delivered'
+        | 'partially_delivered'
+        | 'failed';
     delivered_at: string | null;
     metadata: Record<string, unknown> | null;
     deliveries?: ShopDelivery[];
@@ -458,7 +482,12 @@ export type ShopDelivery = {
 
 export type PurchaseStatusResponse = {
     purchase_id: string;
-    delivery_status: 'pending' | 'queued' | 'delivered' | 'partially_delivered' | 'failed';
+    delivery_status:
+        | 'pending'
+        | 'queued'
+        | 'delivered'
+        | 'partially_delivered'
+        | 'failed';
     is_complete: boolean;
     is_debited: boolean;
     total_price: number;

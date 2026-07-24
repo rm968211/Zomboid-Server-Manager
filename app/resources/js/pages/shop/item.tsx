@@ -75,7 +75,11 @@ export default function ShopItemDetail({ item, bundle, balance }: Props) {
         <PublicLayout>
             <Head title={name} />
             <div className="mx-auto max-w-2xl space-y-6 p-4 lg:p-6">
-                <Button variant="ghost" size="sm" onClick={() => router.visit('/shop')}>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => router.visit('/shop')}
+                >
                     <ArrowLeft className="mr-1.5 size-4" />
                     {t('shop.back_to_shop')}
                 </Button>
@@ -87,7 +91,9 @@ export default function ShopItemDetail({ item, bundle, balance }: Props) {
                             {balance !== null && (
                                 <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
                                     <Coins className="size-4 text-amber-500" />
-                                    <span className="font-bold tabular-nums">{Math.round(balance)}</span>
+                                    <span className="font-bold tabular-nums">
+                                        {Math.round(balance)}
+                                    </span>
                                 </div>
                             )}
                         </div>
@@ -97,33 +103,61 @@ export default function ShopItemDetail({ item, bundle, balance }: Props) {
                             <>
                                 <div className="flex items-center gap-4">
                                     <img
-                                        src={item.icon || '/images/items/placeholder.svg'}
+                                        src={
+                                            item.icon ||
+                                            '/images/items/placeholder.svg'
+                                        }
                                         alt={item.name}
                                         width={64}
                                         height={64}
                                         className="rounded object-contain"
                                     />
                                     <div>
-                                        <p className="text-muted-foreground text-sm">{item.item_type}</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {item.item_type}
+                                        </p>
                                         <div className="flex items-center gap-1.5">
                                             <Coins className="size-4 text-amber-500" />
-                                            <span className="text-2xl font-bold tabular-nums">{Math.round(price)}</span>
+                                            <span className="text-2xl font-bold tabular-nums">
+                                                {Math.round(price)}
+                                            </span>
                                         </div>
                                         {item.quantity > 1 && (
-                                            <p className="text-muted-foreground text-sm">x{item.quantity} items per purchase</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                x{item.quantity} items per
+                                                purchase
+                                            </p>
                                         )}
                                     </div>
                                 </div>
-                                {item.description && <p className="text-muted-foreground">{item.description}</p>}
+                                {item.description && (
+                                    <p className="text-muted-foreground">
+                                        {item.description}
+                                    </p>
+                                )}
                                 <div className="flex flex-wrap gap-2">
-                                    {item.category && <Badge variant="outline">{item.category.name}</Badge>}
+                                    {item.category && (
+                                        <Badge variant="outline">
+                                            {item.category.name}
+                                        </Badge>
+                                    )}
                                     {item.stock !== null && (
-                                        <Badge variant={item.stock > 0 ? 'secondary' : 'destructive'}>
-                                            {item.stock > 0 ? `${item.stock} in stock` : 'Out of stock'}
+                                        <Badge
+                                            variant={
+                                                item.stock > 0
+                                                    ? 'secondary'
+                                                    : 'destructive'
+                                            }
+                                        >
+                                            {item.stock > 0
+                                                ? `${item.stock} in stock`
+                                                : 'Out of stock'}
                                         </Badge>
                                     )}
                                     {item.max_per_player && (
-                                        <Badge variant="outline">Max {item.max_per_player} per player</Badge>
+                                        <Badge variant="outline">
+                                            Max {item.max_per_player} per player
+                                        </Badge>
                                     )}
                                 </div>
                             </>
@@ -131,24 +165,43 @@ export default function ShopItemDetail({ item, bundle, balance }: Props) {
 
                         {bundle && (
                             <>
-                                {bundle.description && <p className="text-muted-foreground">{bundle.description}</p>}
+                                {bundle.description && (
+                                    <p className="text-muted-foreground">
+                                        {bundle.description}
+                                    </p>
+                                )}
                                 <div className="flex items-center gap-1.5">
                                     <Coins className="size-4 text-amber-500" />
-                                    <span className="text-2xl font-bold tabular-nums">{Math.round(price)}</span>
+                                    <span className="text-2xl font-bold tabular-nums">
+                                        {Math.round(price)}
+                                    </span>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Bundle includes:</Label>
                                     {bundle.items.map((bi) => (
-                                        <div key={bi.id} className="flex items-center gap-2 rounded-md bg-muted px-3 py-2">
+                                        <div
+                                            key={bi.id}
+                                            className="flex items-center gap-2 rounded-md bg-muted px-3 py-2"
+                                        >
                                             <img
-                                                src={bi.icon || '/images/items/placeholder.svg'}
+                                                src={
+                                                    bi.icon ||
+                                                    '/images/items/placeholder.svg'
+                                                }
                                                 alt={bi.name}
                                                 width={24}
                                                 height={24}
                                                 className="rounded"
                                             />
-                                            <span className="text-sm font-medium">{bi.name}</span>
-                                            <Badge variant="outline" className="text-xs">x{bi.pivot.quantity}</Badge>
+                                            <span className="text-sm font-medium">
+                                                {bi.name}
+                                            </span>
+                                            <Badge
+                                                variant="outline"
+                                                className="text-xs"
+                                            >
+                                                x{bi.pivot.quantity}
+                                            </Badge>
                                         </div>
                                     ))}
                                 </div>
@@ -158,11 +211,16 @@ export default function ShopItemDetail({ item, bundle, balance }: Props) {
                         <Button
                             className="w-full"
                             size="lg"
-                            disabled={(balance !== null && price > balance) || (item?.stock !== null && item?.stock === 0)}
+                            disabled={
+                                (balance !== null && price > balance) ||
+                                (item?.stock !== null && item?.stock === 0)
+                            }
                             onClick={handleBuyClick}
                         >
                             <ShoppingBag className="mr-2 size-5" />
-                            {isAuthenticated ? t('shop.buy_now') : t('shop.login_to_buy')}
+                            {isAuthenticated
+                                ? t('shop.buy_now')
+                                : t('shop.login_to_buy')}
                         </Button>
                     </CardContent>
                 </Card>
@@ -173,7 +231,9 @@ export default function ShopItemDetail({ item, bundle, balance }: Props) {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>{t('shop.confirm_purchase')}</DialogTitle>
-                        <DialogDescription>{t('shop.review_purchase')}</DialogDescription>
+                        <DialogDescription>
+                            {t('shop.review_purchase')}
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <p className="text-sm font-medium">{name}</p>
@@ -185,7 +245,14 @@ export default function ShopItemDetail({ item, bundle, balance }: Props) {
                                     min={1}
                                     max={item?.max_per_player || 100}
                                     value={quantity}
-                                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                                    onChange={(e) =>
+                                        setQuantity(
+                                            Math.max(
+                                                1,
+                                                parseInt(e.target.value) || 1,
+                                            ),
+                                        )
+                                    }
                                 />
                             </div>
                         )}
@@ -193,26 +260,43 @@ export default function ShopItemDetail({ item, bundle, balance }: Props) {
                             <Label>{t('shop.promo_code')}</Label>
                             <Input
                                 value={promoCode}
-                                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                                onChange={(e) =>
+                                    setPromoCode(e.target.value.toUpperCase())
+                                }
                                 placeholder={t('shop.enter_code')}
                             />
                         </div>
                         <div className="flex items-center justify-between rounded-md bg-muted p-3">
-                            <span className="font-medium">{t('shop.total')}</span>
+                            <span className="font-medium">
+                                {t('shop.total')}
+                            </span>
                             <div className="flex items-center gap-1.5">
                                 <Coins className="size-4 text-amber-500" />
-                                <span className="text-lg font-bold tabular-nums">{Math.round(totalPrice)}</span>
+                                <span className="text-lg font-bold tabular-nums">
+                                    {Math.round(totalPrice)}
+                                </span>
                             </div>
                         </div>
                         {balance !== null && totalPrice > balance && (
-                            <p className="text-sm text-destructive">{t('shop.insufficient_balance')}</p>
+                            <p className="text-sm text-destructive">
+                                {t('shop.insufficient_balance')}
+                            </p>
                         )}
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setConfirmOpen(false)}
+                        >
                             {t('common.cancel')}
                         </Button>
-                        <Button disabled={(balance !== null && totalPrice > balance) || loading} onClick={handlePurchase}>
+                        <Button
+                            disabled={
+                                (balance !== null && totalPrice > balance) ||
+                                loading
+                            }
+                            onClick={handlePurchase}
+                        >
                             {t('shop.purchase_item')}
                         </Button>
                     </DialogFooter>

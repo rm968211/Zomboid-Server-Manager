@@ -81,9 +81,9 @@ class ModController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'workshop_id' => 'required|string|max:20',
-            'mod_id' => 'required|string|max:255',
-            'map_folder' => 'nullable|string|max:255',
+            'workshop_id' => ['required', 'string', 'regex:/^\d{1,20}$/'],
+            'mod_id' => ['required', 'string', 'max:255', 'not_regex:/[;\r\n]/'],
+            'map_folder' => ['nullable', 'string', 'max:255', 'not_regex:/[;\r\n]/'],
         ]);
 
         try {
@@ -158,8 +158,8 @@ class ModController extends Controller
     {
         $validated = $request->validate([
             'mods' => 'required|array',
-            'mods.*.workshop_id' => 'required|string',
-            'mods.*.mod_id' => 'required|string',
+            'mods.*.workshop_id' => ['required', 'string', 'regex:/^\d{1,20}$/'],
+            'mods.*.mod_id' => ['required', 'string', 'max:255', 'not_regex:/[;\r\n]/'],
         ]);
 
         try {

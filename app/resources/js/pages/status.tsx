@@ -2,7 +2,13 @@ import { Head, usePoll } from '@inertiajs/react';
 import { Circle, Clock, Map, Package, Users } from 'lucide-react';
 import { GameStateWidget } from '@/components/game-state-widget';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { usePing } from '@/hooks/use-ping';
 import { useTranslation } from '@/hooks/use-translation';
 import PublicLayout from '@/layouts/public-layout';
@@ -26,7 +32,9 @@ export default function Status({
                 <main className="mx-auto max-w-7xl px-4 py-8">
                     {/* Server Status Hero */}
                     <div className="mb-8 text-center">
-                        <h1 className="mb-2 text-3xl font-bold tracking-tight">{server_name}</h1>
+                        <h1 className="mb-2 text-3xl font-bold tracking-tight">
+                            {server_name}
+                        </h1>
                         <div className="flex items-center justify-center gap-2">
                             <Circle
                                 className={`size-3 fill-current ${
@@ -37,13 +45,15 @@ export default function Status({
                                           : 'text-red-500'
                                 }`}
                             />
-                            <span className={`text-lg font-medium ${
-                                server.status === 'online'
-                                    ? 'text-green-500'
-                                    : server.status === 'starting'
-                                      ? 'text-yellow-500'
-                                      : 'text-red-500'
-                            }`}>
+                            <span
+                                className={`text-lg font-medium ${
+                                    server.status === 'online'
+                                        ? 'text-green-500'
+                                        : server.status === 'starting'
+                                          ? 'text-yellow-500'
+                                          : 'text-red-500'
+                                }`}
+                            >
                                 {server.status === 'online'
                                     ? t('status.online')
                                     : server.status === 'starting'
@@ -51,7 +61,9 @@ export default function Status({
                                       : t('status.offline')}
                             </span>
                             {ping !== null && server.status === 'online' && (
-                                <span className="text-sm text-muted-foreground">— {ping}ms</span>
+                                <span className="text-sm text-muted-foreground">
+                                    — {ping}ms
+                                </span>
                             )}
                         </div>
                     </div>
@@ -67,7 +79,9 @@ export default function Status({
                     <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">{t('status.players_card')}</CardTitle>
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    {t('status.players_card')}
+                                </CardTitle>
                                 <Users className="size-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
@@ -84,7 +98,9 @@ export default function Status({
 
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">{t('status.map')}</CardTitle>
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    {t('status.map')}
+                                </CardTitle>
                                 <Map className="size-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
@@ -96,7 +112,9 @@ export default function Status({
 
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">{t('status.uptime')}</CardTitle>
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    {t('status.uptime')}
+                                </CardTitle>
                                 <Clock className="size-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
@@ -108,11 +126,15 @@ export default function Status({
 
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">{t('status.mods')}</CardTitle>
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    {t('status.mods')}
+                                </CardTitle>
                                 <Package className="size-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{mods.length}</div>
+                                <div className="text-2xl font-bold">
+                                    {mods.length}
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
@@ -126,7 +148,12 @@ export default function Status({
                                     {t('status.online_players_title')}
                                 </CardTitle>
                                 <CardDescription>
-                                    {t(server.player_count !== 1 ? 'status.players_connected_plural' : 'status.players_connected', { count: String(server.player_count) })}
+                                    {t(
+                                        server.player_count !== 1
+                                            ? 'status.players_connected_plural'
+                                            : 'status.players_connected',
+                                        { count: String(server.player_count) },
+                                    )}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -138,7 +165,9 @@ export default function Status({
                                                 className="flex items-center gap-2 rounded-md border border-border/50 px-3 py-2"
                                             >
                                                 <Circle className="size-2 fill-green-500 text-green-500" />
-                                                <span className="text-sm font-medium">{player}</span>
+                                                <span className="text-sm font-medium">
+                                                    {player}
+                                                </span>
                                             </div>
                                         ))}
                                     </div>
@@ -162,7 +191,12 @@ export default function Status({
                                     {t('status.installed_mods_title')}
                                 </CardTitle>
                                 <CardDescription>
-                                    {t(mods.length !== 1 ? 'status.mods_installed_plural' : 'status.mods_installed', { count: String(mods.length) })}
+                                    {t(
+                                        mods.length !== 1
+                                            ? 'status.mods_installed_plural'
+                                            : 'status.mods_installed',
+                                        { count: String(mods.length) },
+                                    )}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -173,9 +207,14 @@ export default function Status({
                                                 key={mod.workshop_id}
                                                 className="flex items-center justify-between rounded-md border border-border/50 px-3 py-2"
                                             >
-                                                <span className="text-sm font-medium">{mod.mod_id}</span>
+                                                <span className="text-sm font-medium">
+                                                    {mod.mod_id}
+                                                </span>
                                                 {mod.workshop_id && (
-                                                    <Badge variant="secondary" className="text-xs">
+                                                    <Badge
+                                                        variant="secondary"
+                                                        className="text-xs"
+                                                    >
                                                         {mod.workshop_id}
                                                     </Badge>
                                                 )}
@@ -183,7 +222,9 @@ export default function Status({
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-muted-foreground">{t('status.no_mods_installed')}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {t('status.no_mods_installed')}
+                                    </p>
                                 )}
                             </CardContent>
                         </Card>

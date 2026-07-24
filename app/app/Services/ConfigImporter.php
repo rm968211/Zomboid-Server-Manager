@@ -82,7 +82,7 @@ class ConfigImporter
      * Apply imported settings through the existing write pipeline.
      *
      * @param  array<string, string>  $settings
-     * @return string[]  Updated field keys
+     * @return string[] Updated field keys
      */
     public function apply(string $type, array $settings): array
     {
@@ -126,7 +126,6 @@ class ConfigImporter
      * Flatten nested sandbox config to dot-notation for comparison.
      *
      * @param  array<string, mixed>  $data
-     * @param  string  $prefix
      * @return array<string, string>
      */
     private function flattenSandbox(array $data, string $prefix = ''): array

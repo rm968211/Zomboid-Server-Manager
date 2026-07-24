@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\DeliveryStatus;
 use App\Models\ShopCategory;
 use App\Models\ShopItem;
 use App\Models\User;
