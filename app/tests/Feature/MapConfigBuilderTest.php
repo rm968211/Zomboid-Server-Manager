@@ -54,8 +54,17 @@ it('falls back to proxy when every level contains only empty markers', function 
 it('falls back to proxy when no tiles have been generated', function () {
     config(['zomboid.map.tiles_path' => sys_get_temp_dir().'/map-tiles-missing-'.uniqid()]);
 
-    $builder = new MapConfigBuilder;
+    $config = (new MapConfigBuilder)->build();
 
-    expect($builder->hasLocalTiles())->toBeFalse()
-        ->and($builder->build()['source'])->toBe('proxy');
+    expect($config['source'])->toBe('proxy')
+        ->and($config['tileUrl'])->toContain('/maps/42.19.0/base/layer0_files/')
+        ->and($config['dzi'])->toMatchArray([
+            'width' => 1157216,
+            'height' => 509520,
+            'x0' => 518144,
+            'y0' => -69648,
+            'sqr' => 64,
+            'maxNativeZoom' => 21,
+            'isometric' => true,
+        ]);
 });
