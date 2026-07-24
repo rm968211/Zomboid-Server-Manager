@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\MapConfigBuilder;
 use Illuminate\Console\Command;
 
 class GenerateMapTiles extends Command
@@ -15,21 +16,24 @@ class GenerateMapTiles extends Command
     /** @var string */
     protected $description = 'Generate DZI map tiles from PZ game data using pzmap2dzi';
 
-    public function handle(): int
+    public function handle(MapConfigBuilder $mapConfig): int
     {
         $tilesPath = config('zomboid.map.tiles_path');
         $serverPath = config('zomboid.game_server_path');
 
+        // Preconditions write 'waiting', not 'failed' — the scheduler retries
+        // anything that isn't 'failed', and these resolve themselves (e.g. the
+        // game server is still downloading via SteamCMD on first boot).
         if (! is_dir($serverPath)) {
             $this->error("Game server path does not exist: {$serverPath}");
-            $this->writeStatus('failed', "Game server path does not exist: {$serverPath}");
+            $this->writeStatus('waiting', "Game server path does not exist: {$serverPath}");
 
             return self::FAILURE;
         }
 
         if (! is_dir($serverPath.'/media')) {
             $this->error("Game server files not ready yet (no media/ directory in {$serverPath})");
-            $this->writeStatus('failed', "Game server files not ready yet (no media/ directory in {$serverPath})");
+            $this->writeStatus('waiting', "Game server files not ready yet (no media/ directory in {$serverPath})");
 
             return self::FAILURE;
         }
@@ -56,14 +60,23 @@ class GenerateMapTiles extends Command
 
         $this->info("Using pzmap2dzi: {$pzmap2dziPath}");
 
-        // Check if tiles already exist
-        if (! $this->option('force') && is_dir($tilesPath) && count(scandir($tilesPath)) > 2) {
+        // Skip only when real tiles exist — a failed run leaves a full
+        // directory tree of .empty markers, which doesn't count.
+        if (! $this->option('force') && $mapConfig->hasLocalTiles()) {
             $this->warn('Tiles already exist. Use --force to regenerate.');
 
             return self::SUCCESS;
         }
 
         $this->writeStatus('running', null);
+
+        // The renderer resumes from marker files, so stale output from a
+        // previous (failed or forced) run must be cleared or it silently
+        // produces nothing.
+        if (is_dir($tilesPath.'/html')) {
+            $this->info('Clearing previous tile output...');
+            exec('rm -rf '.escapeshellarg($tilesPath.'/html'));
+        }
 
         // Create output directory
         if (! is_dir($tilesPath)) {
