@@ -4,8 +4,6 @@ on:
   schedule:
     - cron: '0 3 * * 0'  # weekly, Sunday midnight UTC
   push:
-    tags:
-      - 'v*.*.*'
     branches:
       - main
   workflow_dispatch:
@@ -26,25 +24,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          fetch-tags: true
 
-      - name: Resolve version from latest git tag
+      - name: Resolve version from package.json
         id: version
         run: |
-          TAG=$(git describe --tags --match "v[0-9]*.[0-9]*.[0-9]*" --abbrev=0 2>/dev/null || echo "")
-          if [ -n "$TAG" ]; then
-            VERSION="${TAG#v}"
-            MAJOR=$(echo "$VERSION" | cut -d. -f1)
-            MINOR=$(echo "$VERSION" | cut -d. -f2)
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "major_minor=$MAJOR.$MINOR" >> $GITHUB_OUTPUT
-            echo "major=$MAJOR" >> $GITHUB_OUTPUT
-            echo "found=true" >> $GITHUB_OUTPUT
-          else
-            echo "found=false" >> $GITHUB_OUTPUT
+          VERSION=$(jq -r .version package.json)
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Invalid version in package.json: $VERSION" >&2
+            exit 1
           fi
+          MAJOR=$(echo "$VERSION" | cut -d. -f1)
+          MINOR=$(echo "$VERSION" | cut -d. -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "major_minor=$MAJOR.$MINOR" >> $GITHUB_OUTPUT
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -58,6 +51,15 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Check if this version is already on Docker Hub
+        id: published
+        run: |
+          if docker manifest inspect "${{ secrets.DOCKERHUB_USERNAME }}/zomboid-manager:${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       # --- zomboid-manager ---
 
       - name: Extract metadata (zomboid-manager)
@@ -66,9 +68,9 @@ jobs:
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/zomboid-manager
           tags: |
-            type=raw,value=${{ steps.version.outputs.version }},enable=${{ (github.ref_type == 'tag' || inputs.force_version_tags == 'true') && steps.version.outputs.found == 'true' }}
-            type=raw,value=${{ steps.version.outputs.major_minor }},enable=${{ (github.ref_type == 'tag' || inputs.force_version_tags == 'true') && steps.version.outputs.found == 'true' }}
-            type=raw,value=${{ steps.version.outputs.major }},enable=${{ (github.ref_type == 'tag' || inputs.force_version_tags == 'true') && steps.version.outputs.found == 'true' }}
+            type=raw,value=${{ steps.version.outputs.version }},enable=${{ steps.published.outputs.exists == 'false' || inputs.force_version_tags == 'true' }}
+            type=raw,value=${{ steps.version.outputs.major_minor }},enable=${{ steps.published.outputs.exists == 'false' || inputs.force_version_tags == 'true' }}
+            type=raw,value=${{ steps.version.outputs.major }},enable=${{ steps.published.outputs.exists == 'false' || inputs.force_version_tags == 'true' }}
             type=sha
           flavor: |
             latest=${{ github.event_name != 'workflow_dispatch' || inputs.push_latest == 'true' }}
@@ -92,9 +94,9 @@ jobs:
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/zomboid-server
           tags: |
-            type=raw,value=${{ steps.version.outputs.version }},enable=${{ (github.ref_type == 'tag' || inputs.force_version_tags == 'true') && steps.version.outputs.found == 'true' }}
-            type=raw,value=${{ steps.version.outputs.major_minor }},enable=${{ (github.ref_type == 'tag' || inputs.force_version_tags == 'true') && steps.version.outputs.found == 'true' }}
-            type=raw,value=${{ steps.version.outputs.major }},enable=${{ (github.ref_type == 'tag' || inputs.force_version_tags == 'true') && steps.version.outputs.found == 'true' }}
+            type=raw,value=${{ steps.version.outputs.version }},enable=${{ steps.published.outputs.exists == 'false' || inputs.force_version_tags == 'true' }}
+            type=raw,value=${{ steps.version.outputs.major_minor }},enable=${{ steps.published.outputs.exists == 'false' || inputs.force_version_tags == 'true' }}
+            type=raw,value=${{ steps.version.outputs.major }},enable=${{ steps.published.outputs.exists == 'false' || inputs.force_version_tags == 'true' }}
             type=sha
           flavor: |
             latest=${{ github.event_name != 'workflow_dispatch' || inputs.push_latest == 'true' }}
