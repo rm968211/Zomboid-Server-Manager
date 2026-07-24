@@ -285,6 +285,8 @@ it('renders the config page', function () {
         ->component('admin/config')
         ->has('server_config')
         ->has('sandbox_config')
+        ->has('server_meta')
+        ->has('sandbox_meta')
     );
 });
 
@@ -334,6 +336,8 @@ it('renders config page when files are unavailable', function () {
         ->component('admin/config')
         ->where('server_config', [])
         ->where('sandbox_config', [])
+        ->where('server_meta', [])
+        ->where('sandbox_meta', [])
     );
 });
 

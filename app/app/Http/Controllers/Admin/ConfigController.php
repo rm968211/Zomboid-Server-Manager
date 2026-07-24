@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\ImportConfigPreviewRequest;
 use App\Rules\SafeConfigValue;
 use App\Services\AuditLogger;
 use App\Services\ConfigImporter;
+use App\Services\ConfigMetadataParser;
 use App\Services\ConfigStateManager;
 use App\Services\RespawnDelayManager;
 use App\Services\SandboxLuaParser;
@@ -29,6 +30,7 @@ class ConfigController extends Controller
         private readonly RespawnDelayManager $respawnDelay,
         private readonly ConfigStateManager $configState,
         private readonly ConfigImporter $configImporter,
+        private readonly ConfigMetadataParser $metadataParser,
     ) {}
 
     public function index(): Response
@@ -51,6 +53,12 @@ class ConfigController extends Controller
         return Inertia::render('admin/config', [
             'server_config' => $serverConfig,
             'sandbox_config' => $sandboxConfig,
+            'server_meta' => $this->metadataParser->parseServerFile(
+                config('zomboid.paths.server_ini'),
+            ),
+            'sandbox_meta' => $this->metadataParser->parseSandboxFile(
+                config('zomboid.paths.sandbox_lua'),
+            ),
             'respawn_delay' => $this->respawnDelay->getConfig(),
         ]);
     }
