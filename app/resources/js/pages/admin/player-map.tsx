@@ -29,6 +29,8 @@ type Props = {
     usingLocalTiles: boolean;
     tilesGenerating: boolean;
     tileError: string | null;
+    tileGenerationStage: string | null;
+    tileGenerationStartedAt: string | null;
     safeZones: SafeZone[];
 };
 
@@ -56,6 +58,8 @@ export default function PlayerMap({
     usingLocalTiles,
     tilesGenerating,
     tileError,
+    tileGenerationStage,
+    tileGenerationStartedAt,
     safeZones,
 }: Props) {
     const { t } = useTranslation();
@@ -68,9 +72,21 @@ export default function PlayerMap({
             'usingLocalTiles',
             'tilesGenerating',
             'tileError',
+            'tileGenerationStage',
+            'tileGenerationStartedAt',
             'safeZones',
         ],
     });
+
+    const generationStage =
+        tileGenerationStage === 'unpacking'
+            ? t('admin.player_map.unpacking_textures')
+            : tileGenerationStage === 'rendering'
+              ? t('admin.player_map.rendering_tiles')
+              : t('admin.player_map.preparing_render');
+    const generationStarted = tileGenerationStartedAt
+        ? new Date(tileGenerationStartedAt).toLocaleString()
+        : null;
 
     const zoneOverlays: ZoneOverlay[] = useMemo(
         () =>
@@ -182,8 +198,18 @@ export default function PlayerMap({
                                     <div className="h-full w-full animate-pulse rounded-full bg-primary/30" />
                                 </div>
                                 <p className="mt-1 text-xs text-muted-foreground">
-                                    {t('admin.player_map.preparing_render')}
+                                    {generationStage}
                                 </p>
+                                {generationStarted && (
+                                    <p className="text-xs text-muted-foreground">
+                                        {t(
+                                            'admin.player_map.generation_started',
+                                            {
+                                                time: generationStarted,
+                                            },
+                                        )}
+                                    </p>
+                                )}
                             </div>
                         )}
                         {!usingLocalTiles && !tilesGenerating && tileError && (

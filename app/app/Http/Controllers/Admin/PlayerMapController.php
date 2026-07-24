@@ -115,6 +115,8 @@ class PlayerMapController extends Controller
             'usingLocalTiles' => $mapConfig['source'] === 'local',
             'tilesGenerating' => $generationStatus['status'] === 'running',
             'tileError' => $generationStatus['status'] === 'failed' ? $generationStatus['error'] : null,
+            'tileGenerationStage' => $generationStatus['stage'],
+            'tileGenerationStartedAt' => $generationStatus['started_at'],
             'safeZones' => $safeZoneConfig['enabled'] ? $safeZoneConfig['zones'] : [],
         ]);
     }
@@ -124,14 +126,19 @@ class PlayerMapController extends Controller
      * written by GenerateMapTiles, so the admin UI can show what actually happened
      * instead of a generic "no tiles yet" message.
      *
-     * @return array{status: string, error: string|null}
+     * @return array{status: string, error: string|null, stage: string|null, started_at: string|null}
      */
     private function readGenerationStatus(): array
     {
         $statusPath = config('zomboid.map.status_path');
 
         if (! is_file($statusPath)) {
-            return ['status' => 'unknown', 'error' => null];
+            return [
+                'status' => 'unknown',
+                'error' => null,
+                'stage' => null,
+                'started_at' => null,
+            ];
         }
 
         $data = json_decode(file_get_contents($statusPath), true);
@@ -139,6 +146,8 @@ class PlayerMapController extends Controller
         return [
             'status' => $data['status'] ?? 'unknown',
             'error' => $data['error'] ?? null,
+            'stage' => $data['stage'] ?? null,
+            'started_at' => $data['started_at'] ?? null,
         ];
     }
 
