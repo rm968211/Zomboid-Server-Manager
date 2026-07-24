@@ -1,14 +1,16 @@
 <?php
 
+use App\Services\ConfigStateManager;
 use App\Services\ModManager;
 use App\Services\ServerIniParser;
 
 beforeEach(function () {
     $this->parser = new ServerIniParser;
-    $this->manager = new ModManager($this->parser);
+    $this->manager = new ModManager($this->parser, new ConfigStateManager);
     $this->tempDir = sys_get_temp_dir().'/pz_test_'.uniqid();
     mkdir($this->tempDir.'/Server', 0777, true);
     $this->iniPath = $this->tempDir.'/Server/ZomboidServer.ini';
+    $this->configStatePath = $this->tempDir.'/Server/.config_state';
     copy(dirname(__DIR__).'/fixtures/server.ini', $this->iniPath);
 });
 
@@ -16,7 +18,7 @@ afterEach(function () {
     if (file_exists($this->iniPath)) {
         unlink($this->iniPath);
     }
-    foreach (['.mod_state', '.mod_state_applied'] as $sidecar) {
+    foreach (['.mod_state', '.mod_state_applied', '.config_state', '.config_state.lock'] as $sidecar) {
         $path = $this->tempDir.'/Server/'.$sidecar;
         if (file_exists($path)) {
             unlink($path);
@@ -392,4 +394,107 @@ it('falls back to active when applied snapshot is missing on running server', fu
         ->and($result['applied_snapshot_present'])->toBeFalse()
         ->and(collect($result['mods'])->pluck('status')->all())
         ->each->toBe('active');
+});
+
+it('persists Map to .config_state when adding a map mod', function () {
+    $this->manager->add($this->iniPath, '9999999999', 'MapMod', 'CustomMap');
+
+    expect(file_exists($this->configStatePath))->toBeTrue();
+    expect(file_get_contents($this->configStatePath))->toContain('Map=')
+        ->and(file_get_contents($this->configStatePath))->toContain('CustomMap');
+});
+
+it('persists Map to .config_state when removing a map mod', function () {
+    $this->manager->add($this->iniPath, '9999999999', 'MapMod', 'CustomMap');
+    $this->manager->remove($this->iniPath, '9999999999', 'CustomMap');
+
+    expect(file_get_contents($this->configStatePath))->not->toContain('CustomMap');
+});
+
+it('does not touch .config_state when adding a mod without a map folder', function () {
+    $this->manager->add($this->iniPath, '1111111111', 'TestMod');
+
+    expect(file_exists($this->configStatePath))->toBeFalse();
+});
+
+it('bulk imports independent Mods and WorkshopItems lists, merging into existing', function () {
+    // A real pack has more mods than workshop items (one item can provide many mods).
+    $summary = $this->manager->bulkImport(
+        $this->iniPath,
+        ['1111111111', '2222222222'],
+        ['ModA', 'ModB', 'ModC'],
+    );
+
+    expect($summary['workshop_added'])->toBe(2)
+        ->and($summary['mods_added'])->toBe(3);
+
+    $config = $this->parser->read($this->iniPath);
+    expect($config['Mods'])->toBe('SuperSurvivors;Hydrocraft;ModA;ModB;ModC;ZomboidManager')
+        ->and($config['WorkshopItems'])->toBe('2561774086;2286126274;1111111111;2222222222;3685323705');
+});
+
+it('bulk import merges each list independently and skips duplicates', function () {
+    $summary = $this->manager->bulkImport(
+        $this->iniPath,
+        ['2561774086', '3333333333'],   // first already present
+        ['SuperSurvivors', 'FreshMod'],  // first already present
+    );
+
+    expect($summary['workshop_added'])->toBe(1)
+        ->and($summary['mods_added'])->toBe(1);
+
+    $config = $this->parser->read($this->iniPath);
+    expect(substr_count($config['WorkshopItems'], '2561774086'))->toBe(1)
+        ->and(substr_count($config['Mods'], 'SuperSurvivors'))->toBe(1);
+});
+
+it('bulk import accepts mod IDs with spaces, brackets, ampersands and slashes', function () {
+    // Regression: real B42 packs use mod IDs like these.
+    $this->manager->bulkImport(
+        $this->iniPath,
+        [],
+        ['[B42] Tatrapan', 'FWOBenchPress&Treadmill', '1299328280/ToadTraits'],
+    );
+
+    $mods = $this->parser->read($this->iniPath)['Mods'];
+    expect($mods)->toContain('[B42] Tatrapan')
+        ->and($mods)->toContain('FWOBenchPress&Treadmill')
+        ->and($mods)->toContain('1299328280/ToadTraits');
+});
+
+it('bulk import writes .mod_state and re-attaches ZomboidManager', function () {
+    $this->manager->bulkImport($this->iniPath, ['1111111111'], ['ModA']);
+
+    $state = file_get_contents($this->tempDir.'/Server/.mod_state');
+    expect($state)->toContain('Mods=SuperSurvivors;Hydrocraft;ModA;ZomboidManager')
+        ->and($state)->toContain('WorkshopItems=2561774086;2286126274;1111111111;3685323705');
+});
+
+it('bulk import prepends new map folders before the vanilla map and persists them', function () {
+    $summary = $this->manager->bulkImport(
+        $this->iniPath,
+        ['1111111111'],
+        ['ModA'],
+        ['BigMap', 'Muldraugh, KY'],
+    );
+
+    expect($summary['maps_added'])->toBe(1);
+
+    // Mod maps must sit ahead of the vanilla base map in Map=.
+    expect($this->parser->read($this->iniPath)['Map'])->toBe('BigMap;Muldraugh, KY');
+    expect(file_get_contents($this->configStatePath))->toContain('Map=BigMap;Muldraugh, KY');
+});
+
+it('bulk import with only already-present mods and no maps writes nothing new', function () {
+    unlink($this->tempDir.'/Server/.mod_state');
+
+    $summary = $this->manager->bulkImport(
+        $this->iniPath,
+        ['2561774086'],
+        ['SuperSurvivors', 'Hydrocraft'],
+    );
+
+    expect($summary['workshop_added'])->toBe(0)
+        ->and($summary['mods_added'])->toBe(0)
+        ->and(file_exists($this->tempDir.'/Server/.mod_state'))->toBeFalse();
 });

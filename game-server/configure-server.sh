@@ -12,7 +12,14 @@ set -e
 # (or whatever PZ_SERVER_NAME the user picked), and no mod ever made it into
 # the live config.
 SERVER_NAME="${SERVERNAME:-${SERVER_NAME:-${PZ_SERVER_NAME:-ZomboidServer}}}"
-INI_DIR="/home/steam/Zomboid/Server"
+
+# Root directories. Overridable so the script can be exercised against a
+# temporary tree in tests; the defaults are the real in-container paths, so
+# production behaviour is unchanged (these vars are never set in the images).
+PZ_CONFIG_DIR="${PZ_CONFIG_DIR:-/home/steam/Zomboid}"
+PZ_INSTALL_DIR="${PZ_INSTALL_DIR:-/home/steam/ZomboidDedicatedServer}"
+
+INI_DIR="${PZ_CONFIG_DIR}/Server"
 INI_FILE="${INI_DIR}/${SERVER_NAME}.ini"
 SANDBOX_FILE="${INI_DIR}/${SERVER_NAME}_SandboxVars.lua"
 
@@ -50,7 +57,19 @@ echo "[configure-server] Applying configuration..."
 
 # Web UI persistence file — written by Laravel when config is saved via dashboard/API.
 # Values here take priority over env var defaults so web UI changes survive restarts.
-CONFIG_STATE_FILE="/home/steam/Zomboid/.config_state"
+#
+# Lives in Server/ (next to the INI and .mod_state) because that is the directory
+# the app container (www-data) can write on the shared volume; the data root above
+# is root-owned and not app-writable. Older builds wrote it to the data root, so
+# migrate that file into Server/ once if it's still there.
+CONFIG_STATE_FILE="${INI_DIR}/.config_state"
+LEGACY_CONFIG_STATE_FILE="${PZ_CONFIG_DIR}/.config_state"
+if [ ! -f "$CONFIG_STATE_FILE" ] && [ -f "$LEGACY_CONFIG_STATE_FILE" ]; then
+    if mv "$LEGACY_CONFIG_STATE_FILE" "$CONFIG_STATE_FILE" 2>/dev/null; then
+        chmod 666 "$CONFIG_STATE_FILE" 2>/dev/null || true
+        echo "[configure-server] Migrated .config_state into Server/"
+    fi
+fi
 
 # Read a value from .config_state, or return empty string.
 read_config_state() {
@@ -97,23 +116,30 @@ apply_setting_force() {
     fi
 }
 
-# Core settings — .config_state (web UI) takes priority over env var defaults
+# Core settings — .config_state (web UI) takes priority over env var defaults.
+#
+# Each value falls back through two env var names: the PZ_* names used by the
+# ARM64 (joyfui) image, then the bare names used by the AMD64 (renegademaster)
+# image. Without the AMD64 fallback this script runs last and overwrites the
+# values renegademaster already applied (e.g. MAX_PLAYERS) with these defaults,
+# so a user who picked 24 players on AMD64 silently ended up with 16. Same
+# both-names pattern the RCON section below already uses.
 STATE_VAL=$(read_config_state "DefaultPort")
-apply_setting "DefaultPort"          "${STATE_VAL:-${PZ_GAME_PORT:-16261}}"       "$INI_FILE"
+apply_setting "DefaultPort"          "${STATE_VAL:-${PZ_GAME_PORT:-${DEFAULT_PORT:-16261}}}"       "$INI_FILE"
 STATE_VAL=$(read_config_state "UDPPort")
-apply_setting "UDPPort"              "${STATE_VAL:-${PZ_DIRECT_PORT:-16262}}"     "$INI_FILE"
+apply_setting "UDPPort"              "${STATE_VAL:-${PZ_DIRECT_PORT:-${UDP_PORT:-16262}}}"     "$INI_FILE"
 STATE_VAL=$(read_config_state "MaxPlayers")
-apply_setting "MaxPlayers"           "${STATE_VAL:-${PZ_MAX_PLAYERS:-16}}"        "$INI_FILE"
+apply_setting "MaxPlayers"           "${STATE_VAL:-${PZ_MAX_PLAYERS:-${MAX_PLAYERS:-16}}}"        "$INI_FILE"
 STATE_VAL=$(read_config_state "Map")
-apply_setting "Map"                  "${STATE_VAL:-${PZ_MAP_NAMES:-Muldraugh, KY}}" "$INI_FILE"
+apply_setting "Map"                  "${STATE_VAL:-${PZ_MAP_NAMES:-${MAP_NAMES:-Muldraugh, KY}}}" "$INI_FILE"
 STATE_VAL=$(read_config_state "Public")
-apply_setting "Public"               "${STATE_VAL:-${PZ_PUBLIC_SERVER:-true}}"    "$INI_FILE"
+apply_setting "Public"               "${STATE_VAL:-${PZ_PUBLIC_SERVER:-${PUBLIC_SERVER:-true}}}"    "$INI_FILE"
 STATE_VAL=$(read_config_state "PauseEmpty")
-apply_setting "PauseEmpty"           "${STATE_VAL:-${PZ_PAUSE_ON_EMPTY:-true}}"   "$INI_FILE"
+apply_setting "PauseEmpty"           "${STATE_VAL:-${PZ_PAUSE_ON_EMPTY:-${PAUSE_ON_EMPTY:-true}}}"   "$INI_FILE"
 STATE_VAL=$(read_config_state "SaveWorldEveryMinutes")
-apply_setting "SaveWorldEveryMinutes" "${STATE_VAL:-${PZ_AUTOSAVE_INTERVAL:-15}}" "$INI_FILE"
+apply_setting "SaveWorldEveryMinutes" "${STATE_VAL:-${PZ_AUTOSAVE_INTERVAL:-${AUTOSAVE_INTERVAL:-15}}}" "$INI_FILE"
 STATE_VAL=$(read_config_state "SteamVAC")
-apply_setting "SteamVAC"             "${STATE_VAL:-${PZ_STEAM_VAC:-true}}"        "$INI_FILE"
+apply_setting "SteamVAC"             "${STATE_VAL:-${PZ_STEAM_VAC:-${STEAM_VAC:-true}}}"        "$INI_FILE"
 STATE_VAL=$(read_config_state "Open")
 apply_setting "Open"                 "${STATE_VAL:-${PZ_OPEN:-true}}"             "$INI_FILE"
 STATE_VAL=$(read_config_state "AutoCreateUserInWhiteList")
@@ -121,9 +147,9 @@ apply_setting "AutoCreateUserInWhiteList" "${STATE_VAL:-${PZ_AUTO_CREATE_WHITELI
 
 # Passwords — .config_state takes priority over env var defaults
 STATE_VAL=$(read_config_state "Password")
-apply_setting "Password"             "${STATE_VAL:-${PZ_SERVER_PASSWORD:-}}"      "$INI_FILE"
+apply_setting "Password"             "${STATE_VAL:-${PZ_SERVER_PASSWORD:-${SERVER_PASSWORD:-}}}"      "$INI_FILE"
 STATE_VAL=$(read_config_state "AdminPassword")
-apply_setting "AdminPassword"        "${STATE_VAL:-${PZ_ADMIN_PASSWORD:-admin}}"  "$INI_FILE"
+apply_setting "AdminPassword"        "${STATE_VAL:-${PZ_ADMIN_PASSWORD:-${ADMIN_PASSWORD:-admin}}}"  "$INI_FILE"
 
 if [ -r "$CONFIG_STATE_FILE" ]; then
     echo "[configure-server] Applied web UI overrides from .config_state"
@@ -173,7 +199,7 @@ fi
 # before start_server runs — otherwise PZ silently drops the mod and may
 # prune Mods= back to empty on its next ini rewrite.
 PZ_WORKSHOP_APP_ID="108600"
-WORKSHOP_CACHE_ROOT="/home/steam/ZomboidDedicatedServer/steamapps/workshop/content/${PZ_WORKSHOP_APP_ID}"
+WORKSHOP_CACHE_ROOT="${PZ_INSTALL_DIR}/steamapps/workshop/content/${PZ_WORKSHOP_APP_ID}"
 ZM_WORKSHOP_ID_EARLY="3685323705"
 
 # Re-read the final WorkshopItems= so we cover every restore path above.
@@ -195,7 +221,7 @@ fi
 if [ "${#MISSING_WORKSHOP_IDS[@]}" -gt 0 ]; then
     echo "[configure-server] Downloading ${#MISSING_WORKSHOP_IDS[@]} Workshop mod(s) via SteamCMD: ${MISSING_WORKSHOP_IDS[*]}"
     STEAMCMD_BIN="$(command -v steamcmd.sh || echo /home/root/.local/steamcmd/steamcmd.sh)"
-    SCMD_ARGS=("+force_install_dir" "/home/steam/ZomboidDedicatedServer" "+login" "anonymous")
+    SCMD_ARGS=("+force_install_dir" "$PZ_INSTALL_DIR" "+login" "anonymous")
     for wid in "${MISSING_WORKSHOP_IDS[@]}"; do
         SCMD_ARGS+=("+workshop_download_item" "$PZ_WORKSHOP_APP_ID" "$wid")
     done
@@ -236,7 +262,7 @@ fi
 # subscribed, so PZ silently wipes them from `Mods=`/`WorkshopItems=` in
 # the INI on startup. The `Zomboid/mods/` path is always scanned, so a
 # symlink there gives PZ a reliable, always-trusted local copy.
-ZOMBOID_MODS_DIR="/home/steam/Zomboid/mods"
+ZOMBOID_MODS_DIR="${PZ_CONFIG_DIR}/mods"
 mkdir -p "$ZOMBOID_MODS_DIR"
 if [ -d "$WORKSHOP_CACHE_ROOT" ]; then
     while IFS= read -r mod_dir; do
@@ -269,8 +295,8 @@ echo "[configure-server] Set DoLuaChecksum=false (required for ZomboidManager mo
 # Local mods in Zomboid/mods/ or ZomboidDedicatedServer/mods/ are NOT scanned.
 # We create a fake Workshop cache entry so PZ discovers our mod through its Workshop scanner.
 ZM_WORKSHOP_ID="3685323705"
-ZM_SOURCE="/home/steam/Zomboid/mods/ZomboidManager"
-WORKSHOP_MOD_DIR="/home/steam/ZomboidDedicatedServer/steamapps/workshop/content/108600/${ZM_WORKSHOP_ID}/mods/ZomboidManager"
+ZM_SOURCE="${PZ_CONFIG_DIR}/mods/ZomboidManager"
+WORKSHOP_MOD_DIR="${PZ_INSTALL_DIR}/steamapps/workshop/content/108600/${ZM_WORKSHOP_ID}/mods/ZomboidManager"
 
 if [ -f "$ZM_SOURCE/42/mod.info" ]; then
     # Create Workshop cache with both root-level and 42/ mod.info.
@@ -289,7 +315,7 @@ else
 fi
 
 # Remove any stale ZomboidManager from install dir (shadows Workshop version)
-rm -rf /home/steam/ZomboidDedicatedServer/mods/ZomboidManager
+rm -rf "${PZ_INSTALL_DIR}/mods/ZomboidManager"
 
 # Ensure ZomboidManager is in the Mods= list.
 CURRENT_MODS=$(grep -m1 "^Mods=" "$INI_FILE" | sed 's/^Mods=//' || true)
@@ -338,8 +364,8 @@ if printf 'Mods=%s\nWorkshopItems=%s\n' "$APPLIED_MODS" "$APPLIED_WORKSHOP" > "$
 fi
 
 # Pre-create Lua bridge directories for inventory exports
-mkdir -p /home/steam/Zomboid/Lua/inventory 2>/dev/null || echo "[configure-server] WARNING: Cannot create Lua/inventory directory (permission denied)"
-if [ -d /home/steam/Zomboid/Lua/inventory ]; then
+mkdir -p "${PZ_CONFIG_DIR}/Lua/inventory" 2>/dev/null || echo "[configure-server] WARNING: Cannot create Lua/inventory directory (permission denied)"
+if [ -d "${PZ_CONFIG_DIR}/Lua/inventory" ]; then
     echo "[configure-server] Lua bridge directories created"
 fi
 
