@@ -34,7 +34,18 @@ Schedule::command('zomboid:process-money-deposits')->everyMinute();
 
 Schedule::command('zomboid:generate-map-tiles')
     ->everyThirtyMinutes()
-    ->when(fn () => ! is_dir(config('zomboid.map.tiles_path').'/html/map_data/base/layer0_files'))
+    ->withoutOverlapping(720)
+    ->when(function () {
+        if (app(\App\Services\MapConfigBuilder::class)->hasLocalTiles()) {
+            return false;
+        }
+
+        // Keep retrying transient states ('waiting', missing file), but not a
+        // failed render — that error is surfaced in the UI for manual action.
+        $status = @json_decode((string) @file_get_contents(config('zomboid.map.status_path')), true);
+
+        return ($status['status'] ?? null) !== 'failed';
+    })
     ->runInBackground();
 
 Schedule::command('zomboid:download-item-icons')
