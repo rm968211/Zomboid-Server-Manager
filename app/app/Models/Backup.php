@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BackupStatus;
 use App\Enums\BackupType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +14,10 @@ class Backup extends Model
 
     public $timestamps = false;
 
+    protected $attributes = [
+        'status' => 'completed',
+    ];
+
     protected $fillable = [
         'filename',
         'path',
@@ -21,6 +26,8 @@ class Backup extends Model
         'game_version',
         'steam_branch',
         'notes',
+        'status',
+        'error_message',
         'created_at',
     ];
 
@@ -28,6 +35,7 @@ class Backup extends Model
     {
         return [
             'type' => BackupType::class,
+            'status' => BackupStatus::class,
             'size_bytes' => 'integer',
             'created_at' => 'datetime',
         ];
