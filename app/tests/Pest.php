@@ -45,3 +45,33 @@ function something()
 {
     // ..
 }
+
+/**
+ * Seed a Workshop content fixture: creates
+ * `<path>/<workshopId>/mods/<modId>/mod.info` declaring that mod ID, mirroring
+ * how downloaded Workshop content resolves workshop_id in ModManager::list().
+ */
+function seedWorkshopMod(string $workshopContentPath, string $workshopId, string $modId): void
+{
+    $modDir = $workshopContentPath.'/'.$workshopId.'/mods/'.$modId;
+    mkdir($modDir, 0777, true);
+    file_put_contents($modDir.'/mod.info', "id=$modId\nname=$modId\n");
+}
+
+function rrmdir(string $dir): void
+{
+    if (! is_dir($dir)) {
+        return;
+    }
+
+    foreach (scandir($dir) as $item) {
+        if ($item === '.' || $item === '..') {
+            continue;
+        }
+
+        $path = $dir.'/'.$item;
+        is_dir($path) ? rrmdir($path) : unlink($path);
+    }
+
+    rmdir($dir);
+}

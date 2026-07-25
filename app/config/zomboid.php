@@ -36,6 +36,9 @@ return [
         // PZ sanitizes the save directory name (spaces become underscores), unlike
         // the Server/ config files which keep the raw server name.
         'players_db' => env('PZ_DATA_PATH', '/pz-data').'/Saves/Multiplayer/'.str_replace(' ', '_', env('PZ_SERVER_NAME', 'ZomboidServer')).'/players.db',
+        // Downloaded Workshop items live here, one directory per Workshop ID,
+        // each with a mods/<ModName>/mod.info per internal mod it bundles.
+        'workshop_content' => env('PZ_SERVER_PATH', '/pz-server').'/steamapps/workshop/content/108600',
     ],
 
     /*
