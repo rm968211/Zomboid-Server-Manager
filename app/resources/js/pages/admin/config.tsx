@@ -55,6 +55,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import {
     groupSettings,
+    mergeConfigMetadata,
     SANDBOX_GROUP_ORDER,
     SANDBOX_META,
     SERVER_INI_GROUP_ORDER,
@@ -72,6 +73,8 @@ type RespawnDelayConfig = {
 type ConfigProps = {
     server_config: Record<string, string>;
     sandbox_config: Record<string, unknown>;
+    server_meta: Record<string, SettingMeta>;
+    sandbox_meta: Record<string, SettingMeta>;
     respawn_delay: RespawnDelayConfig;
 };
 
@@ -181,6 +184,18 @@ function SettingInput({
         );
     }
 
+    if (meta.readOnly) {
+        return (
+            <Input
+                id={inputId}
+                value={value}
+                readOnly
+                aria-readonly="true"
+                className="cursor-not-allowed bg-muted text-muted-foreground"
+            />
+        );
+    }
+
     if (meta.sensitive) {
         return (
             <PasswordInput
@@ -240,7 +255,7 @@ function SettingInput({
                 onChange={(e) => onChange(e.target.value)}
                 min={meta.min}
                 max={meta.max}
-                step={Number(value) % 1 !== 0 ? '0.1' : '1'}
+                step={meta.step ?? 1}
                 className={dirtyClass}
             />
         );
@@ -253,6 +268,34 @@ function SettingInput({
             onChange={(e) => onChange(e.target.value)}
             className={dirtyClass}
         />
+    );
+}
+
+function SettingHelp({ meta }: { meta: SettingMeta }) {
+    const details: string[] = [];
+
+    if (!meta.sensitive && meta.default !== undefined) {
+        const defaultOption = meta.options?.find(
+            (option) => option.value === String(meta.default),
+        );
+        details.push(
+            `Default: ${defaultOption?.label ?? String(meta.default)}`,
+        );
+    }
+
+    if (meta.min !== undefined && meta.max !== undefined) {
+        details.push(`Range: ${meta.min}–${meta.max}`);
+    } else if (meta.min !== undefined) {
+        details.push(`Minimum: ${meta.min}`);
+    } else if (meta.max !== undefined) {
+        details.push(`Maximum: ${meta.max}`);
+    }
+
+    return (
+        <div className="space-y-0.5 text-xs text-muted-foreground">
+            <p>{meta.description}</p>
+            {details.length > 0 && <p>{details.join(' · ')}</p>}
+        </div>
     );
 }
 
@@ -422,12 +465,10 @@ const ConfigSection = forwardRef<ConfigSectionHandle, ConfigSectionProps>(
                                                         handleChange(key, v)
                                                     }
                                                 />
-                                                {settingMeta?.description && (
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {
-                                                            settingMeta.description
-                                                        }
-                                                    </p>
+                                                {settingMeta && (
+                                                    <SettingHelp
+                                                        meta={settingMeta}
+                                                    />
                                                 )}
                                             </div>
                                         ),
@@ -456,6 +497,8 @@ const ConfigSection = forwardRef<ConfigSectionHandle, ConfigSectionProps>(
 export default function Config({
     server_config,
     sandbox_config,
+    server_meta,
+    sandbox_meta,
     respawn_delay,
 }: ConfigProps) {
     const { t } = useTranslation();
@@ -488,6 +531,14 @@ export default function Config({
     const sandboxRef = useRef<ConfigSectionHandle>(null);
 
     const totalDirty = serverDirty + sandboxDirty;
+    const resolvedServerMeta = useMemo(
+        () => mergeConfigMetadata(SERVER_INI_META, server_meta),
+        [server_meta],
+    );
+    const resolvedSandboxMeta = useMemo(
+        () => mergeConfigMetadata(SANDBOX_META, sandbox_meta),
+        [sandbox_meta],
+    );
 
     async function saveConfig(
         url: string,
@@ -534,7 +585,15 @@ export default function Config({
         setRestartCountdown('0');
         setRestartMessage('');
         setTimeout(
-            () => router.reload({ only: ['server_config', 'sandbox_config'] }),
+            () =>
+                router.reload({
+                    only: [
+                        'server_config',
+                        'sandbox_config',
+                        'server_meta',
+                        'sandbox_meta',
+                    ],
+                }),
             2000,
         );
     }
@@ -694,7 +753,7 @@ export default function Config({
                     title={t('admin.config.server_settings_title')}
                     description={t('admin.config.server_settings_description')}
                     config={server_config}
-                    meta={SERVER_INI_META}
+                    meta={resolvedServerMeta}
                     groupOrder={SERVER_INI_GROUP_ORDER}
                     search={search}
                     onSave={(settings) =>
@@ -708,7 +767,7 @@ export default function Config({
                     title={t('admin.config.sandbox_settings_title')}
                     description={t('admin.config.sandbox_settings_description')}
                     config={flatSandbox}
-                    meta={SANDBOX_META}
+                    meta={resolvedSandboxMeta}
                     groupOrder={SANDBOX_GROUP_ORDER}
                     search={search}
                     onSave={(settings) =>

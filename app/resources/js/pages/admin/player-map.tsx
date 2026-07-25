@@ -1,13 +1,23 @@
 import { Head, router, usePoll } from '@inertiajs/react';
-import { AlertTriangle, Circle, Loader2 } from 'lucide-react';
+import {
+    AlertTriangle,
+    Circle,
+    Crosshair,
+    Loader2,
+    MapPin,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import PlayerActionDialogs from '@/components/player-action-dialogs';
+import PlayerTeleportDialog from '@/components/player-teleport-dialog';
+import type { TeleportDestination } from '@/components/player-teleport-dialog';
 import PzMap from '@/components/pz-map';
-import type { ZoneOverlay } from '@/components/pz-map';
+import type { MapLocation, ZoneOverlay } from '@/components/pz-map';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
+import { fetchAction } from '@/lib/fetch-action';
 import type { BreadcrumbItem } from '@/types';
 import type { MapConfig, PlayerMarker } from '@/types/server';
 
@@ -100,6 +110,16 @@ export default function PlayerMap({
     const [kickTarget, setKickTarget] = useState<string | null>(null);
     const [banTarget, setBanTarget] = useState<string | null>(null);
     const [accessTarget, setAccessTarget] = useState<string | null>(null);
+    const [teleportDialogOpen, setTeleportDialogOpen] = useState(false);
+    const [teleportTarget, setTeleportTarget] = useState('');
+    const [teleportDestination, setTeleportDestination] =
+        useState<TeleportDestination>({
+            x: '',
+            y: '',
+            z: '0',
+        });
+    const [teleportPicking, setTeleportPicking] = useState(false);
+    const [teleportLoading, setTeleportLoading] = useState(false);
 
     const counts = useMemo(() => {
         const online = Math.max(
@@ -110,6 +130,67 @@ export default function PlayerMap({
         const dead = markers.filter((m) => m.status === 'dead').length;
         return { online, offline, dead, total: markers.length };
     }, [markers, onlineCount]);
+    const onlineMarkers = useMemo(
+        () => markers.filter((marker) => marker.is_online),
+        [markers],
+    );
+
+    function beginTeleport(marker: PlayerMarker) {
+        setTeleportTarget(marker.username);
+        setTeleportDestination({ x: '', y: '', z: '0' });
+        setTeleportDialogOpen(false);
+        setTeleportPicking(true);
+    }
+
+    function openTeleportDialog() {
+        if (
+            !onlineMarkers.some((marker) => marker.username === teleportTarget)
+        ) {
+            setTeleportTarget(onlineMarkers[0]?.username ?? '');
+        }
+        setTeleportPicking(false);
+        setTeleportDialogOpen(true);
+    }
+
+    function handleLocationPicked(location: MapLocation) {
+        setTeleportDestination((current) => ({
+            x: String(Math.round(location.x)),
+            y: String(Math.round(location.y)),
+            z: current.z || '0',
+        }));
+        setTeleportPicking(false);
+        setTeleportDialogOpen(true);
+    }
+
+    async function confirmTeleport() {
+        if (
+            !onlineMarkers.some((marker) => marker.username === teleportTarget)
+        ) {
+            return;
+        }
+
+        setTeleportLoading(true);
+        const result = await fetchAction(
+            `/admin/players/${encodeURIComponent(teleportTarget)}/teleport`,
+            {
+                data: {
+                    x: Number(teleportDestination.x),
+                    y: Number(teleportDestination.y),
+                    z: Number(teleportDestination.z),
+                },
+                successMessage: t('admin.player_map.teleport_success', {
+                    player: teleportTarget,
+                }),
+            },
+        );
+        setTeleportLoading(false);
+
+        if (result !== null) {
+            setTeleportDialogOpen(false);
+            setTeleportPicking(false);
+            setTeleportDestination({ x: '', y: '', z: '0' });
+        }
+    }
 
     function handleMarkerAction(marker: PlayerMarker, action: string) {
         switch (action) {
@@ -124,6 +205,9 @@ export default function PlayerMap({
                 break;
             case 'inventory':
                 router.visit(`/admin/players/${marker.username}/inventory`);
+                break;
+            case 'teleport':
+                beginTeleport(marker);
                 break;
         }
     }
@@ -150,6 +234,17 @@ export default function PlayerMap({
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                            size="sm"
+                            onClick={openTeleportDialog}
+                            disabled={
+                                serverStatus !== 'online' ||
+                                onlineMarkers.length === 0
+                            }
+                        >
+                            <MapPin className="mr-1.5 size-3.5" />
+                            {t('admin.player_map.teleport_button')}
+                        </Button>
                         <Badge variant="outline" className="text-sm">
                             <Circle className="mr-1.5 size-2 fill-green-500 text-green-500" />
                             {t('admin.player_map.online_count', {
@@ -188,6 +283,28 @@ export default function PlayerMap({
 
                 <Card className="isolate flex-1">
                     <CardContent className="relative h-[350px] p-0 sm:h-[500px] lg:h-[600px]">
+                        {teleportPicking && (
+                            <div className="absolute top-2 left-1/2 z-[1001] flex w-[calc(100%-1rem)] max-w-md -translate-x-1/2 items-center justify-between gap-3 rounded-lg border border-primary/40 bg-background/95 px-4 py-3 shadow-lg backdrop-blur-sm">
+                                <div className="flex min-w-0 items-center gap-2">
+                                    <Crosshair className="size-4 shrink-0 text-primary" />
+                                    <p className="truncate text-sm font-medium">
+                                        {t(
+                                            'admin.player_map.teleport_pick_instruction',
+                                            {
+                                                player: teleportTarget,
+                                            },
+                                        )}
+                                    </p>
+                                </div>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setTeleportPicking(false)}
+                                >
+                                    {t('common.cancel')}
+                                </Button>
+                            </div>
+                        )}
                         {!usingLocalTiles && tilesGenerating && (
                             <div className="absolute top-2 left-1/2 z-[1000] w-64 -translate-x-1/2 rounded-lg border bg-background/90 px-4 py-3 shadow-sm backdrop-blur-sm sm:w-72">
                                 <div className="flex items-center gap-2 text-sm font-medium">
@@ -244,6 +361,8 @@ export default function PlayerMap({
                             hasTiles={hasTiles}
                             onMarkerAction={handleMarkerAction}
                             zones={zoneOverlays}
+                            locationPickingMode={teleportPicking}
+                            onLocationPicked={handleLocationPicked}
                             className="rounded-xl"
                         />
                     </CardContent>
@@ -291,6 +410,21 @@ export default function PlayerMap({
                 onCloseBan={() => setBanTarget(null)}
                 onCloseAccess={() => setAccessTarget(null)}
                 reloadOnly={['markers']}
+            />
+            <PlayerTeleportDialog
+                open={teleportDialogOpen}
+                players={onlineMarkers}
+                target={teleportTarget}
+                destination={teleportDestination}
+                loading={teleportLoading}
+                onOpenChange={setTeleportDialogOpen}
+                onTargetChange={setTeleportTarget}
+                onDestinationChange={setTeleportDestination}
+                onPickLocation={() => {
+                    setTeleportDialogOpen(false);
+                    setTeleportPicking(true);
+                }}
+                onConfirm={confirmTeleport}
             />
         </AppLayout>
     );

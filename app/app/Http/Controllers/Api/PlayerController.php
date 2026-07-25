@@ -8,7 +8,7 @@ use App\Http\Requests\Api\AddXpRequest;
 use App\Http\Requests\Api\BanPlayerRequest;
 use App\Http\Requests\Api\KickPlayerRequest;
 use App\Http\Requests\Api\SetAccessLevelRequest;
-use App\Http\Requests\Api\TeleportPlayerRequest;
+use App\Http\Requests\TeleportPlayerRequest;
 use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\OnlinePlayersReader;

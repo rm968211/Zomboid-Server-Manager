@@ -272,6 +272,42 @@ it('does not error when setting access level for an unregistered player', functi
     expect(User::where('username', 'GhostPlayer')->exists())->toBeFalse();
 });
 
+it('can teleport an online player to map coordinates', function () {
+    mockAdminRcon([
+        'teleport "Alice" 10500,9800,0' => '',
+    ]);
+
+    $response = $this->actingAs(adminUser())
+        ->postJson('/admin/players/Alice/teleport', [
+            'x' => 10500,
+            'y' => 9800,
+            'z' => 0,
+        ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'message' => 'Teleported Alice',
+            'command' => 'teleport "Alice" 10500,9800,0',
+        ]);
+
+    $this->assertDatabaseHas('audit_logs', [
+        'action' => 'player.teleport',
+        'target' => 'Alice',
+    ]);
+});
+
+it('rejects unsafe map teleport coordinates', function () {
+    mockAdminRcon();
+
+    $this->actingAs(adminUser())
+        ->postJson('/admin/players/Alice/teleport', [
+            'x' => '10500;quit',
+            'y' => 9800,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('x');
+});
+
 // --- Config Management ---
 
 it('renders the config page', function () {
@@ -285,6 +321,8 @@ it('renders the config page', function () {
         ->component('admin/config')
         ->has('server_config')
         ->has('sandbox_config')
+        ->has('server_meta')
+        ->has('sandbox_meta')
     );
 });
 
@@ -334,6 +372,8 @@ it('renders config page when files are unavailable', function () {
         ->component('admin/config')
         ->where('server_config', [])
         ->where('sandbox_config', [])
+        ->where('server_meta', [])
+        ->where('sandbox_meta', [])
     );
 });
 

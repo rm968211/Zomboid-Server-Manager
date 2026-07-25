@@ -8,6 +8,7 @@ export type SettingMeta = {
     options?: { value: string; label: string }[];
     min?: number;
     max?: number;
+    step?: number;
 };
 
 // ── Server.ini settings ─────────────────────────────────────────────
@@ -1072,6 +1073,14 @@ export const SERVER_INI_GROUP_ORDER = [
 // ── SandboxVars.lua settings ────────────────────────────────────────
 
 export const SANDBOX_META: Record<string, SettingMeta> = {
+    VERSION: {
+        type: 'number',
+        group: 'Advanced Sandbox',
+        description:
+            'Internal SandboxVars file-format version used by Project Zomboid. It is managed by the game and cannot be edited here.',
+        readOnly: true,
+    },
+
     // Zombie Lore
     'ZombieLore.Speed': {
         type: 'enum',
@@ -1488,22 +1497,143 @@ export const SANDBOX_META: Record<string, SettingMeta> = {
         min: 0.01,
         max: 1000,
     },
+    InsaneLootFactor: {
+        type: 'number',
+        group: 'Loot & Resources',
+        description:
+            'Loot multiplier applied when a loot category is set to Insanely Rare.',
+    },
+    ExtremeLootFactor: {
+        type: 'number',
+        group: 'Loot & Resources',
+        description:
+            'Loot multiplier applied when a loot category is set to Extremely Rare.',
+    },
+    RareLootFactor: {
+        type: 'number',
+        group: 'Loot & Resources',
+        description:
+            'Loot multiplier applied when a loot category is set to Rare.',
+    },
+    NormalLootFactor: {
+        type: 'number',
+        group: 'Loot & Resources',
+        description:
+            'Loot multiplier applied when a loot category is set to Normal.',
+    },
+    CommonLootFactor: {
+        type: 'number',
+        group: 'Loot & Resources',
+        description:
+            'Loot multiplier applied when a loot category is set to Common.',
+    },
+    AbundantLootFactor: {
+        type: 'number',
+        group: 'Loot & Resources',
+        description:
+            'Loot multiplier applied when a loot category is set to Abundant.',
+    },
+    AnimalMilkIncModifier: {
+        type: 'enum',
+        group: 'Gameplay',
+        description: 'Controls how quickly animal milk replenishes.',
+    },
+    AnimalWoolIncModifier: {
+        type: 'enum',
+        group: 'Gameplay',
+        description: 'Controls how quickly animal wool regrows.',
+    },
+    GeneratorTileRange: {
+        type: 'number',
+        group: 'World',
+        description:
+            'Horizontal tile radius around a generator that receives electricity.',
+    },
+    'ZombieLore.DoorOpeningPercentage': {
+        type: 'number',
+        group: 'Zombie Lore',
+        description: 'Percentage of spawned zombies that can open doors.',
+    },
+    'ZombieConfig.ZombiesCountBeforeDelete': {
+        type: 'number',
+        group: 'Zombie Population',
+        description:
+            'Maximum number of inactive zombie records retained before older records are deleted.',
+    },
 };
 
 export const SANDBOX_GROUP_ORDER = [
     'Zombie Lore',
     'Zombie Population',
+    'Skill XP Multipliers',
     'Time & Start',
     'World',
     'Loot & Resources',
     'Gameplay',
+    'Map',
+    'Advanced Sandbox',
 ];
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
+function humanizeSettingKey(key: string): string {
+    const leaf = key.split('.').at(-1) ?? key;
+
+    return leaf
+        .replace(/_/g, ' ')
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .toLowerCase();
+}
+
+/**
+ * Merge metadata discovered from the installed config files with the curated
+ * metadata that provides app-specific grouping and sensitive/read-only flags.
+ */
+export function mergeConfigMetadata(
+    curated: Record<string, SettingMeta>,
+    discovered: Record<string, SettingMeta>,
+): Record<string, SettingMeta> {
+    const merged: Record<string, SettingMeta> = {};
+    const keys = new Set([...Object.keys(curated), ...Object.keys(discovered)]);
+
+    for (const key of keys) {
+        const known = curated[key];
+        const source = discovered[key];
+        const sourceOptions =
+            source?.options && source.options.length >= 2
+                ? source.options
+                : undefined;
+
+        merged[key] = {
+            ...known,
+            ...source,
+            type:
+                known?.readOnly && known.type === 'list'
+                    ? known.type
+                    : (source?.type ?? known?.type ?? 'string'),
+            group: known?.group ?? source?.group ?? 'Other',
+            description:
+                source?.description ||
+                known?.description ||
+                `Controls the ${humanizeSettingKey(key)} setting.`,
+            default: source?.default ?? known?.default,
+            options: sourceOptions ?? known?.options,
+            min: source?.min ?? known?.min,
+            max: source?.max ?? known?.max,
+            step: source?.step ?? known?.step,
+            sensitive: known?.sensitive ?? source?.sensitive,
+            readOnly: known?.readOnly ?? source?.readOnly,
+        };
+    }
+
+    return merged;
+}
+
 /**
  * Group settings by their metadata group.
- * Unknown keys (not in metadata) are placed in an "Other" group.
+ * Unknown keys (not in metadata) are placed in an "Other" group. Groups that
+ * are not in the preferred order are appended so new game settings stay
+ * visible when Project Zomboid adds categories.
  */
 export function groupSettings(
     settings: Record<string, string>,
@@ -1544,10 +1674,21 @@ export function groupSettings(
         }
     }
 
-    // Append "Other" at the end if it has entries
-    const other = groups.get('Other');
-    if (other && other.length > 0) {
-        result.push({ group: 'Other', entries: other });
+    // Append newly discovered groups in source order.
+    for (const [group, entries] of groups) {
+        if (
+            !groupOrder.includes(group) &&
+            group !== 'Other' &&
+            entries.length > 0
+        ) {
+            result.push({ group, entries });
+        }
+    }
+
+    // Keep uncategorized settings last.
+    const otherEntries = groups.get('Other');
+    if (otherEntries && otherEntries.length > 0) {
+        result.push({ group: 'Other', entries: otherEntries });
     }
 
     return result;

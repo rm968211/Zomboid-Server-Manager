@@ -3,7 +3,12 @@ import 'leaflet/dist/leaflet.css';
 import { useCallback, useEffect, useRef } from 'react';
 import type { DziInfo, MapConfig, PlayerMarker } from '@/types/server';
 
-type MarkerAction = 'kick' | 'ban' | 'access' | 'inventory';
+type MarkerAction = 'kick' | 'ban' | 'access' | 'inventory' | 'teleport';
+
+export type MapLocation = {
+    x: number;
+    y: number;
+};
 
 export type ZoneOverlay = {
     id: string;
@@ -48,6 +53,8 @@ type PzMapProps = {
     eventMarkers?: EventMarker[];
     onEventMarkerClick?: (marker: EventMarker) => void;
     onMapReady?: (map: L.Map) => void;
+    locationPickingMode?: boolean;
+    onLocationPicked?: (location: MapLocation) => void;
 };
 
 const statusColors: Record<PlayerMarker['status'], string> = {
@@ -106,6 +113,7 @@ function createPopupHtml(marker: PlayerMarker): string {
     const actions = marker.is_online
         ? `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:2px;">
             <button class="pz-action" data-action="inventory" style="${btnStyle}">Inventory</button>
+            <button class="pz-action" data-action="teleport" style="${btnStyle}">Teleport</button>
             <button class="pz-action" data-action="access" style="${btnStyle}">Access</button>
             <button class="pz-action" data-action="kick" style="${btnStyle}">Kick</button>
             <button class="pz-action" data-action="ban" style="${btnDanger}">Ban</button>
@@ -235,6 +243,8 @@ export default function PzMap({
     eventMarkers,
     onEventMarkerClick,
     onMapReady,
+    locationPickingMode = false,
+    onLocationPicked,
 }: PzMapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<L.Map | null>(null);
@@ -250,10 +260,14 @@ export default function PzMap({
     // Stable refs for callbacks so event handlers always see latest values
     const onZoneDrawnRef = useRef(onZoneDrawn);
     const drawingModeRef = useRef(drawingMode);
+    const onLocationPickedRef = useRef(onLocationPicked);
+    const locationPickingModeRef = useRef(locationPickingMode);
     useEffect(() => {
         onZoneDrawnRef.current = onZoneDrawn;
         drawingModeRef.current = drawingMode;
-    }, [onZoneDrawn, drawingMode]);
+        onLocationPickedRef.current = onLocationPicked;
+        locationPickingModeRef.current = locationPickingMode;
+    }, [onZoneDrawn, drawingMode, onLocationPicked, locationPickingMode]);
 
     // Initialize map
     useEffect(() => {
@@ -305,6 +319,14 @@ export default function PzMap({
         mapRef.current = map;
 
         onMapReady?.(map);
+
+        map.on('click', (event: L.LeafletMouseEvent) => {
+            if (!locationPickingModeRef.current || drawingModeRef.current) {
+                return;
+            }
+
+            onLocationPickedRef.current?.(latLngToPz(event.latlng));
+        });
 
         // Drawing event handlers
         map.on('mousedown', (e: L.LeafletMouseEvent) => {
@@ -378,8 +400,9 @@ export default function PzMap({
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
-        container.style.cursor = drawingMode ? 'crosshair' : '';
-    }, [drawingMode]);
+        container.style.cursor =
+            drawingMode || locationPickingMode ? 'crosshair' : '';
+    }, [drawingMode, locationPickingMode]);
 
     // Cancel drawing on Escape
     const handleKeyDown = useCallback(
