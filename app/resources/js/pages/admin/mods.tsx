@@ -163,7 +163,9 @@ function SortableModRow({
         transition,
         isDragging,
     } = useSortable({
-        id: mod.workshop_id,
+        // mod_id is the unique key — a single Workshop item can bundle several
+        // mods sharing one workshop_id, which dnd-kit can't use as a sortable id.
+        id: mod.mod_id,
         disabled: isDragDisabled,
     });
 
@@ -504,12 +506,8 @@ export default function Mods({
         const { active, over } = event;
         if (!over || active.id === over.id) return;
 
-        const oldIndex = orderedMods.findIndex(
-            (m) => m.workshop_id === active.id,
-        );
-        const newIndex = orderedMods.findIndex(
-            (m) => m.workshop_id === over.id,
-        );
+        const oldIndex = orderedMods.findIndex((m) => m.mod_id === active.id);
+        const newIndex = orderedMods.findIndex((m) => m.mod_id === over.id);
         const reordered = arrayMove(orderedMods, oldIndex, newIndex);
 
         setOrderedMods(reordered);
@@ -563,6 +561,9 @@ export default function Mods({
         setLoading(true);
         await fetchAction(`/admin/mods/${mod.workshop_id}`, {
             method: 'DELETE',
+            // Disambiguates which row to remove when several mods share one
+            // Workshop item (a single Workshop upload can bundle multiple mods).
+            data: { mod_id: mod.mod_id },
             successMessage: t('admin.mods.toast_removed', {
                 mod_id: mod.mod_id,
             }),
@@ -694,14 +695,14 @@ export default function Mods({
                                     </TableHeader>
                                     <SortableContext
                                         items={filteredMods.map(
-                                            (m) => m.workshop_id,
+                                            (m) => m.mod_id,
                                         )}
                                         strategy={verticalListSortingStrategy}
                                     >
                                         <TableBody>
                                             {filteredMods.map((mod, index) => (
                                                 <SortableModRow
-                                                    key={mod.workshop_id}
+                                                    key={mod.mod_id}
                                                     mod={mod}
                                                     index={index}
                                                     onDelete={setDeleteTarget}

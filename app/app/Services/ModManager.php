@@ -34,33 +34,88 @@ class ModManager
      * leave stale or empty Mods= entries between container restarts. Falls back to
      * the INI when the state file is missing or malformed.
      *
+     * `Mods=` and `WorkshopItems=` are independent lists — a single Workshop item
+     * can bundle several internal mod IDs (e.g. one Workshop upload containing
+     * five sub-mods), so they're rarely the same length and must NOT be paired by
+     * array position. When `$workshopContentPath` is given, each mod's Workshop ID
+     * is instead resolved by scanning the downloaded Workshop content for the
+     * `mods/<ModName>/mod.info` that declares that mod ID. Without a path (or if a
+     * mod isn't found on disk), its workshop_id is ''.
+     *
      * @return array<int, array{workshop_id: string, mod_id: string, position: int}>
      */
-    public function list(string $iniPath): array
+    public function list(string $iniPath, string $workshopContentPath = ''): array
     {
         $state = $this->parseStateFile(dirname($iniPath).'/.mod_state');
 
-        if ($state !== null) {
-            $workshopIds = $this->splitList($state['WorkshopItems']);
-            $modIds = $this->splitList($state['Mods']);
-        } else {
-            $config = $this->iniParser->read($iniPath);
-            $workshopIds = $this->splitList($config['WorkshopItems'] ?? '');
-            $modIds = $this->splitList($config['Mods'] ?? '');
-        }
+        $modIds = $state !== null
+            ? $this->splitList($state['Mods'])
+            : $this->splitList($this->iniParser->read($iniPath)['Mods'] ?? '');
+
+        $workshopIdsByModId = $workshopContentPath !== ''
+            ? $this->scanWorkshopIdsByModId($workshopContentPath)
+            : [];
 
         $mods = [];
-        $count = max(count($workshopIds), count($modIds));
 
-        for ($i = 0; $i < $count; $i++) {
+        foreach ($modIds as $i => $modId) {
             $mods[] = [
-                'workshop_id' => $workshopIds[$i] ?? '',
-                'mod_id' => $modIds[$i] ?? '',
+                'workshop_id' => $workshopIdsByModId[$modId] ?? '',
+                'mod_id' => $modId,
                 'position' => $i,
             ];
         }
 
         return $mods;
+    }
+
+    /**
+     * Build a mod_id → workshop_id map from downloaded Workshop content.
+     * Each Workshop item directory holds `mods/<ModName>/mod.info` (sometimes
+     * one level deeper, e.g. `common/mod.info`) per internal mod it bundles.
+     *
+     * @return array<string, string>
+     */
+    private function scanWorkshopIdsByModId(string $workshopContentPath): array
+    {
+        $map = [];
+
+        foreach (glob($workshopContentPath.'/*', GLOB_ONLYDIR) ?: [] as $itemDir) {
+            $workshopId = basename($itemDir);
+
+            foreach (glob($itemDir.'/mods/*', GLOB_ONLYDIR) ?: [] as $modDir) {
+                $modId = $this->readModInfoId($modDir);
+
+                if ($modId !== null) {
+                    $map[$modId] = $workshopId;
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * Read the `id=` line from a mod's `mod.info`, checking the mod directory
+     * itself and one level down (build-specific copies live in subfolders like
+     * `common/` or `42/`, but all copies for a given mod share the same id).
+     */
+    private function readModInfoId(string $modDir): ?string
+    {
+        $candidates = array_merge(
+            glob($modDir.'/mod.info') ?: [],
+            glob($modDir.'/*/mod.info') ?: [],
+        );
+
+        foreach ($candidates as $file) {
+            $contents = @file_get_contents($file);
+
+            if ($contents !== false && preg_match('/^id=(.+)$/m', $contents, $matches)) {
+                return trim($matches[1]);
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -88,9 +143,9 @@ class ModManager
      *     applied_snapshot_present: bool,
      * }
      */
-    public function listWithStatus(string $iniPath, bool $serverRunning): array
+    public function listWithStatus(string $iniPath, bool $serverRunning, string $workshopContentPath = ''): array
     {
-        $mods = $this->list($iniPath);
+        $mods = $this->list($iniPath, $workshopContentPath);
         $applied = $this->parseStateFile(dirname($iniPath).'/.mod_state_applied');
         $appliedWorkshopIds = $applied !== null
             ? $this->splitList($applied['WorkshopItems'])
@@ -195,34 +250,58 @@ class ModManager
     }
 
     /**
-     * Remove a mod by workshop ID from both lines.
+     * Remove a mod from the Mods/WorkshopItems lines.
+     *
+     * A single Workshop item can bundle several internal mod IDs — production
+     * data confirms `WorkshopItems=` then lists that item once while `Mods=`
+     * lists every mod it bundles, so the two are not index-aligned. Pass
+     * `$modId` to remove by that unique key: only the matching `Mods=` entry
+     * is spliced, and `WorkshopItems=` is left untouched, since correctly
+     * pruning it would require knowing whether another remaining mod still
+     * needs that same Workshop item (see `list()`'s mod.info scan — safe to
+     * wire up later, not needed for removal to work correctly today).
+     * Without `$modId`, the legacy behavior applies: the first entry matching
+     * `$workshopId` is removed from both lists by position, which is correct
+     * whenever that Workshop item only bundles one mod.
      *
      * @return array{workshop_id: string, mod_id: string}|null The removed mod, or null if not found.
      */
-    public function remove(string $iniPath, string $workshopId, ?string $mapFolder = null): ?array
+    public function remove(string $iniPath, string $workshopId, ?string $mapFolder = null, ?string $modId = null): ?array
     {
         $current = $this->readCurrentLists($iniPath);
         $workshopIds = $current['workshop_ids'];
         $modIds = $current['mod_ids'];
 
-        $index = array_search($workshopId, $workshopIds, true);
+        if ($modId !== null) {
+            $index = array_search($modId, $modIds, true);
 
-        if ($index === false) {
-            return null;
+            if ($index === false) {
+                return null;
+            }
+
+            $removed = ['workshop_id' => $workshopId, 'mod_id' => $modIds[$index]];
+            array_splice($modIds, $index, 1);
+            $updates = ['Mods' => implode(';', $modIds)];
+        } else {
+            $index = array_search($workshopId, $workshopIds, true);
+
+            if ($index === false) {
+                return null;
+            }
+
+            $removed = [
+                'workshop_id' => $workshopIds[$index],
+                'mod_id' => $modIds[$index] ?? '',
+            ];
+
+            array_splice($workshopIds, $index, 1);
+            array_splice($modIds, $index, 1);
+
+            $updates = [
+                'WorkshopItems' => implode(';', $workshopIds),
+                'Mods' => implode(';', $modIds),
+            ];
         }
-
-        $removed = [
-            'workshop_id' => $workshopIds[$index],
-            'mod_id' => $modIds[$index] ?? '',
-        ];
-
-        array_splice($workshopIds, $index, 1);
-        array_splice($modIds, $index, 1);
-
-        $updates = [
-            'WorkshopItems' => implode(';', $workshopIds),
-            'Mods' => implode(';', $modIds),
-        ];
 
         if ($mapFolder !== null) {
             $config = $this->iniParser->read($iniPath);

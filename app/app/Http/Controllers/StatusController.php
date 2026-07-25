@@ -33,7 +33,7 @@ class StatusController extends Controller
         $mods = [];
         try {
             $iniPath = config('zomboid.paths.server_ini');
-            $mods = $this->modManager->list($iniPath);
+            $mods = $this->modManager->list($iniPath, config('zomboid.paths.workshop_content'));
         } catch (\Throwable) {
             // Config file not available
         }

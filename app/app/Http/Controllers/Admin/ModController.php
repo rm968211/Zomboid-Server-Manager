@@ -117,6 +117,10 @@ class ModController extends Controller
 
     public function destroy(Request $request, string $workshopId): JsonResponse
     {
+        $validated = $request->validate([
+            'mod_id' => ['nullable', 'string', 'max:255', 'not_regex:/[;\r\n]/'],
+        ]);
+
         if (ModManager::isProtected($workshopId)) {
             return response()->json([
                 'error' => 'This mod is required by the manager and cannot be removed.',
@@ -127,6 +131,7 @@ class ModController extends Controller
             $removed = $this->modManager->remove(
                 config('zomboid.paths.server_ini'),
                 $workshopId,
+                modId: $validated['mod_id'] ?? null,
             );
         } catch (RuntimeException $e) {
             Log::error('Failed to remove mod', ['exception' => $e, 'workshop_id' => $workshopId]);
@@ -186,6 +191,7 @@ class ModController extends Controller
         $status = $this->modManager->listWithStatus(
             config('zomboid.paths.server_ini'),
             $serverRunning,
+            config('zomboid.paths.workshop_content'),
         );
 
         return response()->json([
@@ -240,6 +246,7 @@ class ModController extends Controller
         $status = $this->modManager->listWithStatus(
             config('zomboid.paths.server_ini'),
             $serverRunning,
+            config('zomboid.paths.workshop_content'),
         );
 
         return response()->json([

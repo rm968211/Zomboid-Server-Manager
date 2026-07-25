@@ -19,12 +19,26 @@ beforeEach(function () {
     $this->iniPath = $this->tempDir.'/Server/ZomboidServer.ini';
     copy(base_path('tests/fixtures/server.ini'), $this->iniPath);
     config(['zomboid.paths.server_ini' => $this->iniPath]);
+
+    // Downloaded Workshop content used to resolve workshop_id by scanning
+    // mod.info — see ModManager::list().
+    $this->workshopContentPath = $this->tempDir.'/workshop_content';
+    mkdir($this->workshopContentPath, 0777, true);
+    config(['zomboid.paths.workshop_content' => $this->workshopContentPath]);
+    foreach ([
+        ['2561774086', 'SuperSurvivors'],
+        ['2286126274', 'Hydrocraft'],
+        ['3685323705', 'ZomboidManager'],
+    ] as [$workshopId, $modId]) {
+        seedWorkshopMod($this->workshopContentPath, $workshopId, $modId);
+    }
 });
 
 afterEach(function () {
     @unlink($this->tempDir.'/Server/.mod_state');
     @unlink($this->iniPath);
     @rmdir($this->tempDir.'/Server');
+    rrmdir($this->workshopContentPath);
     @rmdir($this->tempDir);
 });
 

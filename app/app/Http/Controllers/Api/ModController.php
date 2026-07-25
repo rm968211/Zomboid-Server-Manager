@@ -28,7 +28,7 @@ class ModController
         }
 
         return response()->json([
-            'mods' => $this->modManager->list($path),
+            'mods' => $this->modManager->list($path, config('zomboid.paths.workshop_content')),
         ]);
     }
 
@@ -151,7 +151,7 @@ class ModController
         );
 
         return response()->json([
-            'mods' => $this->modManager->list($path),
+            'mods' => $this->modManager->list($path, config('zomboid.paths.workshop_content')),
             'restart_required' => true,
         ]);
     }

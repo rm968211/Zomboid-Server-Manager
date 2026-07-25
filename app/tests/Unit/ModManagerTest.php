@@ -12,6 +12,22 @@ beforeEach(function () {
     $this->iniPath = $this->tempDir.'/Server/ZomboidServer.ini';
     $this->configStatePath = $this->tempDir.'/Server/.config_state';
     copy(dirname(__DIR__).'/fixtures/server.ini', $this->iniPath);
+
+    // Downloaded Workshop content used to resolve workshop_id by scanning
+    // mod.info, mirroring how a single Workshop item can bundle several mods.
+    $this->workshopContentPath = $this->tempDir.'/workshop_content';
+    mkdir($this->workshopContentPath, 0777, true);
+    foreach ([
+        ['2561774086', 'SuperSurvivors'],
+        ['2286126274', 'Hydrocraft'],
+        ['3685323705', 'ZomboidManager'],
+        ['1111111111', 'TestMod'],
+        ['1111111111', 'NewMod'],
+        ['9999999999', 'MapMod'],
+        ['9999999999', 'StateMod'],
+    ] as [$workshopId, $modId]) {
+        seedWorkshopMod($this->workshopContentPath, $workshopId, $modId);
+    }
 });
 
 afterEach(function () {
@@ -27,13 +43,14 @@ afterEach(function () {
     if (is_dir($this->tempDir.'/Server')) {
         rmdir($this->tempDir.'/Server');
     }
+    rrmdir($this->workshopContentPath);
     if (is_dir($this->tempDir)) {
         rmdir($this->tempDir);
     }
 });
 
 it('lists mods from ini file', function () {
-    $mods = $this->manager->list($this->iniPath);
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
 
     expect($mods)->toHaveCount(2)
         ->and($mods[0]['workshop_id'])->toBe('2561774086')
@@ -42,10 +59,53 @@ it('lists mods from ini file', function () {
         ->and($mods[1]['mod_id'])->toBe('Hydrocraft');
 });
 
+it('returns blank workshop_id for every mod when no workshop content path is given', function () {
+    $mods = $this->manager->list($this->iniPath);
+
+    expect($mods[0]['workshop_id'])->toBe('')
+        ->and($mods[1]['workshop_id'])->toBe('');
+});
+
+it('returns blank workshop_id for a mod not found on disk', function () {
+    $this->parser->write($this->iniPath, ['Mods' => 'UnknownMod', 'WorkshopItems' => '']);
+
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
+
+    expect($mods)->toHaveCount(1)
+        ->and($mods[0]['mod_id'])->toBe('UnknownMod')
+        ->and($mods[0]['workshop_id'])->toBe('');
+});
+
+it('resolves workshop_id by scanning mod.info when one Workshop item bundles multiple mods', function () {
+    seedWorkshopMod($this->workshopContentPath, '5000000000', 'BundleModA');
+    seedWorkshopMod($this->workshopContentPath, '5000000000', 'BundleModB');
+    $this->parser->write($this->iniPath, [
+        'Mods' => 'BundleModA;BundleModB',
+        'WorkshopItems' => '5000000000',
+    ]);
+
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
+
+    expect($mods)->toHaveCount(2)
+        ->and($mods[0]['workshop_id'])->toBe('5000000000')
+        ->and($mods[1]['workshop_id'])->toBe('5000000000');
+});
+
+it('resolves workshop_id from mod.info nested one level down (e.g. common/mod.info)', function () {
+    $modDir = $this->workshopContentPath.'/6000000000/mods/NestedMod/common';
+    mkdir($modDir, 0777, true);
+    file_put_contents($modDir.'/mod.info', "id=NestedMod\n");
+    $this->parser->write($this->iniPath, ['Mods' => 'NestedMod', 'WorkshopItems' => '6000000000']);
+
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
+
+    expect($mods[0]['workshop_id'])->toBe('6000000000');
+});
+
 it('adds a mod to both lists', function () {
     $this->manager->add($this->iniPath, '1111111111', 'TestMod');
 
-    $mods = $this->manager->list($this->iniPath);
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
 
     // Existing fixture (2) + user-added (1) + auto-attached ZomboidManager (1) = 4
     expect($mods)->toHaveCount(4)
@@ -57,7 +117,7 @@ it('adds a mod to both lists', function () {
 it('prevents duplicate workshop ids', function () {
     $this->manager->add($this->iniPath, '2561774086', 'SuperSurvivors');
 
-    expect($this->manager->list($this->iniPath))->toHaveCount(2);
+    expect($this->manager->list($this->iniPath, $this->workshopContentPath))->toHaveCount(2);
 });
 
 it('removes a mod from both lists', function () {
@@ -65,7 +125,7 @@ it('removes a mod from both lists', function () {
 
     expect($removed)->toBe(['workshop_id' => '2561774086', 'mod_id' => 'SuperSurvivors']);
 
-    $mods = $this->manager->list($this->iniPath);
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
     // Hydrocraft survives + auto-attached ZomboidManager
     expect($mods)->toHaveCount(2)
         ->and($mods[0]['workshop_id'])->toBe('2286126274')
@@ -76,13 +136,34 @@ it('returns null when removing nonexistent mod', function () {
     expect($this->manager->remove($this->iniPath, '0000000000'))->toBeNull();
 });
 
+it('removes by mod_id, leaving WorkshopItems untouched, when several mods share a workshop_id', function () {
+    $this->parser->write($this->iniPath, [
+        'Mods' => 'BundleModA;BundleModB',
+        'WorkshopItems' => '5000000000',
+    ]);
+
+    $removed = $this->manager->remove($this->iniPath, '5000000000', modId: 'BundleModB');
+
+    expect($removed)->toBe(['workshop_id' => '5000000000', 'mod_id' => 'BundleModB']);
+
+    $stateContent = file_get_contents($this->tempDir.'/Server/.mod_state');
+    expect($stateContent)->toContain('Mods=BundleModA')
+        ->and($stateContent)->not->toContain('BundleModB')
+        // WorkshopItems is left alone — BundleModA still needs this Workshop item.
+        ->and($stateContent)->toContain('WorkshopItems=5000000000');
+});
+
+it('returns null removing by mod_id when that mod is not present', function () {
+    expect($this->manager->remove($this->iniPath, '2561774086', modId: 'NotInstalled'))->toBeNull();
+});
+
 it('reorders mods', function () {
     $this->manager->reorder($this->iniPath, [
         ['workshop_id' => '2286126274', 'mod_id' => 'Hydrocraft'],
         ['workshop_id' => '2561774086', 'mod_id' => 'SuperSurvivors'],
     ]);
 
-    $mods = $this->manager->list($this->iniPath);
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
     expect($mods[0]['workshop_id'])->toBe('2286126274')
         ->and($mods[1]['workshop_id'])->toBe('2561774086');
 });
@@ -91,7 +172,7 @@ it('handles empty mod list', function () {
     // Clear mods
     $this->parser->write($this->iniPath, ['Mods' => '', 'WorkshopItems' => '']);
 
-    $mods = $this->manager->list($this->iniPath);
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
 
     expect($mods)->toBe([]);
 });
@@ -191,7 +272,7 @@ it('allows reorder that keeps required mod', function () {
         ['workshop_id' => '2286126274', 'mod_id' => 'Hydrocraft'],
     ]);
 
-    $mods = $this->manager->list($this->iniPath);
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
     expect($mods[0]['workshop_id'])->toBe('3685323705');
 });
 
@@ -212,7 +293,7 @@ it('lists mods from .mod_state when state file exists, ignoring INI', function (
         "Mods=StateMod\nWorkshopItems=9999999999\n"
     );
 
-    $mods = $this->manager->list($this->iniPath);
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
 
     expect($mods)->toHaveCount(1)
         ->and($mods[0]['mod_id'])->toBe('StateMod')
@@ -225,7 +306,7 @@ it('returns empty list when .mod_state has empty mod values', function () {
         "Mods=\nWorkshopItems=\n"
     );
 
-    expect($this->manager->list($this->iniPath))->toBe([]);
+    expect($this->manager->list($this->iniPath, $this->workshopContentPath))->toBe([]);
 });
 
 it('falls back to INI when .mod_state is malformed', function () {
@@ -234,7 +315,7 @@ it('falls back to INI when .mod_state is malformed', function () {
         'garbage content with no recognizable lines'
     );
 
-    $mods = $this->manager->list($this->iniPath);
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
 
     expect($mods)->toHaveCount(2)
         ->and($mods[0]['mod_id'])->toBe('SuperSurvivors');
@@ -246,7 +327,7 @@ it('falls back to INI when .mod_state is missing WorkshopItems line', function (
         "Mods=StateMod\n"
     );
 
-    $mods = $this->manager->list($this->iniPath);
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
 
     expect($mods)->toHaveCount(2)
         ->and($mods[0]['mod_id'])->toBe('SuperSurvivors');
@@ -256,7 +337,7 @@ it('returns state-file mods even when INI was clobbered to empty', function () {
     $this->manager->add($this->iniPath, '1111111111', 'TestMod');
     $this->parser->write($this->iniPath, ['Mods' => '', 'WorkshopItems' => '']);
 
-    $mods = $this->manager->list($this->iniPath);
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
 
     // 2 fixture + 1 added + auto ZomboidManager
     expect($mods)->toHaveCount(4)
@@ -325,7 +406,7 @@ it('rolls back the INI when state file write fails', function () {
 })->skip(getmyuid() === 0, 'chmod restrictions are bypassed by root');
 
 it('marks all mods stopped when server is not running', function () {
-    $result = $this->manager->listWithStatus($this->iniPath, serverRunning: false);
+    $result = $this->manager->listWithStatus($this->iniPath, serverRunning: false, workshopContentPath: $this->workshopContentPath);
 
     expect($result['server_running'])->toBeFalse()
         ->and($result['pending_restart'])->toBeFalse()
@@ -343,7 +424,7 @@ it('marks mods active when state matches applied snapshot', function () {
         "Mods=SuperSurvivors;Hydrocraft;TestMod;ZomboidManager\nWorkshopItems=2561774086;2286126274;1111111111;3685323705\n"
     );
 
-    $result = $this->manager->listWithStatus($this->iniPath, serverRunning: true);
+    $result = $this->manager->listWithStatus($this->iniPath, serverRunning: true, workshopContentPath: $this->workshopContentPath);
 
     expect($result['pending_restart'])->toBeFalse()
         ->and(collect($result['mods'])->pluck('status')->all())
@@ -358,7 +439,7 @@ it('marks newly added mod as pending_restart when applied snapshot is older', fu
 
     $this->manager->add($this->iniPath, '1111111111', 'NewMod');
 
-    $result = $this->manager->listWithStatus($this->iniPath, serverRunning: true);
+    $result = $this->manager->listWithStatus($this->iniPath, serverRunning: true, workshopContentPath: $this->workshopContentPath);
 
     expect($result['pending_restart'])->toBeTrue();
 
@@ -376,7 +457,7 @@ it('flags pending_restart when a mod was removed since last server start', funct
 
     $this->manager->remove($this->iniPath, '2286126274');
 
-    $result = $this->manager->listWithStatus($this->iniPath, serverRunning: true);
+    $result = $this->manager->listWithStatus($this->iniPath, serverRunning: true, workshopContentPath: $this->workshopContentPath);
 
     // After remove() the auto-attached ZomboidManager (3685323705) is in user intent
     // but not in .mod_state_applied — so it's correctly flagged pending_restart.
@@ -388,7 +469,7 @@ it('flags pending_restart when a mod was removed since last server start', funct
 });
 
 it('falls back to active when applied snapshot is missing on running server', function () {
-    $result = $this->manager->listWithStatus($this->iniPath, serverRunning: true);
+    $result = $this->manager->listWithStatus($this->iniPath, serverRunning: true, workshopContentPath: $this->workshopContentPath);
 
     expect($result['pending_restart'])->toBeFalse()
         ->and($result['applied_snapshot_present'])->toBeFalse()
