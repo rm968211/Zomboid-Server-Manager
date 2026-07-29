@@ -361,7 +361,8 @@ function SortableModRow({
     };
 
     const isGrouped = group.position !== 'solo';
-    const isContinuation = group.position === 'middle' || group.position === 'end';
+    const isContinuation =
+        group.position === 'middle' || group.position === 'end';
     const requires = mod.requires ?? [];
     const missingRequires = requires.filter((r) => !installedModIds.has(r));
     const requiredBy = mod.required_by ?? [];
@@ -867,7 +868,10 @@ export default function Mods({
     // search), so groups are recomputed against whatever's currently visible
     // rather than the full list — a partially-filtered bundle just renders
     // as standalone rows instead of a broken-looking group.
-    const modGroups = useMemo(() => computeGroups(filteredMods), [filteredMods]);
+    const modGroups = useMemo(
+        () => computeGroups(filteredMods),
+        [filteredMods],
+    );
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -1198,9 +1202,7 @@ export default function Mods({
                                                                 ]
                                                             }
                                                             group={
-                                                                modGroups[
-                                                                    index
-                                                                ]
+                                                                modGroups[index]
                                                             }
                                                             installedModIds={
                                                                 existingModIds
