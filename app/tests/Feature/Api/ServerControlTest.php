@@ -267,6 +267,18 @@ it('validates restart countdown range', function () {
         ->assertJsonValidationErrors('countdown');
 });
 
+it('records update notes in the audit log', function () {
+    config(['zomboid.api_key' => 'test-key-12345']);
+
+    Queue::fake();
+
+    $this->postJson('/api/server/update', ['notes' => 'Restarted via Discord by ryan (123)'], apiHeaders())
+        ->assertOk();
+
+    $entry = AuditLog::where('action', 'post:api/server/update')->latest('id')->first();
+    expect($entry->details['body']['notes'])->toBe('Restarted via Discord by ryan (123)');
+});
+
 // ── POST /api/server/save ────────────────────────────────────────────
 
 it('saves the world', function () {
