@@ -7,9 +7,17 @@ use Illuminate\Support\Facades\Log;
 
 class GameVersionReader
 {
-    private const CACHE_KEY = 'pz.game_version';
+    /**
+     * Versioned so deployments of the freshness-aware reader do not keep a
+     * stale value written by the previous detection order for up to 24 hours.
+     */
+    private const CACHE_KEY = 'pz.game_version.v2';
 
     private const CACHE_TTL = 86400;
+
+    private const CONSOLE_READ_CHUNK_SIZE = 65536;
+
+    private const CONSOLE_MATCH_OVERLAP = 256;
 
     public function __construct(
         private readonly GameStateReader $gameStateReader,
@@ -21,20 +29,32 @@ class GameVersionReader
      */
     public function detectVersion(): ?string
     {
-        // Primary: read from game_state.json (Lua bridge, updated every minute)
+        // Primary: use the Lua bridge only while it is actively updating. A
+        // server update/restart can leave the previous build's snapshot behind.
         $state = $this->gameStateReader->getGameState();
-        if (! empty($state['game_version'])) {
+        if (! empty($state['game_version']) && ! $this->gameStateReader->isStale()) {
             return $this->extractVersionNumber($state['game_version']);
         }
 
-        // Secondary: parse server-console.txt (works with screen sessions)
+        // Secondary: parse the current version from server-console.txt.
         $consoleVersion = $this->detectVersionFromConsoleLog();
         if ($consoleVersion !== null) {
             return $consoleVersion;
         }
 
-        // Last resort: parse Docker container logs for version string
-        return $this->detectVersionFromLogs();
+        // Then try Docker output in case the console file is unavailable.
+        $dockerVersion = $this->detectVersionFromLogs();
+        if ($dockerVersion !== null) {
+            return $dockerVersion;
+        }
+
+        // An old Lua snapshot is still useful as a last-known version while the
+        // server is offline, but it must never override a current log entry.
+        if (! empty($state['game_version'])) {
+            return $this->extractVersionNumber($state['game_version']);
+        }
+
+        return null;
     }
 
     /**
@@ -108,6 +128,8 @@ class GameVersionReader
             return null;
         }
 
+        $fp = null;
+
         try {
             $size = @filesize($path);
             if ($size === false || $size === 0) {
@@ -119,25 +141,42 @@ class GameVersionReader
                 return null;
             }
 
-            // Read the last 64 KB — version appears once per boot and the most
-            // recent startup entry is always near the end of a growing log file.
-            $readSize = min(65536, $size);
-            fseek($fp, -$readSize, SEEK_END);
-            $chunk = fread($fp, $readSize);
-            fclose($fp);
+            // Search backwards in bounded chunks. Build 42 can emit enough
+            // startup output to push version= outside a fixed tail window, while
+            // long-lived logs can contain version lines from several boots.
+            $offset = $size;
+            $newerChunkPrefix = '';
 
-            if ($chunk === false) {
-                return null;
-            }
+            while ($offset > 0) {
+                $readSize = min(self::CONSOLE_READ_CHUNK_SIZE, $offset);
+                $offset -= $readSize;
 
-            // Return the last match when multiple boots are present in the window
-            if (preg_match_all('/version(?:Number)?\s*=\s*([0-9]+\.[0-9]+(?:\.[0-9]+)*)/', $chunk, $matches)) {
-                return end($matches[1]);
+                if (fseek($fp, $offset, SEEK_SET) !== 0) {
+                    break;
+                }
+
+                $chunk = fread($fp, $readSize);
+                if ($chunk === false || $chunk === '') {
+                    break;
+                }
+
+                $searchBuffer = $chunk.$newerChunkPrefix;
+                if (preg_match_all('/version(?:Number)?\s*=\s*([0-9]+\.[0-9]+(?:\.[0-9]+)*)/', $searchBuffer, $matches)) {
+                    return end($matches[1]);
+                }
+
+                // Preserve enough of the newer chunk to detect a version line
+                // split across the boundary between two reads.
+                $newerChunkPrefix = substr($chunk, 0, self::CONSOLE_MATCH_OVERLAP);
             }
         } catch (\Throwable $e) {
             Log::debug('GameVersionReader: failed to read server-console.txt', [
                 'error' => $e->getMessage(),
             ]);
+        } finally {
+            if (is_resource($fp)) {
+                fclose($fp);
+            }
         }
 
         return null;
