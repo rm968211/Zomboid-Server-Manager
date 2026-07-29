@@ -187,11 +187,28 @@ class ModController extends Controller
             ], 422);
         }
 
+        $modId = $validated['mod_id'] ?? null;
+
+        if ($modId !== null) {
+            $dependents = $this->modManager->findDependents(
+                config('zomboid.paths.server_ini'),
+                config('zomboid.paths.workshop_content'),
+                $modId,
+            );
+
+            if ($dependents !== []) {
+                return response()->json([
+                    'error' => 'Still required by: '.implode(', ', $dependents),
+                    'dependents' => $dependents,
+                ], 422);
+            }
+        }
+
         try {
             $removed = $this->modManager->remove(
                 config('zomboid.paths.server_ini'),
                 $workshopId,
-                modId: $validated['mod_id'] ?? null,
+                modId: $modId,
             );
         } catch (RuntimeException $e) {
             Log::error('Failed to remove mod', ['exception' => $e, 'workshop_id' => $workshopId]);

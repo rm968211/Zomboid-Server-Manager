@@ -25,6 +25,7 @@ import {
     Download,
     FileUp,
     GripVertical,
+    Layers,
     Loader2,
     Package,
     Pencil,
@@ -72,6 +73,11 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { fetchAction } from '@/lib/fetch-action';
@@ -261,6 +267,59 @@ function ModMeta({ details }: { details: WorkshopDetails }) {
     );
 }
 
+type GroupPosition = 'solo' | 'start' | 'middle' | 'end';
+type GroupInfo = { position: GroupPosition; siblings: string[] };
+
+/**
+ * A single Workshop item can bundle several mods (e.g. one upload containing
+ * seven sub-mods) — they're installed as consecutive `Mods=` entries. This
+ * clusters visually-adjacent rows sharing a workshop_id into a group, without
+ * reordering anything: load order (and drag-to-reorder) stays exactly as-is,
+ * so a bundle only *looks* grouped when its members happen to still be next
+ * to each other.
+ */
+function computeGroups(mods: ModEntry[]): GroupInfo[] {
+    const result: GroupInfo[] = new Array(mods.length);
+    let i = 0;
+
+    while (i < mods.length) {
+        // An unresolved workshop_id ('') never groups with anything — treat
+        // it as its own solo run and move on. Without this, the inner scan
+        // below (which starts comparing at `i` itself) never advances past
+        // an empty-string workshop_id, since '' is falsy, looping forever.
+        if (!mods[i].workshop_id) {
+            result[i] = { position: 'solo', siblings: [] };
+            i++;
+            continue;
+        }
+
+        let j = i + 1;
+        while (j < mods.length && mods[j].workshop_id === mods[i].workshop_id) {
+            j++;
+        }
+
+        const runLength = j - i;
+        const siblings =
+            runLength > 1 ? mods.slice(i, j).map((m) => m.mod_id) : [];
+
+        for (let k = i; k < j; k++) {
+            const position: GroupPosition =
+                runLength === 1
+                    ? 'solo'
+                    : k === i
+                      ? 'start'
+                      : k === j - 1
+                        ? 'end'
+                        : 'middle';
+            result[k] = { position, siblings };
+        }
+
+        i = j;
+    }
+
+    return result;
+}
+
 function SortableModRow({
     mod,
     index,
@@ -268,12 +327,16 @@ function SortableModRow({
     isDragDisabled,
     isProtected,
     details,
+    group,
+    installedModIds,
 }: {
     mod: ModEntry;
     index: number;
     onDelete: (mod: ModEntry) => void;
     isDragDisabled: boolean;
     isProtected: boolean;
+    group: GroupInfo;
+    installedModIds: Set<string>;
     details?: WorkshopDetails | null;
 }) {
     const { t } = useTranslation();
@@ -297,11 +360,23 @@ function SortableModRow({
         opacity: isDragging ? 0.5 : undefined,
     };
 
+    const isGrouped = group.position !== 'solo';
+    const isContinuation = group.position === 'middle' || group.position === 'end';
+    const requires = mod.requires ?? [];
+    const missingRequires = requires.filter((r) => !installedModIds.has(r));
+    const requiredBy = mod.required_by ?? [];
+    const blocked = requiredBy.length > 0;
+
     return (
         <TableRow
             ref={setNodeRef}
             style={style}
-            className={isDragging ? 'bg-muted' : undefined}
+            className={[
+                isDragging ? 'bg-muted' : '',
+                isGrouped ? 'border-l-2 border-l-primary/40' : '',
+            ]
+                .filter(Boolean)
+                .join(' ')}
         >
             <TableCell className="w-[50px]">
                 {!isDragDisabled ? (
@@ -321,39 +396,98 @@ function SortableModRow({
                 )}
             </TableCell>
             <TableCell className="font-medium">
-                <div className="flex items-center gap-3">
-                    <ModThumb src={details?.preview_url} />
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                            {details?.title ? (
-                                <a
-                                    href={workshopUrl(mod.workshop_id)}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="truncate hover:underline"
-                                >
-                                    {details.title}
-                                </a>
-                            ) : (
-                                <span className="truncate">{mod.mod_id}</span>
-                            )}
-                            {isProtected && (
-                                <Badge variant="outline" className="text-xs">
-                                    {t('admin.mods.required_badge')}
-                                </Badge>
-                            )}
-                            <CompatBadge compat={details?.build_compat} />
-                        </div>
-                        <div className="truncate font-mono text-xs text-muted-foreground">
+                {isContinuation ? (
+                    <div className="flex items-center gap-2 pl-6 text-muted-foreground">
+                        <span aria-hidden="true">↳</span>
+                        <span className="truncate font-mono text-xs">
                             {mod.mod_id}
-                        </div>
-                        {details && (
-                            <div className="hidden md:block">
-                                <ModMeta details={details} />
-                            </div>
+                        </span>
+                        {isProtected && (
+                            <Badge variant="outline" className="text-xs">
+                                {t('admin.mods.required_badge')}
+                            </Badge>
                         )}
                     </div>
-                </div>
+                ) : (
+                    <div className="flex items-center gap-3">
+                        <ModThumb src={details?.preview_url} />
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                                {details?.title ? (
+                                    <a
+                                        href={workshopUrl(mod.workshop_id)}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="truncate hover:underline"
+                                    >
+                                        {details.title}
+                                    </a>
+                                ) : (
+                                    <span className="truncate">
+                                        {mod.mod_id}
+                                    </span>
+                                )}
+                                {isProtected && (
+                                    <Badge
+                                        variant="outline"
+                                        className="text-xs"
+                                    >
+                                        {t('admin.mods.required_badge')}
+                                    </Badge>
+                                )}
+                                <CompatBadge compat={details?.build_compat} />
+                                {group.position === 'start' && (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Badge
+                                                variant="outline"
+                                                className="gap-1 text-xs"
+                                                data-testid="bundle-badge"
+                                            >
+                                                <Layers className="size-3" />
+                                                {t('admin.mods.bundle_badge', {
+                                                    count: String(
+                                                        group.siblings.length,
+                                                    ),
+                                                })}
+                                            </Badge>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {group.siblings.join(', ')}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )}
+                            </div>
+                            <div className="truncate font-mono text-xs text-muted-foreground">
+                                {mod.mod_id}
+                            </div>
+                            {details && (
+                                <div className="hidden md:block">
+                                    <ModMeta details={details} />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+                {requires.length > 0 && (
+                    <div
+                        className={`mt-1 truncate text-xs ${missingRequires.length > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
+                    >
+                        {missingRequires.length > 0 && (
+                            <AlertTriangle className="mr-1 inline size-3" />
+                        )}
+                        {t('admin.mods.requires_label', {
+                            mods: requires.join(', '),
+                        })}
+                    </div>
+                )}
+                {blocked && (
+                    <div className="mt-1 truncate text-xs text-amber-600 dark:text-amber-400">
+                        {t('admin.mods.required_by_label', {
+                            mods: requiredBy.join(', '),
+                        })}
+                    </div>
+                )}
             </TableCell>
             <TableCell className="hidden sm:table-cell">
                 <Badge variant="secondary" className="text-xs">
@@ -364,16 +498,37 @@ function SortableModRow({
                 <StatusBadge status={mod.status} />
             </TableCell>
             <TableCell className="text-right">
-                {!isProtected && (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => onDelete(mod)}
-                    >
-                        <Trash2 className="size-4" />
-                    </Button>
-                )}
+                {!isProtected &&
+                    (blocked ? (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        disabled
+                                        className="text-destructive"
+                                    >
+                                        <Trash2 className="size-4" />
+                                    </Button>
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('admin.mods.required_by_label', {
+                                    mods: requiredBy.join(', '),
+                                })}
+                            </TooltipContent>
+                        </Tooltip>
+                    ) : (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => onDelete(mod)}
+                        >
+                            <Trash2 className="size-4" />
+                        </Button>
+                    ))}
             </TableCell>
         </TableRow>
     );
@@ -708,6 +863,12 @@ export default function Mods({
         );
     }, [orderedMods, search, details]);
 
+    // Filtering can split a bundle apart (only some of its mods match the
+    // search), so groups are recomputed against whatever's currently visible
+    // rather than the full list — a partially-filtered bundle just renders
+    // as standalone rows instead of a broken-looking group.
+    const modGroups = useMemo(() => computeGroups(filteredMods), [filteredMods]);
+
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
         useSensor(KeyboardSensor, {
@@ -1035,6 +1196,14 @@ export default function Mods({
                                                                     mod
                                                                         .workshop_id
                                                                 ]
+                                                            }
+                                                            group={
+                                                                modGroups[
+                                                                    index
+                                                                ]
+                                                            }
+                                                            installedModIds={
+                                                                existingModIds
                                                             }
                                                         />
                                                     ),
@@ -1598,6 +1767,21 @@ export default function Mods({
                             })}
                         </DialogDescription>
                     </DialogHeader>
+                    {(deleteTarget?.required_by?.length ?? 0) > 0 && (
+                        <Alert
+                            className="border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200 [&>svg]:text-amber-600"
+                            data-testid="delete-blocked-alert"
+                        >
+                            <AlertTriangle className="size-4" />
+                            <AlertDescription>
+                                {t('admin.mods.delete_blocked_description', {
+                                    mods: (
+                                        deleteTarget?.required_by ?? []
+                                    ).join(', '),
+                                })}
+                            </AlertDescription>
+                        </Alert>
+                    )}
                     <DialogFooter>
                         <Button
                             variant="outline"
@@ -1607,7 +1791,10 @@ export default function Mods({
                         </Button>
                         <Button
                             variant="outline"
-                            disabled={loading}
+                            disabled={
+                                loading ||
+                                (deleteTarget?.required_by?.length ?? 0) > 0
+                            }
                             onClick={() =>
                                 deleteTarget && removeMod(deleteTarget, true)
                             }
@@ -1618,7 +1805,10 @@ export default function Mods({
                         </Button>
                         <Button
                             variant="destructive"
-                            disabled={loading}
+                            disabled={
+                                loading ||
+                                (deleteTarget?.required_by?.length ?? 0) > 0
+                            }
                             onClick={() =>
                                 deleteTarget && removeMod(deleteTarget)
                             }

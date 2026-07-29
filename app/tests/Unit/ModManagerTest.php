@@ -102,6 +102,56 @@ it('resolves workshop_id from mod.info nested one level down (e.g. common/mod.in
     expect($mods[0]['workshop_id'])->toBe('6000000000');
 });
 
+it('reports requires from mod.info and required_by for dependents that are enabled', function () {
+    seedWorkshopMod($this->workshopContentPath, '5000000000', 'BasePack');
+    seedWorkshopMod($this->workshopContentPath, '5000000000', 'AddonA', ['BasePack']);
+    seedWorkshopMod($this->workshopContentPath, '5000000000', 'AddonB', ['BasePack', 'AddonA']);
+    $this->parser->write($this->iniPath, [
+        'Mods' => 'BasePack;AddonA;AddonB',
+        'WorkshopItems' => '5000000000',
+    ]);
+
+    $mods = collect($this->manager->list($this->iniPath, $this->workshopContentPath))->keyBy('mod_id');
+
+    expect($mods['BasePack']['requires'])->toBe([])
+        ->and($mods['BasePack']['required_by'])->toEqualCanonicalizing(['AddonA', 'AddonB'])
+        ->and($mods['AddonA']['requires'])->toBe(['BasePack'])
+        ->and($mods['AddonA']['required_by'])->toBe(['AddonB'])
+        ->and($mods['AddonB']['requires'])->toBe(['BasePack', 'AddonA'])
+        ->and($mods['AddonB']['required_by'])->toBe([]);
+});
+
+it('lists a declared requirement even when that mod is not currently installed', function () {
+    seedWorkshopMod($this->workshopContentPath, '5000000000', 'AddonA', ['MissingBase']);
+    $this->parser->write($this->iniPath, ['Mods' => 'AddonA', 'WorkshopItems' => '5000000000']);
+
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
+
+    expect($mods[0]['requires'])->toBe(['MissingBase']);
+});
+
+it('strips a stray leading backslash from require= dependency names', function () {
+    $modDir = $this->workshopContentPath.'/5000000000/mods/AddonA';
+    mkdir($modDir, 0777, true);
+    file_put_contents($modDir.'/mod.info', "id=AddonA\nrequire=\\BasePack\n");
+    $this->parser->write($this->iniPath, ['Mods' => 'AddonA', 'WorkshopItems' => '5000000000']);
+
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
+
+    expect($mods[0]['requires'])->toBe(['BasePack']);
+});
+
+it('findDependents returns the currently-enabled mods that require the given mod', function () {
+    seedWorkshopMod($this->workshopContentPath, '5000000000', 'BasePack');
+    seedWorkshopMod($this->workshopContentPath, '5000000000', 'AddonA', ['BasePack']);
+    $this->parser->write($this->iniPath, ['Mods' => 'BasePack;AddonA', 'WorkshopItems' => '5000000000']);
+
+    expect($this->manager->findDependents($this->iniPath, $this->workshopContentPath, 'BasePack'))
+        ->toBe(['AddonA'])
+        ->and($this->manager->findDependents($this->iniPath, $this->workshopContentPath, 'AddonA'))
+        ->toBe([]);
+});
+
 it('adds a mod to both lists', function () {
     $this->manager->add($this->iniPath, '1111111111', 'TestMod');
 

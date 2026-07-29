@@ -48,14 +48,21 @@ function something()
 
 /**
  * Seed a Workshop content fixture: creates
- * `<path>/<workshopId>/mods/<modId>/mod.info` declaring that mod ID, mirroring
- * how downloaded Workshop content resolves workshop_id in ModManager::list().
+ * `<path>/<workshopId>/mods/<modId>/mod.info` declaring that mod ID (and,
+ * optionally, a `require=` line), mirroring how downloaded Workshop content
+ * resolves workshop_id/requires in ModManager::list().
+ *
+ * @param  list<string>  $requires
  */
-function seedWorkshopMod(string $workshopContentPath, string $workshopId, string $modId): void
+function seedWorkshopMod(string $workshopContentPath, string $workshopId, string $modId, array $requires = []): void
 {
     $modDir = $workshopContentPath.'/'.$workshopId.'/mods/'.$modId;
     mkdir($modDir, 0777, true);
-    file_put_contents($modDir.'/mod.info', "id=$modId\nname=$modId\n");
+    $contents = "id=$modId\nname=$modId\n";
+    if ($requires !== []) {
+        $contents .= 'require='.implode(',', $requires)."\n";
+    }
+    file_put_contents($modDir.'/mod.info', $contents);
 }
 
 function rrmdir(string $dir): void

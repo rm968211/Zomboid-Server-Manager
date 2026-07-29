@@ -266,6 +266,27 @@ describe('TranslationService', function () {
         expect($translations)->toHaveKey('nav.players');
         expect($translations['nav.players'])->toBe('მოთამაშეები');
     });
+
+    it('picks up new JSON keys automatically without an explicit bustCache call', function () {
+        // Regression: adding a key straight to lang/en.json (a deploy) used to
+        // leave the old value cached for up to an hour, since only DB-edited
+        // translations called bustCache(). The cache key now folds in the
+        // JSON files' mtime, so a changed file is a different cache entry.
+        $tempLangDir = sys_get_temp_dir().'/pz_lang_test_'.uniqid();
+        mkdir($tempLangDir, 0777, true);
+        file_put_contents($tempLangDir.'/en.json', json_encode(['foo.bar' => 'v1']));
+        app()->useLangPath($tempLangDir);
+
+        expect(TranslationService::getForLocale('en')['foo.bar'])->toBe('v1');
+
+        file_put_contents($tempLangDir.'/en.json', json_encode(['foo.bar' => 'v2']));
+        touch($tempLangDir.'/en.json', time() + 5);
+        clearstatcache();
+
+        expect(TranslationService::getForLocale('en')['foo.bar'])->toBe('v2');
+
+        rrmdir($tempLangDir);
+    });
 });
 
 // ── Export / Import ─────────────────────────────────────────────────
