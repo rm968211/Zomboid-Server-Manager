@@ -18,8 +18,11 @@ import { CSS } from '@dnd-kit/utilities';
 import { Head, router } from '@inertiajs/react';
 import {
     AlertTriangle,
+    Bookmark,
+    BookmarkPlus,
     CheckCircle2,
     Clock,
+    Download,
     FileUp,
     GripVertical,
     Loader2,
@@ -28,6 +31,7 @@ import {
     Plus,
     RotateCcw,
     Search,
+    Star,
     Trash2,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -67,11 +71,17 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { fetchAction } from '@/lib/fetch-action';
 import { parseModImport } from '@/lib/parse-mod-import';
-import type { BreadcrumbItem, ModEntry } from '@/types';
+import type {
+    BreadcrumbItem,
+    BuildCompat,
+    ModEntry,
+    WorkshopDetails,
+} from '@/types';
 
 type LookupResult = {
     found: boolean;
@@ -141,18 +151,130 @@ function StatusBadge({ status }: { status: ModEntry['status'] }) {
     );
 }
 
+function workshopUrl(workshopId: string): string {
+    return `https://steamcommunity.com/sharedfiles/filedetails/?id=${workshopId}`;
+}
+
+function fmtSize(bytes: number): string {
+    if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+    if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+    if (bytes >= 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${bytes} B`;
+}
+
+function fmtDate(unixSeconds: number): string {
+    return new Date(unixSeconds * 1000).toLocaleDateString(undefined, {
+        month: 'short',
+        year: 'numeric',
+    });
+}
+
+function CompatBadge({ compat }: { compat?: BuildCompat }) {
+    const { t } = useTranslation();
+
+    if (!compat) {
+        return null;
+    }
+
+    if (compat === 'b42') {
+        return (
+            <Badge
+                variant="outline"
+                className="border-emerald-500/40 bg-emerald-500/10 text-xs text-emerald-700 dark:text-emerald-400"
+                data-testid="compat-b42"
+            >
+                {t('admin.mods.compat_b42')}
+            </Badge>
+        );
+    }
+
+    if (compat === 'b41') {
+        return (
+            <Badge
+                variant="outline"
+                className="border-rose-500/40 bg-rose-500/10 text-xs text-rose-700 dark:text-rose-400"
+                data-testid="compat-b41"
+            >
+                {t('admin.mods.compat_b41')}
+            </Badge>
+        );
+    }
+
+    return (
+        <Badge
+            variant="outline"
+            className="text-xs text-muted-foreground"
+            data-testid="compat-unknown"
+        >
+            {t('admin.mods.compat_unknown')}
+        </Badge>
+    );
+}
+
+function ModThumb({
+    src,
+    className = 'size-10',
+}: {
+    src?: string | null;
+    className?: string;
+}) {
+    return (
+        <div
+            className={`relative shrink-0 overflow-hidden rounded-md bg-muted ${className}`}
+        >
+            <Package className="absolute inset-0 m-auto size-4 text-muted-foreground" />
+            {src && (
+                <img
+                    src={src}
+                    alt=""
+                    loading="lazy"
+                    className="absolute inset-0 size-full object-cover"
+                    onError={(e) => e.currentTarget.remove()}
+                />
+            )}
+        </div>
+    );
+}
+
+function ModMeta({ details }: { details: WorkshopDetails }) {
+    const { t } = useTranslation();
+
+    return (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+            {details.subscriptions != null && (
+                <span className="flex items-center gap-1">
+                    <Star className="size-3" />
+                    {details.subscriptions.toLocaleString()}
+                </span>
+            )}
+            {details.time_updated != null && (
+                <span>
+                    {t('admin.mods.meta_updated', {
+                        date: fmtDate(details.time_updated),
+                    })}
+                </span>
+            )}
+            {details.file_size != null && details.file_size > 0 && (
+                <span>{fmtSize(details.file_size)}</span>
+            )}
+        </div>
+    );
+}
+
 function SortableModRow({
     mod,
     index,
     onDelete,
     isDragDisabled,
     isProtected,
+    details,
 }: {
     mod: ModEntry;
     index: number;
     onDelete: (mod: ModEntry) => void;
     isDragDisabled: boolean;
     isProtected: boolean;
+    details?: WorkshopDetails | null;
 }) {
     const { t } = useTranslation();
     const {
@@ -199,14 +321,39 @@ function SortableModRow({
                 )}
             </TableCell>
             <TableCell className="font-medium">
-                <span className="flex items-center gap-2">
-                    {mod.mod_id}
-                    {isProtected && (
-                        <Badge variant="outline" className="text-xs">
-                            {t('admin.mods.required_badge')}
-                        </Badge>
-                    )}
-                </span>
+                <div className="flex items-center gap-3">
+                    <ModThumb src={details?.preview_url} />
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                            {details?.title ? (
+                                <a
+                                    href={workshopUrl(mod.workshop_id)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="truncate hover:underline"
+                                >
+                                    {details.title}
+                                </a>
+                            ) : (
+                                <span className="truncate">{mod.mod_id}</span>
+                            )}
+                            {isProtected && (
+                                <Badge variant="outline" className="text-xs">
+                                    {t('admin.mods.required_badge')}
+                                </Badge>
+                            )}
+                            <CompatBadge compat={details?.build_compat} />
+                        </div>
+                        <div className="truncate font-mono text-xs text-muted-foreground">
+                            {mod.mod_id}
+                        </div>
+                        {details && (
+                            <div className="hidden md:block">
+                                <ModMeta details={details} />
+                            </div>
+                        )}
+                    </div>
+                </div>
             </TableCell>
             <TableCell className="hidden sm:table-cell">
                 <Badge variant="secondary" className="text-xs">
@@ -237,11 +384,13 @@ export default function Mods({
     protectedWorkshopIds = [],
     pendingRestart = false,
     serverRunning = false,
+    watchlist = [],
 }: {
     mods: ModEntry[];
     protectedWorkshopIds?: string[];
     pendingRestart?: boolean;
     serverRunning?: boolean;
+    watchlist?: string[];
 }) {
     const { t } = useTranslation();
     const protectedSet = useMemo(
@@ -266,6 +415,16 @@ export default function Mods({
     const [manualOverride, setManualOverride] = useState(false);
     const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lookupAbort = useRef<AbortController | null>(null);
+
+    const [view, setView] = useState<'installed' | 'watchlist'>('installed');
+    const [details, setDetails] = useState<
+        Record<string, WorkshopDetails | null>
+    >({});
+    const [watchSort, setWatchSort] = useState<'added' | 'b42'>('added');
+    const [showWatch, setShowWatch] = useState(false);
+    const [watchId, setWatchId] = useState('');
+    const [watchLoading, setWatchLoading] = useState(false);
+    const [pendingInstall, setPendingInstall] = useState<string | null>(null);
 
     const existingWorkshopIds = useMemo(
         () => new Set(mods.map((m) => m.workshop_id).filter(Boolean)),
@@ -400,6 +559,59 @@ export default function Mods({
         setOrderedMods(mods);
     }, [mods]);
 
+    // Batch-fetch Workshop metadata (title, thumbnail, build compat, stats)
+    // for every installed + watched mod that we haven't resolved yet.
+    useEffect(() => {
+        const wanted = new Set<string>(watchlist);
+        mods.forEach((m) => {
+            if (m.workshop_id) {
+                wanted.add(m.workshop_id);
+            }
+        });
+        const missing = [...wanted].filter((id) => !(id in details));
+        if (missing.length === 0) {
+            return;
+        }
+
+        let cancelled = false;
+        (async () => {
+            const json = (await fetchAction('/admin/mods/details', {
+                data: { workshop_ids: missing },
+                silent: true,
+            })) as {
+                details?: Record<string, WorkshopDetails | null>;
+            } | null;
+            if (cancelled || !json?.details) {
+                return;
+            }
+            setDetails((prev) => ({ ...prev, ...json.details }));
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [mods, watchlist, details]);
+
+    const sortedWatchlist = useMemo(() => {
+        const entries = watchlist.map((id) => ({
+            id,
+            details: details[id] ?? null,
+        }));
+        if (watchSort === 'b42') {
+            const rank: Record<BuildCompat, number> = {
+                b42: 0,
+                unknown: 1,
+                b41: 2,
+            };
+            return [...entries].sort(
+                (a, b) =>
+                    rank[a.details?.build_compat ?? 'unknown'] -
+                    rank[b.details?.build_compat ?? 'unknown'],
+            );
+        }
+        return entries;
+    }, [watchlist, details, watchSort]);
+
     const resetLookupState = useCallback(() => {
         setLookup({ status: 'idle' });
         setModId('');
@@ -491,9 +703,10 @@ export default function Mods({
         return orderedMods.filter(
             (m) =>
                 m.mod_id.toLowerCase().includes(q) ||
-                m.workshop_id.toLowerCase().includes(q),
+                m.workshop_id.toLowerCase().includes(q) ||
+                (details[m.workshop_id]?.title ?? '').toLowerCase().includes(q),
         );
-    }, [orderedMods, search]);
+    }, [orderedMods, search, details]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -539,12 +752,13 @@ export default function Mods({
     function closeAddDialog() {
         setShowAdd(false);
         setWorkshopId('');
+        setPendingInstall(null);
         resetLookupState();
     }
 
     async function addMod() {
         setLoading(true);
-        await fetchAction('/admin/mods', {
+        const result = await fetchAction('/admin/mods', {
             data: {
                 workshop_id: workshopId,
                 mod_id: modId,
@@ -552,25 +766,74 @@ export default function Mods({
             },
             successMessage: t('admin.mods.toast_added', { mod_id: modId }),
         });
+        // Installing a watched mod removes it from the watchlist.
+        if (result && pendingInstall === workshopId.trim()) {
+            await fetchAction(`/admin/mods/watchlist/${pendingInstall}`, {
+                method: 'DELETE',
+                silent: true,
+            });
+        }
         setLoading(false);
         closeAddDialog();
-        router.reload({ only: ['mods', 'pendingRestart', 'serverRunning'] });
+        router.reload({
+            only: ['mods', 'watchlist', 'pendingRestart', 'serverRunning'],
+        });
     }
 
-    async function removeMod(mod: ModEntry) {
+    async function removeMod(mod: ModEntry, toWatchlist = false) {
         setLoading(true);
-        await fetchAction(`/admin/mods/${mod.workshop_id}`, {
+        const result = await fetchAction(`/admin/mods/${mod.workshop_id}`, {
             method: 'DELETE',
             // Disambiguates which row to remove when several mods share one
             // Workshop item (a single Workshop upload can bundle multiple mods).
             data: { mod_id: mod.mod_id },
-            successMessage: t('admin.mods.toast_removed', {
-                mod_id: mod.mod_id,
-            }),
+            successMessage: toWatchlist
+                ? t('admin.mods.toast_moved_to_watchlist', {
+                      mod_id: mod.mod_id,
+                  })
+                : t('admin.mods.toast_removed', {
+                      mod_id: mod.mod_id,
+                  }),
         });
+        if (result && toWatchlist) {
+            await fetchAction('/admin/mods/watchlist', {
+                data: { workshop_id: mod.workshop_id },
+                silent: true,
+            });
+        }
         setLoading(false);
         setDeleteTarget(null);
-        router.reload({ only: ['mods', 'pendingRestart', 'serverRunning'] });
+        router.reload({
+            only: ['mods', 'watchlist', 'pendingRestart', 'serverRunning'],
+        });
+    }
+
+    async function addWatch() {
+        setWatchLoading(true);
+        const result = await fetchAction('/admin/mods/watchlist', {
+            data: { workshop_id: watchId.trim() },
+            successMessage: t('admin.mods.toast_watch_added'),
+        });
+        setWatchLoading(false);
+        if (result) {
+            setShowWatch(false);
+            setWatchId('');
+            router.reload({ only: ['watchlist'] });
+        }
+    }
+
+    async function removeWatch(id: string) {
+        await fetchAction(`/admin/mods/watchlist/${id}`, {
+            method: 'DELETE',
+            successMessage: t('admin.mods.toast_watch_removed'),
+        });
+        router.reload({ only: ['watchlist'] });
+    }
+
+    function installFromWatchlist(id: string) {
+        setPendingInstall(id);
+        setWorkshopId(id);
+        setShowAdd(true);
     }
 
     return (
@@ -589,96 +852,253 @@ export default function Mods({
                         </p>
                     </div>
                     <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={openBulk}
-                            data-testid="bulk-import-button"
-                        >
-                            <FileUp className="mr-1.5 size-4" />
-                            {t('admin.mods.bulk_import')}
-                        </Button>
-                        <Button onClick={() => setShowAdd(true)}>
-                            <Plus className="mr-1.5 size-4" />
-                            {t('admin.mods.add_mod')}
-                        </Button>
+                        {view === 'installed' ? (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    onClick={openBulk}
+                                    data-testid="bulk-import-button"
+                                >
+                                    <FileUp className="mr-1.5 size-4" />
+                                    {t('admin.mods.bulk_import')}
+                                </Button>
+                                <Button onClick={() => setShowAdd(true)}>
+                                    <Plus className="mr-1.5 size-4" />
+                                    {t('admin.mods.add_mod')}
+                                </Button>
+                            </>
+                        ) : (
+                            <Button
+                                onClick={() => setShowWatch(true)}
+                                data-testid="watch-mod-button"
+                            >
+                                <BookmarkPlus className="mr-1.5 size-4" />
+                                {t('admin.mods.watch_mod')}
+                            </Button>
+                        )}
                     </div>
                 </div>
 
-                <Card>
-                    <CardHeader>
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Package className="size-5" />
-                                    {t('admin.mods.installed_mods')}
-                                </CardTitle>
-                                <CardDescription>
-                                    {t(
-                                        'admin.mods.installed_mods_description',
-                                        {
-                                            filtered: String(
-                                                filteredMods.length,
-                                            ),
-                                            total: String(mods.length),
-                                        },
-                                    )}
-                                </CardDescription>
+                <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    value={view}
+                    onValueChange={(v) => {
+                        if (v === 'installed' || v === 'watchlist') {
+                            setView(v);
+                        }
+                    }}
+                    className="self-start"
+                >
+                    <ToggleGroupItem
+                        value="installed"
+                        data-testid="tab-installed"
+                    >
+                        <Package className="mr-1.5 size-4" />
+                        {t('admin.mods.tab_installed')} ({mods.length})
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                        value="watchlist"
+                        data-testid="tab-watchlist"
+                    >
+                        <Bookmark className="mr-1.5 size-4" />
+                        {t('admin.mods.tab_watchlist')} ({watchlist.length})
+                    </ToggleGroupItem>
+                </ToggleGroup>
+
+                {view === 'installed' && (
+                    <Card>
+                        <CardHeader>
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Package className="size-5" />
+                                        {t('admin.mods.installed_mods')}
+                                    </CardTitle>
+                                    <CardDescription>
+                                        {t(
+                                            'admin.mods.installed_mods_description',
+                                            {
+                                                filtered: String(
+                                                    filteredMods.length,
+                                                ),
+                                                total: String(mods.length),
+                                            },
+                                        )}
+                                    </CardDescription>
+                                </div>
+                                <div className="relative">
+                                    <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder={t(
+                                            'admin.mods.search_placeholder',
+                                        )}
+                                        value={search}
+                                        onChange={(e) =>
+                                            setSearch(e.target.value)
+                                        }
+                                        className="pl-9 sm:w-[200px]"
+                                    />
+                                </div>
                             </div>
-                            <div className="relative">
-                                <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
-                                <Input
-                                    placeholder={t(
-                                        'admin.mods.search_placeholder',
-                                    )}
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="pl-9 sm:w-[200px]"
-                                />
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        {pendingRestart && (
-                            <Alert
-                                className="mb-4 border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200 [&>svg]:text-amber-600"
-                                data-testid="pending-restart-banner"
-                            >
-                                <AlertTriangle className="size-4" />
-                                <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <span>
-                                        {t('admin.mods.pending_restart_banner')}
-                                    </span>
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        disabled={restarting || !serverRunning}
-                                        onClick={restartServer}
-                                        data-testid="restart-server-button"
+                        </CardHeader>
+                        <CardContent>
+                            {pendingRestart && (
+                                <Alert
+                                    className="mb-4 border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200 [&>svg]:text-amber-600"
+                                    data-testid="pending-restart-banner"
+                                >
+                                    <AlertTriangle className="size-4" />
+                                    <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <span>
+                                            {t(
+                                                'admin.mods.pending_restart_banner',
+                                            )}
+                                        </span>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            disabled={
+                                                restarting || !serverRunning
+                                            }
+                                            onClick={restartServer}
+                                            data-testid="restart-server-button"
+                                        >
+                                            <RotateCcw
+                                                className={`mr-1.5 size-4 ${restarting ? 'animate-spin' : ''}`}
+                                            />
+                                            {restarting
+                                                ? t('admin.mods.restarting')
+                                                : t('admin.mods.restart_now')}
+                                        </Button>
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                            {filteredMods.length > 0 ? (
+                                <DndContext
+                                    sensors={sensors}
+                                    collisionDetection={closestCenter}
+                                    onDragEnd={handleDragEnd}
+                                >
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="w-[50px]">
+                                                    {isFiltering ? '#' : ''}
+                                                </TableHead>
+                                                <TableHead>
+                                                    {t(
+                                                        'admin.mods.table_mod_id',
+                                                    )}
+                                                </TableHead>
+                                                <TableHead className="hidden sm:table-cell">
+                                                    {t(
+                                                        'admin.mods.table_workshop_id',
+                                                    )}
+                                                </TableHead>
+                                                <TableHead>
+                                                    {t(
+                                                        'admin.mods.table_status',
+                                                    )}
+                                                </TableHead>
+                                                <TableHead className="text-right">
+                                                    {t('common.actions')}
+                                                </TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <SortableContext
+                                            items={filteredMods.map(
+                                                (m) => m.mod_id,
+                                            )}
+                                            strategy={
+                                                verticalListSortingStrategy
+                                            }
+                                        >
+                                            <TableBody>
+                                                {filteredMods.map(
+                                                    (mod, index) => (
+                                                        <SortableModRow
+                                                            key={mod.mod_id}
+                                                            mod={mod}
+                                                            index={index}
+                                                            onDelete={
+                                                                setDeleteTarget
+                                                            }
+                                                            isDragDisabled={
+                                                                isFiltering
+                                                            }
+                                                            isProtected={protectedSet.has(
+                                                                mod.workshop_id,
+                                                            )}
+                                                            details={
+                                                                details[
+                                                                    mod
+                                                                        .workshop_id
+                                                                ]
+                                                            }
+                                                        />
+                                                    ),
+                                                )}
+                                            </TableBody>
+                                        </SortableContext>
+                                    </Table>
+                                </DndContext>
+                            ) : (
+                                <p className="py-8 text-center text-muted-foreground">
+                                    {search
+                                        ? t('admin.mods.no_mods_search')
+                                        : t('admin.mods.no_mods')}
+                                </p>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
+
+                {view === 'watchlist' && (
+                    <Card>
+                        <CardHeader>
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Bookmark className="size-5" />
+                                        {t('admin.mods.watchlist_title')}
+                                    </CardTitle>
+                                    <CardDescription>
+                                        {t('admin.mods.watchlist_description', {
+                                            count: String(watchlist.length),
+                                        })}
+                                    </CardDescription>
+                                </div>
+                                <Select
+                                    value={watchSort}
+                                    onValueChange={(v) =>
+                                        setWatchSort(v as 'added' | 'b42')
+                                    }
+                                >
+                                    <SelectTrigger
+                                        className="sm:w-[200px]"
+                                        data-testid="watchlist-sort"
                                     >
-                                        <RotateCcw
-                                            className={`mr-1.5 size-4 ${restarting ? 'animate-spin' : ''}`}
-                                        />
-                                        {restarting
-                                            ? t('admin.mods.restarting')
-                                            : t('admin.mods.restart_now')}
-                                    </Button>
-                                </AlertDescription>
-                            </Alert>
-                        )}
-                        {filteredMods.length > 0 ? (
-                            <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragEnd={handleDragEnd}
-                            >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="added">
+                                            {t('admin.mods.sort_added')}
+                                        </SelectItem>
+                                        <SelectItem value="b42">
+                                            {t('admin.mods.sort_b42')}
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {sortedWatchlist.length > 0 ? (
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="w-[50px]">
-                                                {isFiltering ? '#' : ''}
-                                            </TableHead>
                                             <TableHead>
-                                                {t('admin.mods.table_mod_id')}
+                                                {t('admin.mods.table_mod')}
                                             </TableHead>
                                             <TableHead className="hidden sm:table-cell">
                                                 {t(
@@ -686,45 +1106,126 @@ export default function Mods({
                                                 )}
                                             </TableHead>
                                             <TableHead>
-                                                {t('admin.mods.table_status')}
+                                                {t('admin.mods.table_b42')}
                                             </TableHead>
                                             <TableHead className="text-right">
                                                 {t('common.actions')}
                                             </TableHead>
                                         </TableRow>
                                     </TableHeader>
-                                    <SortableContext
-                                        items={filteredMods.map(
-                                            (m) => m.mod_id,
+                                    <TableBody>
+                                        {sortedWatchlist.map(
+                                            ({ id, details: d }) => {
+                                                const installed =
+                                                    existingWorkshopIds.has(id);
+                                                return (
+                                                    <TableRow
+                                                        key={id}
+                                                        data-testid="watchlist-row"
+                                                    >
+                                                        <TableCell className="font-medium">
+                                                            <div className="flex items-center gap-3">
+                                                                <ModThumb
+                                                                    src={
+                                                                        d?.preview_url
+                                                                    }
+                                                                    className="size-12"
+                                                                />
+                                                                <div className="min-w-0">
+                                                                    <a
+                                                                        href={workshopUrl(
+                                                                            id,
+                                                                        )}
+                                                                        target="_blank"
+                                                                        rel="noreferrer"
+                                                                        className="block truncate hover:underline"
+                                                                    >
+                                                                        {d?.title ||
+                                                                            id}
+                                                                    </a>
+                                                                    {d && (
+                                                                        <ModMeta
+                                                                            details={
+                                                                                d
+                                                                            }
+                                                                        />
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="hidden sm:table-cell">
+                                                            <Badge
+                                                                variant="secondary"
+                                                                className="text-xs"
+                                                            >
+                                                                {id}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <CompatBadge
+                                                                compat={
+                                                                    d?.build_compat ??
+                                                                    'unknown'
+                                                                }
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <div className="flex items-center justify-end gap-1">
+                                                                {installed ? (
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        className="text-xs text-muted-foreground"
+                                                                    >
+                                                                        {t(
+                                                                            'admin.mods.already_installed',
+                                                                        )}
+                                                                    </Badge>
+                                                                ) : (
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={() =>
+                                                                            installFromWatchlist(
+                                                                                id,
+                                                                            )
+                                                                        }
+                                                                        data-testid="watchlist-install"
+                                                                    >
+                                                                        <Download className="mr-1.5 size-4" />
+                                                                        {t(
+                                                                            'admin.mods.install',
+                                                                        )}
+                                                                    </Button>
+                                                                )}
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="text-destructive hover:text-destructive"
+                                                                    onClick={() =>
+                                                                        removeWatch(
+                                                                            id,
+                                                                        )
+                                                                    }
+                                                                    data-testid="watchlist-remove"
+                                                                >
+                                                                    <Trash2 className="size-4" />
+                                                                </Button>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            },
                                         )}
-                                        strategy={verticalListSortingStrategy}
-                                    >
-                                        <TableBody>
-                                            {filteredMods.map((mod, index) => (
-                                                <SortableModRow
-                                                    key={mod.mod_id}
-                                                    mod={mod}
-                                                    index={index}
-                                                    onDelete={setDeleteTarget}
-                                                    isDragDisabled={isFiltering}
-                                                    isProtected={protectedSet.has(
-                                                        mod.workshop_id,
-                                                    )}
-                                                />
-                                            ))}
-                                        </TableBody>
-                                    </SortableContext>
+                                    </TableBody>
                                 </Table>
-                            </DndContext>
-                        ) : (
-                            <p className="py-8 text-center text-muted-foreground">
-                                {search
-                                    ? t('admin.mods.no_mods_search')
-                                    : t('admin.mods.no_mods')}
-                            </p>
-                        )}
-                    </CardContent>
-                </Card>
+                            ) : (
+                                <p className="py-8 text-center text-muted-foreground">
+                                    {t('admin.mods.no_watchlist')}
+                                </p>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
             </div>
 
             {/* Add Mod Dialog */}
@@ -1105,6 +1606,17 @@ export default function Mods({
                             {t('common.cancel')}
                         </Button>
                         <Button
+                            variant="outline"
+                            disabled={loading}
+                            onClick={() =>
+                                deleteTarget && removeMod(deleteTarget, true)
+                            }
+                            data-testid="move-to-watchlist-button"
+                        >
+                            <Bookmark className="mr-1.5 size-4" />
+                            {t('admin.mods.move_to_watchlist')}
+                        </Button>
+                        <Button
                             variant="destructive"
                             disabled={loading}
                             onClick={() =>
@@ -1112,6 +1624,64 @@ export default function Mods({
                             }
                         >
                             {t('admin.mods.delete_dialog_title')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Watch Mod Dialog */}
+            <Dialog
+                open={showWatch}
+                onOpenChange={(open) => {
+                    setShowWatch(open);
+                    if (!open) {
+                        setWatchId('');
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>
+                            {t('admin.mods.watch_dialog_title')}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {t('admin.mods.watch_dialog_description')}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-2">
+                        <Label htmlFor="watch-workshop-id">
+                            {t('admin.mods.table_workshop_id')}
+                        </Label>
+                        <Input
+                            id="watch-workshop-id"
+                            inputMode="numeric"
+                            value={watchId}
+                            onChange={(e) => setWatchId(e.target.value)}
+                            placeholder={t(
+                                'admin.mods.workshop_id_placeholder',
+                            )}
+                            data-testid="watch-workshop-id-input"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setShowWatch(false);
+                                setWatchId('');
+                            }}
+                        >
+                            {t('common.cancel')}
+                        </Button>
+                        <Button
+                            disabled={
+                                watchLoading ||
+                                !/^\d{1,20}$/.test(watchId.trim())
+                            }
+                            onClick={addWatch}
+                            data-testid="watch-submit-button"
+                        >
+                            {t('admin.mods.watch_mod')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

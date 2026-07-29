@@ -44,6 +44,22 @@ export type ModEntry = {
     status?: ModStatus;
 };
 
+export type BuildCompat = 'b42' | 'b41' | 'unknown';
+
+export type WorkshopDetails = {
+    workshop_id: string;
+    title: string;
+    description: string;
+    preview_url: string | null;
+    mod_ids: string[];
+    map_folders: string[];
+    tags: string[];
+    build_compat: BuildCompat;
+    time_updated: number | null;
+    file_size: number | null;
+    subscriptions: number | null;
+};
+
 export type AuditEntry = {
     id: string;
     actor: string;
