@@ -61,3 +61,23 @@ it('removes a mod with no dependents on its own, with an empty cascaded list', f
 
     $response->assertOk()->assertJson(['removed' => ['workshop_id' => '5000000000', 'mod_id' => 'BasePack', 'cascaded' => []]]);
 });
+
+it('removes a mod with no matching WorkshopItems entry via a non-numeric path placeholder', function () {
+    // Mirrors the frontend: a mod with no matching WorkshopItems= entry has
+    // workshop_id === '', which the UI substitutes with a placeholder segment
+    // so the URL still matches the {workshopId} route.
+    (new ServerIniParser)->write($this->iniPath, [
+        'Mods' => 'BasePack',
+        'WorkshopItems' => '',
+    ]);
+
+    $response = $this->actingAs($this->admin)->deleteJson('/admin/mods/unresolved', [
+        'mod_id' => 'BasePack',
+    ]);
+
+    $response->assertOk()
+        ->assertJson(['removed' => ['workshop_id' => 'unresolved', 'mod_id' => 'BasePack', 'cascaded' => []]]);
+
+    $mods = (new ServerIniParser)->read($this->iniPath)['Mods'];
+    expect($mods)->not->toContain('BasePack');
+});

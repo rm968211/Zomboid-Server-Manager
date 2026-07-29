@@ -987,19 +987,27 @@ export default function Mods({
 
     async function removeMod(mod: ModEntry, toWishlist = false) {
         setLoading(true);
-        const result = await fetchAction(`/admin/mods/${mod.workshop_id}`, {
-            method: 'DELETE',
-            // Disambiguates which row to remove when several mods share one
-            // Workshop item (a single Workshop upload can bundle multiple mods).
-            data: { mod_id: mod.mod_id },
-            successMessage: toWishlist
-                ? t('admin.mods.toast_moved_to_wishlist', {
-                      mod_id: mod.mod_id,
-                  })
-                : t('admin.mods.toast_removed', {
-                      mod_id: mod.mod_id,
-                  }),
-        });
+        // A mod with no matching WorkshopItems= entry has workshop_id === '',
+        // which would collapse the URL to /admin/mods (no DELETE route). The
+        // backend looks the mod up by mod_id in the body when present, so the
+        // path segment just needs to be non-empty.
+        const result = await fetchAction(
+            `/admin/mods/${mod.workshop_id || 'unresolved'}`,
+            {
+                method: 'DELETE',
+                // Disambiguates which row to remove when several mods share
+                // one Workshop item (a single Workshop upload can bundle
+                // multiple mods).
+                data: { mod_id: mod.mod_id },
+                successMessage: toWishlist
+                    ? t('admin.mods.toast_moved_to_wishlist', {
+                          mod_id: mod.mod_id,
+                      })
+                    : t('admin.mods.toast_removed', {
+                          mod_id: mod.mod_id,
+                      }),
+            },
+        );
         if (result && toWishlist) {
             await fetchAction('/admin/mods/wishlist', {
                 data: { workshop_id: mod.workshop_id },
