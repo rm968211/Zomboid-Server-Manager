@@ -70,8 +70,9 @@ Route::middleware(['auth', 'admin', 'throttle:admin'])->group(function () {
         Route::get('mods', [Admin\ModController::class, 'index'])->name('mods');
         Route::post('mods/lookup', [Admin\ModController::class, 'lookup'])->name('mods.lookup');
         Route::post('mods/details', [Admin\ModController::class, 'details'])->name('mods.details');
-        Route::post('mods/watchlist', [Admin\ModController::class, 'watchlistStore'])->name('mods.watchlist.store');
-        Route::delete('mods/watchlist/{workshopId}', [Admin\ModController::class, 'watchlistDestroy'])->name('mods.watchlist.destroy');
+        Route::post('mods/wishlist', [Admin\ModController::class, 'wishlistStore'])->name('mods.wishlist.store');
+        Route::post('mods/wishlist/import', [Admin\ModController::class, 'wishlistImport'])->name('mods.wishlist.import');
+        Route::delete('mods/wishlist/{workshopId}', [Admin\ModController::class, 'wishlistDestroy'])->name('mods.wishlist.destroy');
         Route::post('mods', [Admin\ModController::class, 'store'])->name('mods.store');
         Route::post('mods/import', [Admin\ModController::class, 'import'])->name('mods.import');
         Route::delete('mods/{workshopId}', [Admin\ModController::class, 'destroy'])->name('mods.destroy');

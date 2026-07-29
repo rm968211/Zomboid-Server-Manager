@@ -2,15 +2,15 @@
 
 namespace Database\Factories;
 
-use App\Models\WatchlistMod;
+use App\Models\WishlistMod;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<WatchlistMod>
+ * @extends Factory<WishlistMod>
  */
-class WatchlistModFactory extends Factory
+class WishlistModFactory extends Factory
 {
-    protected $model = WatchlistMod::class;
+    protected $model = WishlistMod::class;
 
     /**
      * @return array<string, mixed>

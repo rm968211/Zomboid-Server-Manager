@@ -89,7 +89,7 @@ class ModManager
 
     /**
      * Look up which currently enabled mods declare needing `$modId` (via their
-     * mod.info `require=` line) — used to block removing a mod others depend on.
+     * mod.info `require=` line) — the immediate dependents only, not transitive.
      *
      * @return list<string>
      */
@@ -102,6 +102,42 @@ class ModManager
         }
 
         return [];
+    }
+
+    /**
+     * Every currently enabled mod that transitively requires `$modId` — i.e.
+     * mods that require it directly, plus mods that require those, and so on.
+     * Used by `remove()` to cascade a removal instead of leaving dependents
+     * behind in a broken state.
+     *
+     * @return list<string>
+     */
+    private function transitiveDependents(string $iniPath, string $workshopContentPath, string $modId): array
+    {
+        $requiredByMap = [];
+
+        foreach ($this->list($iniPath, $workshopContentPath) as $mod) {
+            $requiredByMap[$mod['mod_id']] = $mod['required_by'];
+        }
+
+        $seen = [];
+        $queue = $requiredByMap[$modId] ?? [];
+
+        while ($queue !== []) {
+            $id = array_shift($queue);
+
+            if (isset($seen[$id])) {
+                continue;
+            }
+
+            $seen[$id] = true;
+
+            foreach ($requiredByMap[$id] ?? [] as $next) {
+                $queue[] = $next;
+            }
+        }
+
+        return array_keys($seen);
     }
 
     /**
@@ -312,32 +348,42 @@ class ModManager
      * A single Workshop item can bundle several internal mod IDs — production
      * data confirms `WorkshopItems=` then lists that item once while `Mods=`
      * lists every mod it bundles, so the two are not index-aligned. Pass
-     * `$modId` to remove by that unique key: only the matching `Mods=` entry
-     * is spliced, and `WorkshopItems=` is left untouched, since correctly
-     * pruning it would require knowing whether another remaining mod still
-     * needs that same Workshop item (see `list()`'s mod.info scan — safe to
-     * wire up later, not needed for removal to work correctly today).
+     * `$modId` to remove by that unique key: the matching `Mods=` entry AND
+     * every currently enabled mod that transitively requires it (per mod.info
+     * `require=`, resolved via `$workshopContentPath` — see `list()`) are
+     * removed together, so the caller only ever has to manage the one mod
+     * they actually added; whatever came along because something needed it
+     * goes with it rather than blocking the removal or being left behind.
+     * `WorkshopItems=` is left untouched, since correctly pruning it would
+     * require knowing whether some other, unrelated still-enabled mod needs
+     * that same Workshop item.
      * Without `$modId`, the legacy behavior applies: the first entry matching
-     * `$workshopId` is removed from both lists by position, which is correct
-     * whenever that Workshop item only bundles one mod.
+     * `$workshopId` is removed from both lists by position (no cascading),
+     * which is correct whenever that Workshop item only bundles one mod.
      *
-     * @return array{workshop_id: string, mod_id: string}|null The removed mod, or null if not found.
+     * @return array{workshop_id: string, mod_id: string, cascaded?: list<string>}|null The removed mod (plus, when removed by mod_id, its cascaded dependents), or null if not found.
      */
-    public function remove(string $iniPath, string $workshopId, ?string $mapFolder = null, ?string $modId = null): ?array
+    public function remove(string $iniPath, string $workshopId, ?string $mapFolder = null, ?string $modId = null, string $workshopContentPath = ''): ?array
     {
         $current = $this->readCurrentLists($iniPath);
         $workshopIds = $current['workshop_ids'];
         $modIds = $current['mod_ids'];
 
         if ($modId !== null) {
-            $index = array_search($modId, $modIds, true);
-
-            if ($index === false) {
+            if (! in_array($modId, $modIds, true)) {
                 return null;
             }
 
-            $removed = ['workshop_id' => $workshopId, 'mod_id' => $modIds[$index]];
-            array_splice($modIds, $index, 1);
+            $cascaded = $workshopContentPath !== ''
+                ? $this->transitiveDependents($iniPath, $workshopContentPath, $modId)
+                : [];
+            // Never let a cascade sweep away a protected mod, however unlikely
+            // it'd be for one to end up in some mod's dependency chain.
+            $cascaded = array_values(array_diff($cascaded, self::PROTECTED_MODS));
+
+            $modIds = array_values(array_diff($modIds, array_merge([$modId], $cascaded)));
+
+            $removed = ['workshop_id' => $workshopId, 'mod_id' => $modId, 'cascaded' => $cascaded];
             $updates = ['Mods' => implode(';', $modIds)];
         } else {
             $index = array_search($workshopId, $workshopIds, true);

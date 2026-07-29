@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\AddWatchlistModRequest;
+use App\Http\Requests\Admin\AddWishlistModRequest;
 use App\Http\Requests\Admin\ImportModsRequest;
+use App\Http\Requests\Admin\ImportWishlistRequest;
 use App\Http\Requests\Admin\LookupWorkshopModRequest;
 use App\Http\Requests\Admin\ModDetailsRequest;
-use App\Models\WatchlistMod;
+use App\Models\WishlistMod;
 use App\Services\AuditLogger;
 use App\Services\DockerManager;
 use App\Services\ModManager;
@@ -57,7 +58,7 @@ class ModController extends Controller
             'protectedWorkshopIds' => array_keys(ModManager::PROTECTED_MODS),
             'pendingRestart' => $pendingRestart,
             'serverRunning' => $serverRunning,
-            'watchlist' => WatchlistMod::query()
+            'wishlist' => WishlistMod::query()
                 ->orderByDesc('created_at')
                 ->pluck('workshop_id'),
         ]);
@@ -79,15 +80,15 @@ class ModController extends Controller
         ]);
     }
 
-    public function watchlistStore(AddWatchlistModRequest $request): JsonResponse
+    public function wishlistStore(AddWishlistModRequest $request): JsonResponse
     {
         $workshopId = $request->validated('workshop_id');
 
-        WatchlistMod::query()->firstOrCreate(['workshop_id' => $workshopId]);
+        WishlistMod::query()->firstOrCreate(['workshop_id' => $workshopId]);
 
         $this->auditLogger->log(
             actor: $request->user()->name ?? 'admin',
-            action: 'mod.watchlist.add',
+            action: 'mod.wishlist.add',
             target: $workshopId,
             ip: $request->ip(),
         );
@@ -95,24 +96,69 @@ class ModController extends Controller
         return response()->json(['workshop_id' => $workshopId], 201);
     }
 
-    public function watchlistDestroy(Request $request, string $workshopId): JsonResponse
+    public function wishlistDestroy(Request $request, string $workshopId): JsonResponse
     {
-        $deleted = WatchlistMod::query()
+        $deleted = WishlistMod::query()
             ->where('workshop_id', $workshopId)
             ->delete();
 
         if ($deleted === 0) {
-            return response()->json(['error' => 'Mod is not on the watchlist'], 404);
+            return response()->json(['error' => 'Mod is not on the wishlist'], 404);
         }
 
         $this->auditLogger->log(
             actor: $request->user()->name ?? 'admin',
-            action: 'mod.watchlist.remove',
+            action: 'mod.wishlist.remove',
             target: $workshopId,
             ip: $request->ip(),
         );
 
         return response()->json(['removed' => $workshopId]);
+    }
+
+    /**
+     * Bulk-add Workshop IDs to the wishlist, skipping any that are already
+     * installed or already wishlisted.
+     */
+    public function wishlistImport(ImportWishlistRequest $request): JsonResponse
+    {
+        $ids = $request->validated('workshop_ids');
+
+        $installed = collect($this->modManager->list(
+            config('zomboid.paths.server_ini'),
+            config('zomboid.paths.workshop_content'),
+        ))->pluck('workshop_id')->filter()->all();
+
+        $skip = array_flip(array_merge(
+            $installed,
+            WishlistMod::query()->pluck('workshop_id')->all(),
+        ));
+
+        $added = [];
+
+        foreach (array_unique($ids) as $id) {
+            if (isset($skip[$id])) {
+                continue;
+            }
+
+            WishlistMod::query()->create(['workshop_id' => $id]);
+            $skip[$id] = true;
+            $added[] = $id;
+        }
+
+        if ($added !== []) {
+            $this->auditLogger->log(
+                actor: $request->user()->name ?? 'admin',
+                action: 'mod.wishlist.import',
+                details: ['added' => $added, 'skipped' => count($ids) - count($added)],
+                ip: $request->ip(),
+            );
+        }
+
+        return response()->json([
+            'added' => $added,
+            'skipped' => count($ids) - count($added),
+        ], 201);
     }
 
     public function lookup(LookupWorkshopModRequest $request): JsonResponse
@@ -189,26 +235,12 @@ class ModController extends Controller
 
         $modId = $validated['mod_id'] ?? null;
 
-        if ($modId !== null) {
-            $dependents = $this->modManager->findDependents(
-                config('zomboid.paths.server_ini'),
-                config('zomboid.paths.workshop_content'),
-                $modId,
-            );
-
-            if ($dependents !== []) {
-                return response()->json([
-                    'error' => 'Still required by: '.implode(', ', $dependents),
-                    'dependents' => $dependents,
-                ], 422);
-            }
-        }
-
         try {
             $removed = $this->modManager->remove(
                 config('zomboid.paths.server_ini'),
                 $workshopId,
                 modId: $modId,
+                workshopContentPath: config('zomboid.paths.workshop_content'),
             );
         } catch (RuntimeException $e) {
             Log::error('Failed to remove mod', ['exception' => $e, 'workshop_id' => $workshopId]);
