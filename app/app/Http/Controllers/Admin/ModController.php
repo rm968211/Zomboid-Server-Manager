@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\AddWatchlistModRequest;
 use App\Http\Requests\Admin\ImportModsRequest;
 use App\Http\Requests\Admin\LookupWorkshopModRequest;
+use App\Http\Requests\Admin\ModDetailsRequest;
+use App\Models\WatchlistMod;
 use App\Services\AuditLogger;
 use App\Services\DockerManager;
 use App\Services\ModManager;
@@ -41,6 +44,7 @@ class ModController extends Controller
             $status = $this->modManager->listWithStatus(
                 config('zomboid.paths.server_ini'),
                 $serverRunning,
+                config('zomboid.paths.workshop_content'),
             );
             $mods = $status['mods'];
             $pendingRestart = $status['pending_restart'];
@@ -53,7 +57,62 @@ class ModController extends Controller
             'protectedWorkshopIds' => array_keys(ModManager::PROTECTED_MODS),
             'pendingRestart' => $pendingRestart,
             'serverRunning' => $serverRunning,
+            'watchlist' => WatchlistMod::query()
+                ->orderByDesc('created_at')
+                ->pluck('workshop_id'),
         ]);
+    }
+
+    /**
+     * Batch-fetch Workshop metadata (title, thumbnail, tags, build
+     * compatibility, stats) for the given Workshop IDs. Entries that are
+     * missing on Steam come back as null.
+     */
+    public function details(ModDetailsRequest $request): JsonResponse
+    {
+        $details = $this->workshopClient->getDetailsMany(
+            $request->validated('workshop_ids'),
+        );
+
+        return response()->json([
+            'details' => $details === [] ? (object) [] : $details,
+        ]);
+    }
+
+    public function watchlistStore(AddWatchlistModRequest $request): JsonResponse
+    {
+        $workshopId = $request->validated('workshop_id');
+
+        WatchlistMod::query()->firstOrCreate(['workshop_id' => $workshopId]);
+
+        $this->auditLogger->log(
+            actor: $request->user()->name ?? 'admin',
+            action: 'mod.watchlist.add',
+            target: $workshopId,
+            ip: $request->ip(),
+        );
+
+        return response()->json(['workshop_id' => $workshopId], 201);
+    }
+
+    public function watchlistDestroy(Request $request, string $workshopId): JsonResponse
+    {
+        $deleted = WatchlistMod::query()
+            ->where('workshop_id', $workshopId)
+            ->delete();
+
+        if ($deleted === 0) {
+            return response()->json(['error' => 'Mod is not on the watchlist'], 404);
+        }
+
+        $this->auditLogger->log(
+            actor: $request->user()->name ?? 'admin',
+            action: 'mod.watchlist.remove',
+            target: $workshopId,
+            ip: $request->ip(),
+        );
+
+        return response()->json(['removed' => $workshopId]);
     }
 
     public function lookup(LookupWorkshopModRequest $request): JsonResponse
@@ -75,6 +134,7 @@ class ModController extends Controller
             'preview_url' => $details['preview_url'],
             'mod_ids' => $details['mod_ids'],
             'map_folders' => $details['map_folders'],
+            'build_compat' => $details['build_compat'],
         ]);
     }
 
