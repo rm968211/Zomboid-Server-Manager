@@ -38,11 +38,16 @@ class ModManager
      * can bundle several internal mod IDs (e.g. one Workshop upload containing
      * five sub-mods), so they're rarely the same length and must NOT be paired by
      * array position. When `$workshopContentPath` is given, each mod's Workshop ID
-     * is instead resolved by scanning the downloaded Workshop content for the
-     * `mods/<ModName>/mod.info` that declares that mod ID. Without a path (or if a
-     * mod isn't found on disk), its workshop_id is ''.
+     * and declared dependencies are instead resolved by scanning the downloaded
+     * Workshop content for the `mods/<ModName>/mod.info` that declares that mod ID
+     * (and its `require=` line, if any). Without a path (or if a mod isn't found on
+     * disk), its workshop_id is '' and it has no known requires.
      *
-     * @return array<int, array{workshop_id: string, mod_id: string, position: int}>
+     * `required_by` is derived, not read from mod.info: it's every OTHER currently
+     * enabled mod whose own `requires` names this one — used to warn against (or
+     * block) removing a mod something else still depends on.
+     *
+     * @return array<int, array{workshop_id: string, mod_id: string, position: int, requires: list<string>, required_by: list<string>}>
      */
     public function list(string $iniPath, string $workshopContentPath = ''): array
     {
@@ -52,55 +57,92 @@ class ModManager
             ? $this->splitList($state['Mods'])
             : $this->splitList($this->iniParser->read($iniPath)['Mods'] ?? '');
 
-        $workshopIdsByModId = $workshopContentPath !== ''
-            ? $this->scanWorkshopIdsByModId($workshopContentPath)
+        $index = $workshopContentPath !== ''
+            ? $this->scanModIndex($workshopContentPath)
             : [];
 
         $mods = [];
 
         foreach ($modIds as $i => $modId) {
             $mods[] = [
-                'workshop_id' => $workshopIdsByModId[$modId] ?? '',
+                'workshop_id' => $index[$modId]['workshop_id'] ?? '',
                 'mod_id' => $modId,
                 'position' => $i,
+                'requires' => $index[$modId]['requires'] ?? [],
             ];
+        }
+
+        foreach ($mods as $i => $mod) {
+            $requiredBy = [];
+
+            foreach ($mods as $other) {
+                if ($other['mod_id'] !== $mod['mod_id'] && in_array($mod['mod_id'], $other['requires'], true)) {
+                    $requiredBy[] = $other['mod_id'];
+                }
+            }
+
+            $mods[$i]['required_by'] = $requiredBy;
         }
 
         return $mods;
     }
 
     /**
-     * Build a mod_id → workshop_id map from downloaded Workshop content.
-     * Each Workshop item directory holds `mods/<ModName>/mod.info` (sometimes
-     * one level deeper, e.g. `common/mod.info`) per internal mod it bundles.
+     * Look up which currently enabled mods declare needing `$modId` (via their
+     * mod.info `require=` line) — used to block removing a mod others depend on.
      *
-     * @return array<string, string>
+     * @return list<string>
      */
-    private function scanWorkshopIdsByModId(string $workshopContentPath): array
+    public function findDependents(string $iniPath, string $workshopContentPath, string $modId): array
     {
-        $map = [];
+        foreach ($this->list($iniPath, $workshopContentPath) as $mod) {
+            if ($mod['mod_id'] === $modId) {
+                return $mod['required_by'];
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Build a mod_id → {workshop_id, requires} index from downloaded Workshop
+     * content. Each Workshop item directory holds `mods/<ModName>/mod.info`
+     * (sometimes one level deeper, e.g. `common/mod.info`) per internal mod it
+     * bundles.
+     *
+     * @return array<string, array{workshop_id: string, requires: list<string>}>
+     */
+    private function scanModIndex(string $workshopContentPath): array
+    {
+        $index = [];
 
         foreach (glob($workshopContentPath.'/*', GLOB_ONLYDIR) ?: [] as $itemDir) {
             $workshopId = basename($itemDir);
 
             foreach (glob($itemDir.'/mods/*', GLOB_ONLYDIR) ?: [] as $modDir) {
-                $modId = $this->readModInfoId($modDir);
+                $info = $this->readModInfo($modDir);
 
-                if ($modId !== null) {
-                    $map[$modId] = $workshopId;
+                if ($info !== null) {
+                    $index[$info['id']] = [
+                        'workshop_id' => $workshopId,
+                        'requires' => $info['requires'],
+                    ];
                 }
             }
         }
 
-        return $map;
+        return $index;
     }
 
     /**
-     * Read the `id=` line from a mod's `mod.info`, checking the mod directory
-     * itself and one level down (build-specific copies live in subfolders like
-     * `common/` or `42/`, but all copies for a given mod share the same id).
+     * Read the `id=` and `require=` lines from a mod's `mod.info`, checking the
+     * mod directory itself and one level down (build-specific copies live in
+     * subfolders like `common/` or `42/`, but all copies for a given mod share
+     * the same id/requires).
+     *
+     * @return array{id: string, requires: list<string>}|null
      */
-    private function readModInfoId(string $modDir): ?string
+    private function readModInfo(string $modDir): ?array
     {
         $candidates = array_merge(
             glob($modDir.'/mod.info') ?: [],
@@ -110,9 +152,24 @@ class ModManager
         foreach ($candidates as $file) {
             $contents = @file_get_contents($file);
 
-            if ($contents !== false && preg_match('/^id=(.+)$/m', $contents, $matches)) {
-                return trim($matches[1]);
+            if ($contents === false || ! preg_match('/^id=(.+)$/m', $contents, $idMatch)) {
+                continue;
             }
+
+            $requires = [];
+
+            if (preg_match('/^require=(.+)$/m', $contents, $reqMatch)) {
+                foreach (explode(',', $reqMatch[1]) as $dep) {
+                    // Some mod.info files have a stray leading backslash on the
+                    // dependency name (real-world formatting quirk) — strip it.
+                    $dep = trim($dep, " \t\n\r\0\x0B\\");
+                    if ($dep !== '') {
+                        $requires[] = $dep;
+                    }
+                }
+            }
+
+            return ['id' => trim($idMatch[1]), 'requires' => $requires];
         }
 
         return null;
@@ -137,7 +194,7 @@ class ModManager
      * the snapshot.
      *
      * @return array{
-     *     mods: array<int, array{workshop_id: string, mod_id: string, position: int, status: string}>,
+     *     mods: array<int, array{workshop_id: string, mod_id: string, position: int, requires: list<string>, required_by: list<string>, status: string}>,
      *     pending_restart: bool,
      *     server_running: bool,
      *     applied_snapshot_present: bool,

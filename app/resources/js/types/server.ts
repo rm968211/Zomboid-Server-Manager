@@ -42,6 +42,10 @@ export type ModEntry = {
     mod_id: string;
     position: number;
     status?: ModStatus;
+    /** Other mod IDs this mod declares needing, from its mod.info require= line. */
+    requires?: string[];
+    /** Currently-installed mod IDs that declare needing this one. */
+    required_by?: string[];
 };
 
 export type BuildCompat = 'b42' | 'b41' | 'unknown';
