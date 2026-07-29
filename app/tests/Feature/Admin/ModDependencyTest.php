@@ -28,7 +28,7 @@ afterEach(function () {
     @rmdir($this->tempDir);
 });
 
-it('refuses to remove a mod that another installed mod still requires', function () {
+it('cascades removal to a mod that still requires the one being removed', function () {
     seedWorkshopMod($this->workshopContentPath, '5000000000', 'BasePack');
     seedWorkshopMod($this->workshopContentPath, '5000000000', 'AddonA', ['BasePack']);
     (new ServerIniParser)->write($this->iniPath, [
@@ -40,13 +40,15 @@ it('refuses to remove a mod that another installed mod still requires', function
         'mod_id' => 'BasePack',
     ]);
 
-    $response->assertStatus(422)
-        ->assertJson(['dependents' => ['AddonA']]);
+    $response->assertOk()
+        ->assertJson(['removed' => ['workshop_id' => '5000000000', 'mod_id' => 'BasePack', 'cascaded' => ['AddonA']]]);
 
-    expect((new ServerIniParser)->read($this->iniPath)['Mods'])->toContain('BasePack');
+    $mods = (new ServerIniParser)->read($this->iniPath)['Mods'];
+    expect($mods)->not->toContain('BasePack')
+        ->and($mods)->not->toContain('AddonA');
 });
 
-it('allows removing a mod once the mods depending on it are already gone', function () {
+it('removes a mod with no dependents on its own, with an empty cascaded list', function () {
     seedWorkshopMod($this->workshopContentPath, '5000000000', 'BasePack');
     (new ServerIniParser)->write($this->iniPath, [
         'Mods' => 'BasePack',
@@ -57,5 +59,5 @@ it('allows removing a mod once the mods depending on it are already gone', funct
         'mod_id' => 'BasePack',
     ]);
 
-    $response->assertOk()->assertJson(['removed' => ['workshop_id' => '5000000000', 'mod_id' => 'BasePack']]);
+    $response->assertOk()->assertJson(['removed' => ['workshop_id' => '5000000000', 'mod_id' => 'BasePack', 'cascaded' => []]]);
 });

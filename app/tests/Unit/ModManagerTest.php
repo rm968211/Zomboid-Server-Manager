@@ -194,7 +194,7 @@ it('removes by mod_id, leaving WorkshopItems untouched, when several mods share 
 
     $removed = $this->manager->remove($this->iniPath, '5000000000', modId: 'BundleModB');
 
-    expect($removed)->toBe(['workshop_id' => '5000000000', 'mod_id' => 'BundleModB']);
+    expect($removed)->toBe(['workshop_id' => '5000000000', 'mod_id' => 'BundleModB', 'cascaded' => []]);
 
     $stateContent = file_get_contents($this->tempDir.'/Server/.mod_state');
     expect($stateContent)->toContain('Mods=BundleModA')
@@ -205,6 +205,94 @@ it('removes by mod_id, leaving WorkshopItems untouched, when several mods share 
 
 it('returns null removing by mod_id when that mod is not present', function () {
     expect($this->manager->remove($this->iniPath, '2561774086', modId: 'NotInstalled'))->toBeNull();
+});
+
+it('cascades removal to a mod that directly requires the one being removed', function () {
+    seedWorkshopMod($this->workshopContentPath, '5000000000', 'BasePack');
+    seedWorkshopMod($this->workshopContentPath, '5000000000', 'AddonA', ['BasePack']);
+    $this->parser->write($this->iniPath, [
+        'Mods' => 'BasePack;AddonA',
+        'WorkshopItems' => '5000000000',
+    ]);
+
+    $removed = $this->manager->remove(
+        $this->iniPath,
+        '5000000000',
+        modId: 'BasePack',
+        workshopContentPath: $this->workshopContentPath,
+    );
+
+    expect($removed)->toBe(['workshop_id' => '5000000000', 'mod_id' => 'BasePack', 'cascaded' => ['AddonA']]);
+
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
+    expect(collect($mods)->pluck('mod_id')->all())->not->toContain('BasePack', 'AddonA');
+});
+
+it('cascades removal transitively through a chain of dependents', function () {
+    // BasePack <- AddonA <- AddonB (AddonB needs AddonA, which needs BasePack)
+    seedWorkshopMod($this->workshopContentPath, '5000000000', 'BasePack');
+    seedWorkshopMod($this->workshopContentPath, '5000000000', 'AddonA', ['BasePack']);
+    seedWorkshopMod($this->workshopContentPath, '5000000000', 'AddonB', ['AddonA']);
+    $this->parser->write($this->iniPath, [
+        'Mods' => 'BasePack;AddonA;AddonB',
+        'WorkshopItems' => '5000000000',
+    ]);
+
+    $removed = $this->manager->remove(
+        $this->iniPath,
+        '5000000000',
+        modId: 'BasePack',
+        workshopContentPath: $this->workshopContentPath,
+    );
+
+    expect($removed['cascaded'])->toEqualCanonicalizing(['AddonA', 'AddonB']);
+
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
+    expect($mods)->toBeEmpty();
+});
+
+it('does not cascade to unrelated mods that require something else', function () {
+    seedWorkshopMod($this->workshopContentPath, '5000000000', 'BasePack');
+    seedWorkshopMod($this->workshopContentPath, '5000000000', 'AddonA', ['BasePack']);
+    seedWorkshopMod($this->workshopContentPath, '6000000000', 'Unrelated');
+    $this->parser->write($this->iniPath, [
+        'Mods' => 'BasePack;AddonA;Unrelated',
+        'WorkshopItems' => '5000000000;6000000000',
+    ]);
+
+    $removed = $this->manager->remove(
+        $this->iniPath,
+        '5000000000',
+        modId: 'BasePack',
+        workshopContentPath: $this->workshopContentPath,
+    );
+
+    expect($removed['cascaded'])->toBe(['AddonA']);
+
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
+    expect(collect($mods)->pluck('mod_id')->all())->toBe(['Unrelated']);
+});
+
+it('never cascades removal onto a protected mod', function () {
+    // Contrived: ZomboidManager itself declares requiring the mod being removed.
+    seedWorkshopMod($this->workshopContentPath, '5000000000', 'BasePack');
+    seedWorkshopMod($this->workshopContentPath, '3685323705', 'ZomboidManager', ['BasePack']);
+    $this->parser->write($this->iniPath, [
+        'Mods' => 'BasePack;ZomboidManager',
+        'WorkshopItems' => '5000000000;3685323705',
+    ]);
+
+    $removed = $this->manager->remove(
+        $this->iniPath,
+        '5000000000',
+        modId: 'BasePack',
+        workshopContentPath: $this->workshopContentPath,
+    );
+
+    expect($removed['cascaded'])->toBe([]);
+
+    $mods = $this->manager->list($this->iniPath, $this->workshopContentPath);
+    expect(collect($mods)->pluck('mod_id')->all())->toContain('ZomboidManager');
 });
 
 it('reorders mods', function () {

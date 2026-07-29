@@ -4,7 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class AddWatchlistModRequest extends FormRequest
+class AddWishlistModRequest extends FormRequest
 {
     /**
      * @return array<string, array<int, mixed>>

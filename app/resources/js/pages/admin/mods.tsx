@@ -63,6 +63,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
     Table,
     TableBody,
@@ -320,6 +321,33 @@ function computeGroups(mods: ModEntry[]): GroupInfo[] {
     return result;
 }
 
+/**
+ * Every currently installed mod that transitively requires `modId` — mirrors
+ * ModManager::transitiveDependents() so the delete dialog can preview exactly
+ * what a cascade will remove before the request is sent.
+ */
+function computeTransitiveDependents(
+    mods: ModEntry[],
+    modId: string,
+): string[] {
+    const requiredByMap: Record<string, string[]> = {};
+    mods.forEach((m) => {
+        requiredByMap[m.mod_id] = m.required_by ?? [];
+    });
+
+    const seen = new Set<string>();
+    const queue = [...(requiredByMap[modId] ?? [])];
+
+    while (queue.length > 0) {
+        const id = queue.shift() as string;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        (requiredByMap[id] ?? []).forEach((next) => queue.push(next));
+    }
+
+    return [...seen];
+}
+
 function SortableModRow({
     mod,
     index,
@@ -363,6 +391,10 @@ function SortableModRow({
     const isGrouped = group.position !== 'solo';
     const isContinuation =
         group.position === 'middle' || group.position === 'end';
+    // Distinguish "still fetching" (undefined) from "fetched, not found on
+    // Steam" (null) — only the former gets a skeleton. A blank workshop_id
+    // is never fetched at all, so it doesn't get a perpetual skeleton either.
+    const isLoadingDetails = mod.workshop_id !== '' && details === undefined;
     const requires = mod.requires ?? [];
     const missingRequires = requires.filter((r) => !installedModIds.has(r));
     const requiredBy = mod.required_by ?? [];
@@ -408,6 +440,17 @@ function SortableModRow({
                                 {t('admin.mods.required_badge')}
                             </Badge>
                         )}
+                    </div>
+                ) : isLoadingDetails ? (
+                    <div
+                        className="flex items-center gap-3"
+                        data-testid="mod-row-loading"
+                    >
+                        <Skeleton className="size-10 shrink-0" />
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                            <Skeleton className="h-4 w-2/3" />
+                            <Skeleton className="h-3 w-1/3" />
+                        </div>
                     </div>
                 ) : (
                     <div className="flex items-center gap-3">
@@ -499,37 +542,16 @@ function SortableModRow({
                 <StatusBadge status={mod.status} />
             </TableCell>
             <TableCell className="text-right">
-                {!isProtected &&
-                    (blocked ? (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <span>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        disabled
-                                        className="text-destructive"
-                                    >
-                                        <Trash2 className="size-4" />
-                                    </Button>
-                                </span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                {t('admin.mods.required_by_label', {
-                                    mods: requiredBy.join(', '),
-                                })}
-                            </TooltipContent>
-                        </Tooltip>
-                    ) : (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => onDelete(mod)}
-                        >
-                            <Trash2 className="size-4" />
-                        </Button>
-                    ))}
+                {!isProtected && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => onDelete(mod)}
+                    >
+                        <Trash2 className="size-4" />
+                    </Button>
+                )}
             </TableCell>
         </TableRow>
     );
@@ -540,13 +562,13 @@ export default function Mods({
     protectedWorkshopIds = [],
     pendingRestart = false,
     serverRunning = false,
-    watchlist = [],
+    wishlist = [],
 }: {
     mods: ModEntry[];
     protectedWorkshopIds?: string[];
     pendingRestart?: boolean;
     serverRunning?: boolean;
-    watchlist?: string[];
+    wishlist?: string[];
 }) {
     const { t } = useTranslation();
     const protectedSet = useMemo(
@@ -567,20 +589,30 @@ export default function Mods({
     const [restarting, setRestarting] = useState(false);
     const [search, setSearch] = useState('');
     const [orderedMods, setOrderedMods] = useState(mods);
+    const deleteCascade = useMemo(
+        () =>
+            deleteTarget
+                ? computeTransitiveDependents(orderedMods, deleteTarget.mod_id)
+                : [],
+        [orderedMods, deleteTarget],
+    );
     const [lookup, setLookup] = useState<LookupState>({ status: 'idle' });
     const [manualOverride, setManualOverride] = useState(false);
     const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lookupAbort = useRef<AbortController | null>(null);
 
-    const [view, setView] = useState<'installed' | 'watchlist'>('installed');
+    const [view, setView] = useState<'installed' | 'wishlist'>('installed');
     const [details, setDetails] = useState<
         Record<string, WorkshopDetails | null>
     >({});
-    const [watchSort, setWatchSort] = useState<'added' | 'b42'>('added');
-    const [showWatch, setShowWatch] = useState(false);
-    const [watchId, setWatchId] = useState('');
-    const [watchLoading, setWatchLoading] = useState(false);
+    const [wishSort, setWishSort] = useState<'added' | 'b42'>('added');
+    const [showWish, setShowWish] = useState(false);
+    const [wishId, setWishId] = useState('');
+    const [wishLoading, setWishLoading] = useState(false);
     const [pendingInstall, setPendingInstall] = useState<string | null>(null);
+    const [showWishlistBulk, setShowWishlistBulk] = useState(false);
+    const [wishlistBulkText, setWishlistBulkText] = useState('');
+    const [wishlistBulkImporting, setWishlistBulkImporting] = useState(false);
 
     const existingWorkshopIds = useMemo(
         () => new Set(mods.map((m) => m.workshop_id).filter(Boolean)),
@@ -716,9 +748,9 @@ export default function Mods({
     }, [mods]);
 
     // Batch-fetch Workshop metadata (title, thumbnail, build compat, stats)
-    // for every installed + watched mod that we haven't resolved yet.
+    // for every installed + wishlisted mod that we haven't resolved yet.
     useEffect(() => {
-        const wanted = new Set<string>(watchlist);
+        const wanted = new Set<string>(wishlist);
         mods.forEach((m) => {
             if (m.workshop_id) {
                 wanted.add(m.workshop_id);
@@ -737,23 +769,31 @@ export default function Mods({
             })) as {
                 details?: Record<string, WorkshopDetails | null>;
             } | null;
-            if (cancelled || !json?.details) {
+            if (cancelled) {
                 return;
             }
-            setDetails((prev) => ({ ...prev, ...json.details }));
+            // Every requested id must resolve to something (even null) —
+            // otherwise a failed or partial response leaves it permanently
+            // `undefined`, which now renders as a skeleton that never clears.
+            const resolved = Object.fromEntries(
+                missing.map((id) => [id, json?.details?.[id] ?? null]),
+            );
+            setDetails((prev) => ({ ...prev, ...resolved }));
         })();
 
         return () => {
             cancelled = true;
         };
-    }, [mods, watchlist, details]);
+    }, [mods, wishlist, details]);
 
-    const sortedWatchlist = useMemo(() => {
-        const entries = watchlist.map((id) => ({
+    const sortedWishlist = useMemo(() => {
+        // Keep `undefined` (still loading) distinct from `null` (fetched,
+        // not found on Steam) so the row can show a skeleton vs. a fallback.
+        const entries = wishlist.map((id) => ({
             id,
-            details: details[id] ?? null,
+            details: details[id],
         }));
-        if (watchSort === 'b42') {
+        if (wishSort === 'b42') {
             const rank: Record<BuildCompat, number> = {
                 b42: 0,
                 unknown: 1,
@@ -766,7 +806,7 @@ export default function Mods({
             );
         }
         return entries;
-    }, [watchlist, details, watchSort]);
+    }, [wishlist, details, wishSort]);
 
     const resetLookupState = useCallback(() => {
         setLookup({ status: 'idle' });
@@ -931,9 +971,9 @@ export default function Mods({
             },
             successMessage: t('admin.mods.toast_added', { mod_id: modId }),
         });
-        // Installing a watched mod removes it from the watchlist.
+        // Installing a wishlisted mod removes it from the wishlist.
         if (result && pendingInstall === workshopId.trim()) {
-            await fetchAction(`/admin/mods/watchlist/${pendingInstall}`, {
+            await fetchAction(`/admin/mods/wishlist/${pendingInstall}`, {
                 method: 'DELETE',
                 silent: true,
             });
@@ -941,27 +981,27 @@ export default function Mods({
         setLoading(false);
         closeAddDialog();
         router.reload({
-            only: ['mods', 'watchlist', 'pendingRestart', 'serverRunning'],
+            only: ['mods', 'wishlist', 'pendingRestart', 'serverRunning'],
         });
     }
 
-    async function removeMod(mod: ModEntry, toWatchlist = false) {
+    async function removeMod(mod: ModEntry, toWishlist = false) {
         setLoading(true);
         const result = await fetchAction(`/admin/mods/${mod.workshop_id}`, {
             method: 'DELETE',
             // Disambiguates which row to remove when several mods share one
             // Workshop item (a single Workshop upload can bundle multiple mods).
             data: { mod_id: mod.mod_id },
-            successMessage: toWatchlist
-                ? t('admin.mods.toast_moved_to_watchlist', {
+            successMessage: toWishlist
+                ? t('admin.mods.toast_moved_to_wishlist', {
                       mod_id: mod.mod_id,
                   })
                 : t('admin.mods.toast_removed', {
                       mod_id: mod.mod_id,
                   }),
         });
-        if (result && toWatchlist) {
-            await fetchAction('/admin/mods/watchlist', {
+        if (result && toWishlist) {
+            await fetchAction('/admin/mods/wishlist', {
                 data: { workshop_id: mod.workshop_id },
                 silent: true,
             });
@@ -969,36 +1009,70 @@ export default function Mods({
         setLoading(false);
         setDeleteTarget(null);
         router.reload({
-            only: ['mods', 'watchlist', 'pendingRestart', 'serverRunning'],
+            only: ['mods', 'wishlist', 'pendingRestart', 'serverRunning'],
         });
     }
 
-    async function addWatch() {
-        setWatchLoading(true);
-        const result = await fetchAction('/admin/mods/watchlist', {
-            data: { workshop_id: watchId.trim() },
-            successMessage: t('admin.mods.toast_watch_added'),
+    async function addWish() {
+        setWishLoading(true);
+        const result = await fetchAction('/admin/mods/wishlist', {
+            data: { workshop_id: wishId.trim() },
+            successMessage: t('admin.mods.toast_wishlist_added'),
         });
-        setWatchLoading(false);
+        setWishLoading(false);
         if (result) {
-            setShowWatch(false);
-            setWatchId('');
-            router.reload({ only: ['watchlist'] });
+            setShowWish(false);
+            setWishId('');
+            router.reload({ only: ['wishlist'] });
         }
     }
 
-    async function removeWatch(id: string) {
-        await fetchAction(`/admin/mods/watchlist/${id}`, {
+    async function removeWish(id: string) {
+        await fetchAction(`/admin/mods/wishlist/${id}`, {
             method: 'DELETE',
-            successMessage: t('admin.mods.toast_watch_removed'),
+            successMessage: t('admin.mods.toast_wishlist_removed'),
         });
-        router.reload({ only: ['watchlist'] });
+        router.reload({ only: ['wishlist'] });
     }
 
-    function installFromWatchlist(id: string) {
+    function installFromWishlist(id: string) {
         setPendingInstall(id);
         setWorkshopId(id);
         setShowAdd(true);
+    }
+
+    function openWishlistBulk() {
+        setWishlistBulkText('');
+        setShowWishlistBulk(true);
+    }
+
+    function closeWishlistBulk() {
+        setShowWishlistBulk(false);
+    }
+
+    const wishlistBulkIds = useMemo(
+        () => parseModImport(wishlistBulkText).workshopIds,
+        [wishlistBulkText],
+    );
+
+    async function submitWishlistBulk() {
+        if (wishlistBulkIds.length === 0) {
+            return;
+        }
+
+        setWishlistBulkImporting(true);
+        const result = (await fetchAction('/admin/mods/wishlist/import', {
+            data: { workshop_ids: wishlistBulkIds },
+            successMessage: t('admin.mods.wishlist_bulk_toast_imported', {
+                count: String(wishlistBulkIds.length),
+            }),
+        })) as { added?: string[]; skipped?: number } | null;
+        setWishlistBulkImporting(false);
+
+        if (result) {
+            closeWishlistBulk();
+            router.reload({ only: ['wishlist'] });
+        }
     }
 
     return (
@@ -1033,13 +1107,23 @@ export default function Mods({
                                 </Button>
                             </>
                         ) : (
-                            <Button
-                                onClick={() => setShowWatch(true)}
-                                data-testid="watch-mod-button"
-                            >
-                                <BookmarkPlus className="mr-1.5 size-4" />
-                                {t('admin.mods.watch_mod')}
-                            </Button>
+                            <>
+                                <Button
+                                    variant="outline"
+                                    onClick={openWishlistBulk}
+                                    data-testid="wishlist-bulk-import-button"
+                                >
+                                    <FileUp className="mr-1.5 size-4" />
+                                    {t('admin.mods.bulk_import')}
+                                </Button>
+                                <Button
+                                    onClick={() => setShowWish(true)}
+                                    data-testid="wishlist-mod-button"
+                                >
+                                    <BookmarkPlus className="mr-1.5 size-4" />
+                                    {t('admin.mods.wishlist_mod')}
+                                </Button>
+                            </>
                         )}
                     </div>
                 </div>
@@ -1049,7 +1133,7 @@ export default function Mods({
                     variant="outline"
                     value={view}
                     onValueChange={(v) => {
-                        if (v === 'installed' || v === 'watchlist') {
+                        if (v === 'installed' || v === 'wishlist') {
                             setView(v);
                         }
                     }}
@@ -1063,11 +1147,11 @@ export default function Mods({
                         {t('admin.mods.tab_installed')} ({mods.length})
                     </ToggleGroupItem>
                     <ToggleGroupItem
-                        value="watchlist"
-                        data-testid="tab-watchlist"
+                        value="wishlist"
+                        data-testid="tab-wishlist"
                     >
                         <Bookmark className="mr-1.5 size-4" />
-                        {t('admin.mods.tab_watchlist')} ({watchlist.length})
+                        {t('admin.mods.tab_wishlist')} ({wishlist.length})
                     </ToggleGroupItem>
                 </ToggleGroup>
 
@@ -1225,30 +1309,30 @@ export default function Mods({
                     </Card>
                 )}
 
-                {view === 'watchlist' && (
+                {view === 'wishlist' && (
                     <Card>
                         <CardHeader>
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <CardTitle className="flex items-center gap-2">
                                         <Bookmark className="size-5" />
-                                        {t('admin.mods.watchlist_title')}
+                                        {t('admin.mods.wishlist_title')}
                                     </CardTitle>
                                     <CardDescription>
-                                        {t('admin.mods.watchlist_description', {
-                                            count: String(watchlist.length),
+                                        {t('admin.mods.wishlist_description', {
+                                            count: String(wishlist.length),
                                         })}
                                     </CardDescription>
                                 </div>
                                 <Select
-                                    value={watchSort}
+                                    value={wishSort}
                                     onValueChange={(v) =>
-                                        setWatchSort(v as 'added' | 'b42')
+                                        setWishSort(v as 'added' | 'b42')
                                     }
                                 >
                                     <SelectTrigger
                                         className="sm:w-[200px]"
-                                        data-testid="watchlist-sort"
+                                        data-testid="wishlist-sort"
                                     >
                                         <SelectValue />
                                     </SelectTrigger>
@@ -1264,7 +1348,7 @@ export default function Mods({
                             </div>
                         </CardHeader>
                         <CardContent>
-                            {sortedWatchlist.length > 0 ? (
+                            {sortedWishlist.length > 0 ? (
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -1285,44 +1369,59 @@ export default function Mods({
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {sortedWatchlist.map(
+                                        {sortedWishlist.map(
                                             ({ id, details: d }) => {
                                                 const installed =
                                                     existingWorkshopIds.has(id);
+                                                const isLoadingDetails =
+                                                    d === undefined;
                                                 return (
                                                     <TableRow
                                                         key={id}
-                                                        data-testid="watchlist-row"
+                                                        data-testid="wishlist-row"
                                                     >
                                                         <TableCell className="font-medium">
-                                                            <div className="flex items-center gap-3">
-                                                                <ModThumb
-                                                                    src={
-                                                                        d?.preview_url
-                                                                    }
-                                                                    className="size-12"
-                                                                />
-                                                                <div className="min-w-0">
-                                                                    <a
-                                                                        href={workshopUrl(
-                                                                            id,
-                                                                        )}
-                                                                        target="_blank"
-                                                                        rel="noreferrer"
-                                                                        className="block truncate hover:underline"
-                                                                    >
-                                                                        {d?.title ||
-                                                                            id}
-                                                                    </a>
-                                                                    {d && (
-                                                                        <ModMeta
-                                                                            details={
-                                                                                d
-                                                                            }
-                                                                        />
-                                                                    )}
+                                                            {isLoadingDetails ? (
+                                                                <div
+                                                                    className="flex items-center gap-3"
+                                                                    data-testid="wishlist-row-loading"
+                                                                >
+                                                                    <Skeleton className="size-12 shrink-0" />
+                                                                    <div className="min-w-0 flex-1 space-y-1.5">
+                                                                        <Skeleton className="h-4 w-2/3" />
+                                                                        <Skeleton className="h-3 w-1/3" />
+                                                                    </div>
                                                                 </div>
-                                                            </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-3">
+                                                                    <ModThumb
+                                                                        src={
+                                                                            d?.preview_url
+                                                                        }
+                                                                        className="size-12"
+                                                                    />
+                                                                    <div className="min-w-0">
+                                                                        <a
+                                                                            href={workshopUrl(
+                                                                                id,
+                                                                            )}
+                                                                            target="_blank"
+                                                                            rel="noreferrer"
+                                                                            className="block truncate hover:underline"
+                                                                        >
+                                                                            {d?.title ||
+                                                                                id}
+                                                                        </a>
+                                                                        {d && (
+                                                                            <ModMeta
+                                                                                details={
+                                                                                    d
+                                                                                }
+                                                                            />
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </TableCell>
                                                         <TableCell className="hidden sm:table-cell">
                                                             <Badge
@@ -1333,12 +1432,14 @@ export default function Mods({
                                                             </Badge>
                                                         </TableCell>
                                                         <TableCell>
-                                                            <CompatBadge
-                                                                compat={
-                                                                    d?.build_compat ??
-                                                                    'unknown'
-                                                                }
-                                                            />
+                                                            {!isLoadingDetails && (
+                                                                <CompatBadge
+                                                                    compat={
+                                                                        d?.build_compat ??
+                                                                        'unknown'
+                                                                    }
+                                                                />
+                                                            )}
                                                         </TableCell>
                                                         <TableCell className="text-right">
                                                             <div className="flex items-center justify-end gap-1">
@@ -1356,11 +1457,11 @@ export default function Mods({
                                                                         variant="outline"
                                                                         size="sm"
                                                                         onClick={() =>
-                                                                            installFromWatchlist(
+                                                                            installFromWishlist(
                                                                                 id,
                                                                             )
                                                                         }
-                                                                        data-testid="watchlist-install"
+                                                                        data-testid="wishlist-install"
                                                                     >
                                                                         <Download className="mr-1.5 size-4" />
                                                                         {t(
@@ -1373,11 +1474,11 @@ export default function Mods({
                                                                     size="sm"
                                                                     className="text-destructive hover:text-destructive"
                                                                     onClick={() =>
-                                                                        removeWatch(
+                                                                        removeWish(
                                                                             id,
                                                                         )
                                                                     }
-                                                                    data-testid="watchlist-remove"
+                                                                    data-testid="wishlist-remove"
                                                                 >
                                                                     <Trash2 className="size-4" />
                                                                 </Button>
@@ -1391,7 +1492,7 @@ export default function Mods({
                                 </Table>
                             ) : (
                                 <p className="py-8 text-center text-muted-foreground">
-                                    {t('admin.mods.no_watchlist')}
+                                    {t('admin.mods.no_wishlist')}
                                 </p>
                             )}
                         </CardContent>
@@ -1769,17 +1870,15 @@ export default function Mods({
                             })}
                         </DialogDescription>
                     </DialogHeader>
-                    {(deleteTarget?.required_by?.length ?? 0) > 0 && (
+                    {deleteCascade.length > 0 && (
                         <Alert
                             className="border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200 [&>svg]:text-amber-600"
-                            data-testid="delete-blocked-alert"
+                            data-testid="delete-cascade-alert"
                         >
                             <AlertTriangle className="size-4" />
                             <AlertDescription>
-                                {t('admin.mods.delete_blocked_description', {
-                                    mods: (
-                                        deleteTarget?.required_by ?? []
-                                    ).join(', '),
+                                {t('admin.mods.delete_cascade_description', {
+                                    mods: deleteCascade.join(', '),
                                 })}
                             </AlertDescription>
                         </Alert>
@@ -1793,24 +1892,18 @@ export default function Mods({
                         </Button>
                         <Button
                             variant="outline"
-                            disabled={
-                                loading ||
-                                (deleteTarget?.required_by?.length ?? 0) > 0
-                            }
+                            disabled={loading}
                             onClick={() =>
                                 deleteTarget && removeMod(deleteTarget, true)
                             }
-                            data-testid="move-to-watchlist-button"
+                            data-testid="move-to-wishlist-button"
                         >
                             <Bookmark className="mr-1.5 size-4" />
-                            {t('admin.mods.move_to_watchlist')}
+                            {t('admin.mods.move_to_wishlist')}
                         </Button>
                         <Button
                             variant="destructive"
-                            disabled={
-                                loading ||
-                                (deleteTarget?.required_by?.length ?? 0) > 0
-                            }
+                            disabled={loading}
                             onClick={() =>
                                 deleteTarget && removeMod(deleteTarget)
                             }
@@ -1821,59 +1914,117 @@ export default function Mods({
                 </DialogContent>
             </Dialog>
 
-            {/* Watch Mod Dialog */}
+            {/* Wishlist Mod Dialog */}
             <Dialog
-                open={showWatch}
+                open={showWish}
                 onOpenChange={(open) => {
-                    setShowWatch(open);
+                    setShowWish(open);
                     if (!open) {
-                        setWatchId('');
+                        setWishId('');
                     }
                 }}
             >
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>
-                            {t('admin.mods.watch_dialog_title')}
+                            {t('admin.mods.wishlist_dialog_title')}
                         </DialogTitle>
                         <DialogDescription>
-                            {t('admin.mods.watch_dialog_description')}
+                            {t('admin.mods.wishlist_dialog_description')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2">
-                        <Label htmlFor="watch-workshop-id">
+                        <Label htmlFor="wishlist-workshop-id">
                             {t('admin.mods.table_workshop_id')}
                         </Label>
                         <Input
-                            id="watch-workshop-id"
+                            id="wishlist-workshop-id"
                             inputMode="numeric"
-                            value={watchId}
-                            onChange={(e) => setWatchId(e.target.value)}
+                            value={wishId}
+                            onChange={(e) => setWishId(e.target.value)}
                             placeholder={t(
                                 'admin.mods.workshop_id_placeholder',
                             )}
-                            data-testid="watch-workshop-id-input"
+                            data-testid="wishlist-workshop-id-input"
                         />
                     </div>
                     <DialogFooter>
                         <Button
                             variant="outline"
                             onClick={() => {
-                                setShowWatch(false);
-                                setWatchId('');
+                                setShowWish(false);
+                                setWishId('');
                             }}
                         >
                             {t('common.cancel')}
                         </Button>
                         <Button
                             disabled={
-                                watchLoading ||
-                                !/^\d{1,20}$/.test(watchId.trim())
+                                wishLoading || !/^\d{1,20}$/.test(wishId.trim())
                             }
-                            onClick={addWatch}
-                            data-testid="watch-submit-button"
+                            onClick={addWish}
+                            data-testid="wishlist-submit-button"
                         >
-                            {t('admin.mods.watch_mod')}
+                            {t('admin.mods.wishlist_mod')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Bulk Add to Wishlist Dialog */}
+            <Dialog
+                open={showWishlistBulk}
+                onOpenChange={(open) =>
+                    open ? setShowWishlistBulk(true) : closeWishlistBulk()
+                }
+            >
+                <DialogContent className="max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {t('admin.mods.wishlist_bulk_dialog_title')}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {t('admin.mods.wishlist_bulk_dialog_description')}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                        <Textarea
+                            value={wishlistBulkText}
+                            onChange={(e) =>
+                                setWishlistBulkText(e.target.value)
+                            }
+                            rows={8}
+                            placeholder={t(
+                                'admin.mods.wishlist_bulk_placeholder',
+                            )}
+                            className="font-mono text-xs"
+                            data-testid="wishlist-bulk-import-textarea"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            {wishlistBulkIds.length > 0
+                                ? t('admin.mods.wishlist_bulk_count', {
+                                      count: String(wishlistBulkIds.length),
+                                  })
+                                : t('admin.mods.wishlist_bulk_hint')}
+                        </p>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={closeWishlistBulk}>
+                            {t('common.cancel')}
+                        </Button>
+                        <Button
+                            disabled={
+                                wishlistBulkImporting ||
+                                wishlistBulkIds.length === 0
+                            }
+                            onClick={submitWishlistBulk}
+                            data-testid="wishlist-bulk-import-submit"
+                        >
+                            {wishlistBulkImporting
+                                ? t('admin.mods.bulk_importing')
+                                : t('admin.mods.wishlist_bulk_do_import', {
+                                      count: String(wishlistBulkIds.length),
+                                  })}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
