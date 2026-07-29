@@ -199,6 +199,7 @@ class ServerController
             'branch' => ['sometimes', 'string', 'in:public,unstable,iwillbackupmysave'],
             'countdown' => ['sometimes', 'integer', 'min:10', 'max:3600'],
             'message' => ['sometimes', 'nullable', 'string', 'max:500', new RconSafeMessage],
+            'notes' => ['sometimes', 'string', 'max:500'],
         ]);
 
         $countdown = $request->input('countdown');
