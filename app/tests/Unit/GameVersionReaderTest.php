@@ -161,3 +161,60 @@ test('console log fallback handles version= format', function () {
     // game_state.json doesn't exist, so it falls through to console log
     expect($reader->detectVersion())->toBe('42.15.3');
 });
+
+test('prefers the current Build 42 console version over a stale Lua snapshot', function () {
+    file_put_contents($this->gameStatePath, json_encode([
+        'game_version' => '42.19.0 oldhash 2026-06-01 09:40:02 (ZB)',
+        'exported_at' => gmdate('Y-m-d\TH:i:s\Z', time() - 600),
+    ]));
+    file_put_contents(
+        $this->consoleLogPath,
+        "LOG : General, 123> version=42.20.0 newhash demo=false\n",
+    );
+
+    config()->set('zomboid.paths.data', $this->tempDir);
+
+    $reader = new GameVersionReader(
+        new GameStateReader($this->gameStatePath),
+        Mockery::mock(DockerManager::class),
+    );
+
+    expect($reader->detectVersion())->toBe('42.20.0');
+});
+
+test('finds the current Build 42 version outside the final console chunk', function () {
+    file_put_contents(
+        $this->consoleLogPath,
+        "LOG : General, 123> version=42.20.0 currenthash demo=false\n"
+        .str_repeat("ERROR: noisy Build 42 startup failure\n", 3000),
+    );
+
+    config()->set('zomboid.paths.data', $this->tempDir);
+
+    $reader = new GameVersionReader(
+        new GameStateReader($this->gameStatePath),
+        Mockery::mock(DockerManager::class),
+    );
+
+    expect(filesize($this->consoleLogPath))->toBeGreaterThan(65536)
+        ->and($reader->detectVersion())->toBe('42.20.0');
+});
+
+test('returns the newest version from a console log containing multiple boots', function () {
+    file_put_contents(
+        $this->consoleLogPath,
+        "version=42.19.0\n"
+        .str_repeat("old boot output\n", 5000)
+        ."versionNumber=42.20.0\n"
+        .str_repeat("current boot output\n", 5000),
+    );
+
+    config()->set('zomboid.paths.data', $this->tempDir);
+
+    $reader = new GameVersionReader(
+        new GameStateReader($this->gameStatePath),
+        Mockery::mock(DockerManager::class),
+    );
+
+    expect($reader->detectVersion())->toBe('42.20.0');
+});
