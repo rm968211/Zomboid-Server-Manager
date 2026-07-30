@@ -8,7 +8,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { formatDateTime } from '@/lib/dates';
 import type { BreadcrumbItem } from '@/types';
@@ -37,19 +36,17 @@ const statusColors: Record<string, string> = {
 };
 
 export default function MyPurchases({ purchases, balance }: Props) {
-    const { t } = useTranslation();
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={t('purchases.title')} />
+            <Head title="My Purchases" />
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">
-                            {t('purchases.title')}
+                            My Purchases
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            {t('purchases.description')}
+                            Your purchase history
                         </p>
                     </div>
                     <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2">
@@ -62,11 +59,9 @@ export default function MyPurchases({ purchases, balance }: Props) {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>{t('purchases.history')}</CardTitle>
+                        <CardTitle>{'Purchase History'}</CardTitle>
                         <CardDescription>
-                            {t('purchases.count', {
-                                count: String(purchases.data.length),
-                            })}
+                            {`${String(purchases.data.length)} purchases`}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -85,12 +80,8 @@ export default function MyPurchases({ purchases, balance }: Props) {
                                                         {purchase.metadata
                                                             ?.item_name ||
                                                         purchase.metadata?.items
-                                                            ? t(
-                                                                  'purchases.bundle',
-                                                              )
-                                                            : t(
-                                                                  'purchases.item',
-                                                              )}
+                                                            ? 'Bundle'
+                                                            : 'Item'}
                                                         {purchase.quantity_bought >
                                                             1 &&
                                                             ` x${purchase.quantity_bought}`}
@@ -195,7 +186,9 @@ export default function MyPurchases({ purchases, balance }: Props) {
                             </div>
                         ) : (
                             <p className="py-8 text-center text-muted-foreground">
-                                {t('purchases.no_purchases')}
+                                {
+                                    'No purchases yet. Visit the shop to buy items!'
+                                }
                             </p>
                         )}
                     </CardContent>

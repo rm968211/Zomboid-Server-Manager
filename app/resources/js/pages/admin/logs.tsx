@@ -17,15 +17,13 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
 export default function Logs({ lines: initialLines }: { lines: string[] }) {
-    const { t } = useTranslation();
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: t('nav.dashboard'), href: '/dashboard' },
-        { title: t('admin.logs.title'), href: '/admin/logs' },
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Server Logs', href: '/admin/logs' },
     ];
     const [lines, setLines] = useState(initialLines);
     const [autoRefresh, setAutoRefresh] = useState(true);
@@ -61,15 +59,15 @@ export default function Logs({ lines: initialLines }: { lines: string[] }) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={t('admin.logs.title')} />
+            <Head title="Server Logs" />
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">
-                            {t('admin.logs.title')}
+                            Server Logs
                         </h1>
                         <p className="text-muted-foreground">
-                            {t('admin.logs.description')}
+                            Live game server container output
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -84,24 +82,16 @@ export default function Logs({ lines: initialLines }: { lines: string[] }) {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="50">
-                                    {t('admin.logs.lines_label', {
-                                        count: '50',
-                                    })}
+                                    {`${'50'} lines`}
                                 </SelectItem>
                                 <SelectItem value="100">
-                                    {t('admin.logs.lines_label', {
-                                        count: '100',
-                                    })}
+                                    {`${'100'} lines`}
                                 </SelectItem>
                                 <SelectItem value="200">
-                                    {t('admin.logs.lines_label', {
-                                        count: '200',
-                                    })}
+                                    {`${'200'} lines`}
                                 </SelectItem>
                                 <SelectItem value="500">
-                                    {t('admin.logs.lines_label', {
-                                        count: '500',
-                                    })}
+                                    {`${'500'} lines`}
                                 </SelectItem>
                             </SelectContent>
                         </Select>
@@ -113,12 +103,12 @@ export default function Logs({ lines: initialLines }: { lines: string[] }) {
                             {autoRefresh ? (
                                 <>
                                     <Pause className="mr-1.5 size-3.5" />{' '}
-                                    {t('admin.logs.pause')}
+                                    {'Pause'}
                                 </>
                             ) : (
                                 <>
                                     <Play className="mr-1.5 size-3.5" />{' '}
-                                    {t('admin.logs.resume')}
+                                    {'Resume'}
                                 </>
                             )}
                         </Button>
@@ -131,7 +121,7 @@ export default function Logs({ lines: initialLines }: { lines: string[] }) {
                             <RefreshCw
                                 className={`mr-1.5 size-3.5 ${refreshing ? 'animate-spin' : ''}`}
                             />
-                            {t('admin.logs.refresh')}
+                            Refresh
                         </Button>
                     </div>
                 </div>
@@ -141,18 +131,16 @@ export default function Logs({ lines: initialLines }: { lines: string[] }) {
                         <div>
                             <CardTitle className="flex items-center gap-2">
                                 <Activity className="size-5" />
-                                {t('admin.logs.card_title')}
+                                Container Output
                             </CardTitle>
                             <CardDescription>
-                                {t('admin.logs.line_count', {
-                                    count: String(lines.length),
-                                })}
+                                {`${String(lines.length)} lines`}
                             </CardDescription>
                         </div>
                         {autoRefresh && (
                             <Badge variant="outline" className="text-xs">
                                 <span className="mr-1.5 inline-block size-1.5 animate-pulse rounded-full bg-green-500" />
-                                {t('admin.logs.auto_refresh_badge')}
+                                Auto-refresh
                             </Badge>
                         )}
                     </CardHeader>
@@ -175,7 +163,7 @@ export default function Logs({ lines: initialLines }: { lines: string[] }) {
                                 ))
                             ) : (
                                 <p className="text-zinc-500">
-                                    {t('admin.logs.empty')}
+                                    No log output available
                                 </p>
                             )}
                         </div>

@@ -50,7 +50,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { usePing } from '@/hooks/use-ping';
-import { useTranslation } from '@/hooks/use-translation';
 import PublicLayout from '@/layouts/public-layout';
 import type { WelcomePageData } from '@/types';
 
@@ -119,8 +118,6 @@ function HeroSection({
 }: Pick<WelcomePageData, 'hero' | 'server' | 'connection'> & {
     ping: number | null;
 }) {
-    const { t } = useTranslation();
-
     return (
         <section className="relative overflow-hidden py-20 lg:py-28">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent" />
@@ -165,10 +162,10 @@ function HeroSection({
                     />
                     <span className="font-medium">
                         {server.status === 'online'
-                            ? `${t('status.online')} — ${server.player_count} ${server.player_count !== 1 ? t('common.players') : t('common.player')}`
+                            ? `${'Online'} — ${server.player_count} ${server.player_count !== 1 ? 'players' : 'player'}`
                             : server.status === 'starting'
-                              ? t('status.starting')
-                              : t('status.offline')}
+                              ? 'Starting up...'
+                              : 'Offline'}
                     </span>
                     {ping !== null && server.status === 'online' && (
                         <span className="text-muted-foreground">
@@ -202,43 +199,45 @@ function HeroSection({
                             <DialogHeader>
                                 <DialogTitle>{hero.button_text}</DialogTitle>
                                 <DialogDescription>
-                                    {t('connection.description')}
+                                    {
+                                        'Use the connection details below to connect in Project Zomboid.'
+                                    }
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-3 py-2">
                                 {connection.ip ? (
                                     <>
                                         <CopyField
-                                            label={t('connection.server_ip')}
+                                            label="Server IP"
                                             value={connection.ip}
                                         />
                                         <CopyField
-                                            label={t('connection.port')}
+                                            label="Port"
                                             value={connection.port}
                                         />
                                     </>
                                 ) : (
                                     <p className="text-sm text-muted-foreground">
-                                        {t('connection.not_configured')}
+                                        {
+                                            'Connection details are not configured yet. Contact the server admin.'
+                                        }
                                     </p>
                                 )}
                                 <div className="rounded-md border border-border/60 bg-muted/20 px-3 py-2.5 text-sm text-muted-foreground">
                                     <p className="mb-1 font-medium text-foreground">
-                                        {t('connection.how_to')}
+                                        How to connect:
                                     </p>
                                     <ol className="list-inside list-decimal space-y-0.5">
-                                        <li>{t('connection.step_1')}</li>
-                                        <li>{t('connection.step_2')}</li>
-                                        <li>{t('connection.step_3')}</li>
-                                        <li>{t('connection.step_4')}</li>
+                                        <li>{'Open Project Zomboid'}</li>
+                                        <li>{'Go to Multiplayer → Join'}</li>
+                                        <li>{'Enter the IP and port above'}</li>
+                                        <li>{'Click Connect'}</li>
                                     </ol>
                                 </div>
                             </div>
                             <DialogFooter>
                                 <DialogClose asChild>
-                                    <Button variant="outline">
-                                        {t('common.close')}
-                                    </Button>
+                                    <Button variant="outline">{'Close'}</Button>
                                 </DialogClose>
                             </DialogFooter>
                         </DialogContent>
@@ -246,7 +245,7 @@ function HeroSection({
                     <Button asChild variant="outline" size="lg">
                         <Link href="/rankings">
                             <Trophy className="mr-1.5 size-4" />
-                            {t('landing.view_rankings')}
+                            View Rankings
                         </Link>
                     </Button>
                 </motion.div>
@@ -259,8 +258,6 @@ function StatsSection({
     server_stats,
     server,
 }: Pick<WelcomePageData, 'server_stats' | 'server'>) {
-    const { t } = useTranslation();
-
     return (
         <Deferred
             data="server_stats"
@@ -294,7 +291,7 @@ function StatsSection({
                                 />
                             </span>
                             <span className="text-xs text-muted-foreground">
-                                {t('status.total_players')}
+                                Total Players
                             </span>
                         </div>
                         <div className="flex flex-col items-center gap-1">
@@ -307,7 +304,7 @@ function StatsSection({
                                 />
                             </span>
                             <span className="text-xs text-muted-foreground">
-                                {t('status.zombie_kills')}
+                                Zombie Kills
                             </span>
                         </div>
                         <div className="flex flex-col items-center gap-1">
@@ -322,7 +319,7 @@ function StatsSection({
                                 />
                             </span>
                             <span className="text-xs text-muted-foreground">
-                                {t('status.hours_survived')}
+                                Hours Survived
                             </span>
                         </div>
                         <div className="flex flex-col items-center gap-1">
@@ -335,7 +332,7 @@ function StatsSection({
                                 />
                             </span>
                             <span className="text-xs text-muted-foreground">
-                                {t('status.deaths')}
+                                Deaths
                             </span>
                         </div>
                         <div className="hidden flex-col items-center gap-1 lg:flex">
@@ -346,7 +343,7 @@ function StatsSection({
                                 {server.player_count}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                                {t('status.players_online')}
+                                Players Online
                             </span>
                         </div>
                     </div>
@@ -359,7 +356,6 @@ function StatsSection({
 function TopPlayersSection({
     top_players,
 }: Pick<WelcomePageData, 'top_players'>) {
-    const { t } = useTranslation();
     return (
         <Deferred
             data="top_players"
@@ -384,10 +380,10 @@ function TopPlayersSection({
                     <div className="mx-auto max-w-7xl px-4">
                         <div className="mb-10 text-center">
                             <h2 className="mb-2 text-2xl font-bold tracking-tight sm:text-3xl">
-                                {t('landing.top_survivors')}
+                                Top Survivors
                             </h2>
                             <p className="text-muted-foreground">
-                                {t('landing.top_survivors_desc')}
+                                Leading zombie slayers on the server
                             </p>
                         </div>
                         <div className="flex items-end justify-center gap-2 sm:gap-4">
@@ -409,7 +405,7 @@ function TopPlayersSection({
                                             </p>
                                             <p className="text-xs text-muted-foreground">
                                                 {top_players[1].zombie_kills.toLocaleString()}{' '}
-                                                {t('common.kills')}
+                                                {'kills'}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
                                                 {top_players[1].hours_survived.toLocaleString(
@@ -418,7 +414,7 @@ function TopPlayersSection({
                                                         maximumFractionDigits: 1,
                                                     },
                                                 )}
-                                                h {t('common.survived')}
+                                                h {'survived'}
                                             </p>
                                             {top_players[1].profession && (
                                                 <span className="mt-1 inline-block rounded bg-muted px-1.5 py-0.5 text-xs">
@@ -447,14 +443,14 @@ function TopPlayersSection({
                                         </p>
                                         <p className="text-sm text-muted-foreground">
                                             {top_players[0].zombie_kills.toLocaleString()}{' '}
-                                            {t('common.kills')}
+                                            {'kills'}
                                         </p>
                                         <p className="text-sm text-muted-foreground">
                                             {top_players[0].hours_survived.toLocaleString(
                                                 undefined,
                                                 { maximumFractionDigits: 1 },
                                             )}
-                                            h {t('common.survived')}
+                                            h {'survived'}
                                         </p>
                                         {top_players[0].profession && (
                                             <span className="mt-1 inline-block rounded bg-yellow-500/10 px-2 py-0.5 text-xs font-medium text-yellow-700 dark:text-yellow-400">
@@ -483,7 +479,7 @@ function TopPlayersSection({
                                             </p>
                                             <p className="text-xs text-muted-foreground">
                                                 {top_players[2].zombie_kills.toLocaleString()}{' '}
-                                                {t('common.kills')}
+                                                {'kills'}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
                                                 {top_players[2].hours_survived.toLocaleString(
@@ -492,7 +488,7 @@ function TopPlayersSection({
                                                         maximumFractionDigits: 1,
                                                     },
                                                 )}
-                                                h {t('common.survived')}
+                                                h {'survived'}
                                             </p>
                                             {top_players[2].profession && (
                                                 <span className="mt-1 inline-block rounded bg-muted px-1.5 py-0.5 text-xs">
@@ -510,7 +506,7 @@ function TopPlayersSection({
                                 className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
                             >
                                 <Trophy className="size-4" />
-                                {t('landing.view_full_rankings')}
+                                View Full Rankings
                             </Link>
                         </div>
                     </div>
@@ -525,17 +521,17 @@ function FeaturesSection({
 }: {
     features: WelcomePageData['features'];
 }) {
-    const { t } = useTranslation();
-
     return (
         <section className="border-t border-border/40 bg-muted/30 py-16 lg:py-20">
             <div className="mx-auto max-w-7xl px-4">
                 <div className="mb-12 text-center">
                     <h2 className="mb-3 text-2xl font-bold tracking-tight sm:text-3xl">
-                        {t('landing.features_title')}
+                        Server Management Features
                     </h2>
                     <p className="text-muted-foreground">
-                        {t('landing.features_desc')}
+                        {
+                            'Everything you need to run a PZ server, without SSH access.'
+                        }
                     </p>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

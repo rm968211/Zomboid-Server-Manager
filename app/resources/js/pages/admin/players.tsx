@@ -40,7 +40,6 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useTableSort } from '@/hooks/use-table-sort';
-import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -89,11 +88,9 @@ export default function Players({
     players,
     respawn_cooldowns = {},
 }: PlayersProps) {
-    const { t } = useTranslation();
-
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: t('nav.dashboard'), href: '/dashboard' },
-        { title: t('admin.players.title'), href: '/admin/players' },
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Player Management', href: '/admin/players' },
     ];
 
     const [search, setSearch] = useState('');
@@ -159,23 +156,20 @@ export default function Players({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={t('admin.players.title')} />
+            <Head title="Player Management" />
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">
-                            {t('admin.players.title')}
+                            Player Management
                         </h1>
                         <p className="text-muted-foreground">
-                            {t('admin.players.subtitle', {
-                                online: String(onlineCount),
-                                total: String(players.length),
-                            })}
+                            {`${String(onlineCount)} online, ${String(players.length)} total`}
                         </p>
                     </div>
                     <Badge variant="outline" className="text-sm">
                         <Circle className="mr-1.5 size-2 fill-green-500 text-green-500" />
-                        {t('common.live')}
+                        Live
                     </Badge>
                 </div>
 
@@ -183,25 +177,18 @@ export default function Players({
                     <CardHeader>
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <CardTitle>
-                                    {t('admin.players.card_title')}
-                                </CardTitle>
+                                <CardTitle>{'Players'}</CardTitle>
                                 <CardDescription>
-                                    {t('admin.players.card_description', {
-                                        filtered: String(
-                                            filteredPlayers.length,
-                                        ),
-                                        total: String(players.length),
-                                    })}
+                                    {`${String(
+                                        filteredPlayers.length,
+                                    )} of ${String(players.length)} players`}
                                 </CardDescription>
                             </div>
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                 <div className="relative">
                                     <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
                                     <Input
-                                        placeholder={t(
-                                            'admin.players.search_placeholder',
-                                        )}
+                                        placeholder="Search players..."
                                         value={search}
                                         onChange={(e) =>
                                             setSearch(e.target.value)
@@ -219,14 +206,12 @@ export default function Players({
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">
-                                            {t('common.all')}
-                                        </SelectItem>
+                                        <SelectItem value="all">All</SelectItem>
                                         <SelectItem value="online">
-                                            {t('common.online')}
+                                            Online
                                         </SelectItem>
                                         <SelectItem value="offline">
-                                            {t('common.offline')}
+                                            Offline
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -261,9 +246,7 @@ export default function Players({
                                                     toggleSort('username')
                                                 }
                                             >
-                                                {t(
-                                                    'admin.players.table_player',
-                                                )}
+                                                Player
                                                 <SortIcon
                                                     column="username"
                                                     sortKey={sortKey}
@@ -272,7 +255,7 @@ export default function Players({
                                             </button>
                                         </TableHead>
                                         <TableHead className="hidden sm:table-cell">
-                                            {t('admin.players.table_role')}
+                                            Role
                                         </TableHead>
                                         <TableHead className="hidden md:table-cell">
                                             <button
@@ -283,7 +266,7 @@ export default function Players({
                                                 }
                                             >
                                                 <Skull className="mr-1 size-3" />
-                                                {t('admin.players.table_kills')}
+                                                Kills
                                                 <SortIcon
                                                     column="kills"
                                                     sortKey={sortKey}
@@ -300,7 +283,7 @@ export default function Players({
                                                 }
                                             >
                                                 <Clock className="mr-1 size-3" />
-                                                {t('admin.players.table_hours')}
+                                                Hours
                                                 <SortIcon
                                                     column="hours"
                                                     sortKey={sortKey}
@@ -316,9 +299,7 @@ export default function Players({
                                                     toggleSort('joined')
                                                 }
                                             >
-                                                {t(
-                                                    'admin.players.table_joined',
-                                                )}
+                                                Joined
                                                 <SortIcon
                                                     column="joined"
                                                     sortKey={sortKey}
@@ -327,7 +308,7 @@ export default function Players({
                                             </button>
                                         </TableHead>
                                         <TableHead className="text-right">
-                                            {t('common.actions')}
+                                            Actions
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -403,9 +384,7 @@ export default function Players({
                                                         variant="ghost"
                                                         size="sm"
                                                         asChild
-                                                        title={t(
-                                                            'admin.players.tooltip_inventory',
-                                                        )}
+                                                        title="Inventory"
                                                     >
                                                         <Link
                                                             href={`/admin/players/${player.username}/inventory`}
@@ -421,9 +400,9 @@ export default function Players({
                                                                 player.username,
                                                             )
                                                         }
-                                                        title={t(
-                                                            'admin.players.tooltip_access_level',
-                                                        )}
+                                                        title={
+                                                            'Set access level'
+                                                        }
                                                     >
                                                         <ShieldCheck className="size-3.5" />
                                                     </Button>
@@ -436,9 +415,9 @@ export default function Players({
                                                                     player.username,
                                                                 )
                                                             }
-                                                            title={t(
-                                                                'admin.players.tooltip_set_password',
-                                                            )}
+                                                            title={
+                                                                'Set password'
+                                                            }
                                                         >
                                                             <KeyRound className="size-3.5" />
                                                         </Button>
@@ -454,9 +433,9 @@ export default function Players({
                                                                     player.username,
                                                                 )
                                                             }
-                                                            title={t(
-                                                                'admin.players.tooltip_reset_timer',
-                                                            )}
+                                                            title={
+                                                                'Reset respawn timer'
+                                                            }
                                                         >
                                                             <TimerReset className="size-3.5" />
                                                         </Button>
@@ -470,9 +449,9 @@ export default function Players({
                                                                     player.username,
                                                                 );
                                                             }}
-                                                            title={t(
-                                                                'admin.players.tooltip_kick',
-                                                            )}
+                                                            title={
+                                                                'Kick player'
+                                                            }
                                                         >
                                                             <UserX className="size-3.5" />
                                                         </Button>
@@ -485,9 +464,7 @@ export default function Players({
                                                                 player.username,
                                                             );
                                                         }}
-                                                        title={t(
-                                                            'admin.players.tooltip_ban',
-                                                        )}
+                                                        title="Ban player"
                                                     >
                                                         <Ban className="size-3.5 text-destructive" />
                                                     </Button>
@@ -500,8 +477,8 @@ export default function Players({
                         ) : (
                             <p className="py-8 text-center text-muted-foreground">
                                 {search || statusFilter !== 'all'
-                                    ? t('admin.players.no_players_filtered')
-                                    : t('admin.players.no_players')}
+                                    ? 'No players match your filters'
+                                    : 'No players'}
                             </p>
                         )}
                     </CardContent>

@@ -21,7 +21,6 @@ use Illuminate\Support\Facades\Storage;
  * @property array<int, array<string, string>>|null $features
  * @property array<int, array<string, mixed>>|null $landing_sections
  * @property array<string, string>|null $theme_colors
- * @property string $default_locale
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  */
@@ -42,7 +41,6 @@ class SiteSetting extends Model
         'features',
         'landing_sections',
         'theme_colors',
-        'default_locale',
     ];
 
     /**
@@ -72,7 +70,6 @@ class SiteSetting extends Model
             'hero_button_text' => 'Join Server',
             'features' => self::defaultFeatures(),
             'landing_sections' => self::defaultLandingSections(),
-            'default_locale' => 'en',
         ]);
     }
 
