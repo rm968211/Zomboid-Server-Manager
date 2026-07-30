@@ -323,25 +323,27 @@ class ModManager
     /**
      * Add a mod to both WorkshopItems and Mods lines.
      *
-     * A mod can need more than one Workshop item downloaded — a base upload
-     * plus a texture or map pack that declares no mod ID of its own — so
-     * `$extraWorkshopIds` are appended to `WorkshopItems=` alongside the
-     * primary one, without adding further `Mods=` entries. Entries already
-     * present are skipped rather than duplicated, and the mod is still added
-     * when its Workshop item happens to be installed already (which is how a
-     * second mod from the same upload gets enabled).
+     * One Workshop upload routinely declares several mod IDs, all of which
+     * have to appear in `Mods=` for PZ to load them — pass the rest as
+     * `$extraModIds` and they are appended after the primary one, in order.
+     * Entries already present are skipped rather than duplicated, and the mod
+     * is still added when its Workshop item happens to be installed already,
+     * which is exactly how a second mod from the same upload gets enabled.
      *
-     * @param  list<string>  $extraWorkshopIds
+     * @param  list<string>  $extraModIds
      */
-    public function add(string $iniPath, string $workshopId, string $modId, ?string $mapFolder = null, array $extraWorkshopIds = []): void
+    public function add(string $iniPath, string $workshopId, string $modId, ?string $mapFolder = null, array $extraModIds = []): void
     {
         $current = $this->readCurrentLists($iniPath);
 
         [$workshopIds, $workshopAdded] = $this->mergeList(
             $current['workshop_ids'],
-            array_merge([$workshopId], $extraWorkshopIds),
+            [$workshopId],
         );
-        [$modIds, $modsAdded] = $this->mergeList($current['mod_ids'], [$modId]);
+        [$modIds, $modsAdded] = $this->mergeList(
+            $current['mod_ids'],
+            array_merge([$modId], $extraModIds),
+        );
 
         if ($workshopAdded === 0 && $modsAdded === 0 && $mapFolder === null) {
             return;
@@ -441,37 +443,40 @@ class ModManager
     }
 
     /**
-     * Add and/or drop `WorkshopItems=` entries without touching `Mods=`, in one
-     * write. Used when a mod's Workshop IDs are edited: the mod stays enabled,
-     * only the set of items PZ downloads for it changes.
+     * Rename a `Mods=` entry in place, keeping its load-order position.
      *
-     * @param  list<string>  $add
-     * @param  list<string>  $remove
-     * @return array{added: list<string>, removed: list<string>}
+     * The mod ID has to match the `id=` line in the mod's own `mod.info` or PZ
+     * silently fails to load it, and that is easy to get wrong when it was
+     * typed by hand or parsed out of a Workshop description. Only `Mods=`
+     * changes: `WorkshopItems=` is unaffected, since the item being downloaded
+     * is the same either way.
+     *
+     * Returns false when `$from` is not installed or `$to` already is, so the
+     * caller can report which rather than writing a duplicate.
      */
-    public function updateWorkshopItems(string $iniPath, array $add, array $remove): array
+    public function renameMod(string $iniPath, string $from, string $to): bool
     {
-        $lists = $this->readCurrentLists($iniPath);
-        $current = $lists['workshop_ids'];
-
-        $protected = array_map('strval', array_keys(self::PROTECTED_MODS));
-        $remove = array_values(array_diff($remove, $protected));
-
-        $added = array_values(array_diff(array_unique($add), $current));
-        $removed = array_values(array_intersect($current, $remove));
-
-        if ($added === [] && $removed === []) {
-            return ['added' => [], 'removed' => []];
+        if (in_array($from, self::PROTECTED_MODS, true)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'mod_id' => ["{$from} is required by the manager and cannot be renamed."],
+            ]);
         }
 
-        $updated = array_values(array_diff(array_merge($current, $added), $removed));
+        $lists = $this->readCurrentLists($iniPath);
+        $index = array_search($from, $lists['mod_ids'], true);
+
+        if ($index === false || in_array($to, $lists['mod_ids'], true)) {
+            return false;
+        }
+
+        $lists['mod_ids'][$index] = $to;
 
         $this->writeIniAndState($iniPath, [
-            'WorkshopItems' => implode(';', $updated),
+            'WorkshopItems' => implode(';', $lists['workshop_ids']),
             'Mods' => implode(';', $lists['mod_ids']),
         ]);
 
-        return ['added' => $added, 'removed' => $removed];
+        return true;
     }
 
     /**

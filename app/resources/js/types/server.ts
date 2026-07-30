@@ -39,13 +39,6 @@ export type ModStatus = 'active' | 'pending_restart' | 'stopped';
 
 export type ModEntry = {
     workshop_id: string;
-    /**
-     * Every Workshop item this mod needs downloaded. Usually one, but a mod
-     * split across several uploads (a base plus a texture or map pack that
-     * declares no mod ID) can list more. Empty when neither the downloaded
-     * content nor a stored link resolves one.
-     */
-    workshop_ids?: string[];
     mod_id: string;
     position: number;
     status?: ModStatus;
