@@ -75,11 +75,18 @@ jobs:
           flavor: |
             latest=${{ github.event_name != 'workflow_dispatch' || inputs.push_latest == 'true' }}
 
+      # amd64 only. The manager runs on Hal (x86_64) and nothing pulls an arm64
+      # image of it, but building one cost ~5 minutes every push: GitHub runners
+      # are amd64, so the arm64 leg ran under QEMU, where `npm run build` took
+      # 292s against 22s native. Add the platform back if something arm64 ever
+      # needs to run the manager — but build the frontend once on
+      # $BUILDPLATFORM and COPY it into both arches, since Vite output is
+      # architecture-independent. The game-server image below still ships arm64.
       - name: Build and push zomboid-server-manager
         uses: docker/build-push-action@v6
         with:
           context: ./app
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta-manager.outputs.tags }}
           labels: ${{ steps.meta-manager.outputs.labels }}
