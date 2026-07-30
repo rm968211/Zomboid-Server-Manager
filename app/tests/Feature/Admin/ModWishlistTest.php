@@ -3,11 +3,16 @@
 use App\Models\User;
 use App\Models\WishlistMod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->admin = User::factory()->admin()->create();
+    // Adding to the wishlist asks Steam whether the ID is a collection, so it
+    // can be expanded into its members — see ModBundleTest. An empty fake makes
+    // every ID here an ordinary mod without touching the network.
+    Http::fake();
 });
 
 it('adds a workshop id to the wishlist', function () {

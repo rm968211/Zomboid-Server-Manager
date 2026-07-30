@@ -62,7 +62,15 @@ export type WorkshopDetails = {
     time_updated: number | null;
     file_size: number | null;
     subscriptions: number | null;
+    is_collection: boolean;
 };
+
+/**
+ * Steam Workshop collections the admin manages as one unit, mapped to the
+ * Workshop IDs they currently contain. Membership is resolved live from Steam,
+ * so a collection that gains a mod regroups without any local bookkeeping.
+ */
+export type ModBundles = Record<string, string[]>;
 
 export type AuditEntry = {
     id: string;

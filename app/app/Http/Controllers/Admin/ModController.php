@@ -8,6 +8,8 @@ use App\Http\Requests\Admin\ImportModsRequest;
 use App\Http\Requests\Admin\ImportWishlistRequest;
 use App\Http\Requests\Admin\LookupWorkshopModRequest;
 use App\Http\Requests\Admin\ModDetailsRequest;
+use App\Http\Requests\Admin\StoreModBundleRequest;
+use App\Models\ModBundle;
 use App\Models\WishlistMod;
 use App\Services\AuditLogger;
 use App\Services\DockerManager;
@@ -61,7 +63,110 @@ class ModController extends Controller
             'wishlist' => WishlistMod::query()
                 ->orderByDesc('created_at')
                 ->pluck('workshop_id'),
+            'bundles' => $this->bundleMemberships(),
         ]);
+    }
+
+    /**
+     * Every tracked bundle mapped to the Workshop IDs it currently contains,
+     * for the UI to group installed and wishlisted rows by. Membership comes
+     * from Steam (cached), so a collection that gains a mod regroups on its
+     * own. Steam being unreachable just drops the grouping for that request
+     * rather than breaking the page.
+     *
+     * @return array<string, list<string>>
+     */
+    private function bundleMemberships(): array
+    {
+        $bundleIds = ModBundle::query()->pluck('workshop_id')->all();
+
+        if ($bundleIds === []) {
+            return [];
+        }
+
+        try {
+            return $this->workshopClient->getCollectionChildrenMany($bundleIds);
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * Resolve a Workshop collection into the member Workshop IDs to act on,
+     * or null when the ID is not a collection.
+     *
+     * @return list<string>|null
+     */
+    private function resolveBundleMembers(string $workshopId): ?array
+    {
+        try {
+            $details = $this->workshopClient->getDetails($workshopId);
+
+            if ($details === null || ! ($details['is_collection'] ?? false)) {
+                return null;
+            }
+
+            return $this->workshopClient->getCollectionChildren($workshopId);
+        } catch (\Throwable $e) {
+            // Steam being unreachable must not block adding an ordinary mod —
+            // fall back to treating the ID as a single item.
+            Log::warning('Workshop collection lookup failed', ['exception' => $e, 'workshop_id' => $workshopId]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Replace every collection ID in a pasted list with the mods it contains,
+     * recording each one as a bundle. Non-collection IDs pass through as-is and
+     * order is preserved. Batched so a 100-ID paste is two Steam calls, not 200.
+     *
+     * @param  list<string>  $workshopIds
+     * @return list<string>
+     */
+    private function expandBundlesInList(array $workshopIds): array
+    {
+        $ids = array_values(array_unique($workshopIds));
+
+        try {
+            $details = $this->workshopClient->getDetailsMany($ids);
+
+            $bundleIds = array_values(array_filter(
+                $ids,
+                fn (string $id): bool => (bool) ($details[$id]['is_collection'] ?? false),
+            ));
+
+            if ($bundleIds === []) {
+                return $ids;
+            }
+
+            $children = $this->workshopClient->getCollectionChildrenMany($bundleIds);
+        } catch (\Throwable $e) {
+            // Steam unreachable — import the IDs verbatim rather than failing
+            // the whole paste; collections can be re-added once it's back.
+            Log::warning('Workshop collection expansion failed', ['exception' => $e]);
+
+            return $ids;
+        }
+
+        $expanded = [];
+
+        foreach ($ids as $id) {
+            if (! in_array($id, $bundleIds, true)) {
+                $expanded[] = $id;
+
+                continue;
+            }
+
+            if (($children[$id] ?? []) === []) {
+                continue;
+            }
+
+            ModBundle::query()->firstOrCreate(['workshop_id' => $id]);
+            $expanded = array_merge($expanded, $children[$id]);
+        }
+
+        return array_values(array_unique($expanded));
     }
 
     /**
@@ -83,6 +188,27 @@ class ModController extends Controller
     public function wishlistStore(AddWishlistModRequest $request): JsonResponse
     {
         $workshopId = $request->validated('workshop_id');
+
+        $members = $this->resolveBundleMembers($workshopId);
+
+        if ($members !== null && $members !== []) {
+            ModBundle::query()->firstOrCreate(['workshop_id' => $workshopId]);
+            $result = $this->wishlistMembers($members);
+
+            $this->auditLogger->log(
+                actor: $request->user()->name ?? 'admin',
+                action: 'mod.bundle.add',
+                target: $workshopId,
+                details: ['target' => 'wishlist'] + $result,
+                ip: $request->ip(),
+            );
+
+            return response()->json([
+                'workshop_id' => $workshopId,
+                'bundle_id' => $workshopId,
+                'members' => $members,
+            ] + $result, 201);
+        }
 
         WishlistMod::query()->firstOrCreate(['workshop_id' => $workshopId]);
 
@@ -118,11 +244,12 @@ class ModController extends Controller
 
     /**
      * Bulk-add Workshop IDs to the wishlist, skipping any that are already
-     * installed or already wishlisted.
+     * installed or already wishlisted. Any collection ID in the list is
+     * recorded as a bundle and replaced by the mods it contains.
      */
     public function wishlistImport(ImportWishlistRequest $request): JsonResponse
     {
-        $ids = $request->validated('workshop_ids');
+        $ids = $this->expandBundlesInList($request->validated('workshop_ids'));
 
         $installed = collect($this->modManager->list(
             config('zomboid.paths.server_ini'),
@@ -136,7 +263,7 @@ class ModController extends Controller
 
         $added = [];
 
-        foreach (array_unique($ids) as $id) {
+        foreach ($ids as $id) {
             if (isset($skip[$id])) {
                 continue;
             }
@@ -181,7 +308,208 @@ class ModController extends Controller
             'mod_ids' => $details['mod_ids'],
             'map_folders' => $details['map_folders'],
             'build_compat' => $details['build_compat'],
+            'is_bundle' => $details['is_collection'],
+            'members' => $details['is_collection']
+                ? $this->workshopClient->getCollectionChildren($workshopId)
+                : [],
         ]);
+    }
+
+    /**
+     * Install every mod in a Workshop collection and record the collection so
+     * the UI keeps its members grouped. Members whose Workshop page declares no
+     * `Mod ID:` are reported back as unresolved instead of silently dropped —
+     * they have to be added by hand, exactly like the bulk importer does.
+     */
+    public function bundleStore(StoreModBundleRequest $request): JsonResponse
+    {
+        $bundleId = $request->validated('workshop_id');
+        $members = $this->resolveBundleMembers($bundleId);
+
+        if ($members === null) {
+            return response()->json([
+                'error' => 'That Workshop ID is not a collection.',
+            ], 422);
+        }
+
+        if ($members === []) {
+            return response()->json(['error' => 'That collection is empty.'], 422);
+        }
+
+        ModBundle::query()->firstOrCreate(['workshop_id' => $bundleId]);
+
+        $result = $request->validated('target') === 'wishlist'
+            ? $this->wishlistMembers($members)
+            : $this->installMembers($members);
+
+        $this->auditLogger->log(
+            actor: $request->user()->name ?? 'admin',
+            action: 'mod.bundle.add',
+            target: $bundleId,
+            details: ['target' => $request->validated('target')] + $result,
+            ip: $request->ip(),
+        );
+
+        return response()->json([
+            'bundle_id' => $bundleId,
+            'members' => $members,
+            'restart_required' => $request->validated('target') === 'installed',
+        ] + $result, 201);
+    }
+
+    /**
+     * @param  list<string>  $members
+     * @return array{added: int, unresolved: list<string>}
+     */
+    private function wishlistMembers(array $members): array
+    {
+        $installed = collect($this->modManager->list(
+            config('zomboid.paths.server_ini'),
+            config('zomboid.paths.workshop_content'),
+        ))->pluck('workshop_id')->filter()->all();
+
+        $added = 0;
+
+        foreach ($members as $id) {
+            if (in_array($id, $installed, true)) {
+                continue;
+            }
+
+            $added += WishlistMod::query()->firstOrCreate(['workshop_id' => $id])->wasRecentlyCreated ? 1 : 0;
+        }
+
+        return ['added' => $added, 'unresolved' => []];
+    }
+
+    /**
+     * @param  list<string>  $members
+     * @return array{added: int, unresolved: list<string>}
+     */
+    private function installMembers(array $members): array
+    {
+        $details = $this->workshopClient->getDetailsMany($members);
+
+        $workshopIds = [];
+        $modIds = [];
+        $mapFolders = [];
+        $unresolved = [];
+
+        foreach ($members as $id) {
+            $member = $details[$id] ?? null;
+
+            if ($member === null || $member['mod_ids'] === []) {
+                $unresolved[] = $id;
+
+                continue;
+            }
+
+            $workshopIds[] = $id;
+            $modIds = array_merge($modIds, $member['mod_ids']);
+            $mapFolders = array_merge($mapFolders, $member['map_folders']);
+        }
+
+        if ($workshopIds === []) {
+            return ['added' => 0, 'unresolved' => $unresolved];
+        }
+
+        $summary = $this->modManager->bulkImport(
+            config('zomboid.paths.server_ini'),
+            $workshopIds,
+            $modIds,
+            $mapFolders,
+        );
+
+        WishlistMod::query()->whereIn('workshop_id', $workshopIds)->delete();
+
+        return ['added' => $summary['mods_added'], 'unresolved' => $unresolved];
+    }
+
+    /**
+     * Uninstall or un-wishlist every member of a bundle in one go. The bundle
+     * record itself is kept so a "move to wishlist" round trip (uninstall, then
+     * wishlist) still renders as one group — use `bundleUnbundle` to dissolve it.
+     */
+    public function bundleDestroy(Request $request, string $workshopId): JsonResponse
+    {
+        $validated = $request->validate([
+            'target' => ['required', 'in:installed,wishlist'],
+            'to_wishlist' => ['sometimes', 'boolean'],
+        ]);
+
+        if (! ModBundle::query()->where('workshop_id', $workshopId)->exists()) {
+            return response()->json(['error' => 'Bundle not found'], 404);
+        }
+
+        $members = $this->workshopClient->getCollectionChildren($workshopId);
+
+        if ($validated['target'] === 'wishlist') {
+            $removed = WishlistMod::query()->whereIn('workshop_id', $members)->delete();
+
+            $this->auditLogger->log(
+                actor: $request->user()->name ?? 'admin',
+                action: 'mod.bundle.wishlist.remove',
+                target: $workshopId,
+                details: ['removed' => $removed],
+                ip: $request->ip(),
+            );
+
+            return response()->json(['removed' => $removed]);
+        }
+
+        try {
+            $removed = $this->modManager->removeWorkshopItems(
+                config('zomboid.paths.server_ini'),
+                $members,
+                config('zomboid.paths.workshop_content'),
+            );
+        } catch (RuntimeException $e) {
+            Log::error('Failed to remove bundle', ['exception' => $e, 'workshop_id' => $workshopId]);
+
+            return response()->json([
+                'error' => 'Could not write the server config. The server may still be starting, or the config volume is not writable.',
+            ], 500);
+        }
+
+        if ($validated['to_wishlist'] ?? false) {
+            foreach ($removed['workshop_ids'] as $id) {
+                WishlistMod::query()->firstOrCreate(['workshop_id' => $id]);
+            }
+        }
+
+        $this->auditLogger->log(
+            actor: $request->user()->name ?? 'admin',
+            action: 'mod.bundle.remove',
+            target: $workshopId,
+            details: $removed + ['to_wishlist' => (bool) ($validated['to_wishlist'] ?? false)],
+            ip: $request->ip(),
+        );
+
+        return response()->json([
+            'removed' => $removed,
+            'restart_required' => true,
+        ]);
+    }
+
+    /**
+     * Drop the grouping only: members stay installed/wishlisted but are managed
+     * individually from here on.
+     */
+    public function bundleUnbundle(Request $request, string $workshopId): JsonResponse
+    {
+        $deleted = ModBundle::query()->where('workshop_id', $workshopId)->delete();
+
+        if ($deleted === 0) {
+            return response()->json(['error' => 'Bundle not found'], 404);
+        }
+
+        $this->auditLogger->log(
+            actor: $request->user()->name ?? 'admin',
+            action: 'mod.bundle.unbundle',
+            target: $workshopId,
+            ip: $request->ip(),
+        );
+
+        return response()->json(['unbundled' => $workshopId]);
     }
 
     public function store(Request $request): JsonResponse

@@ -419,6 +419,58 @@ class ModManager
     }
 
     /**
+     * Remove every mod belonging to the given Workshop items in a single write.
+     *
+     * Used to uninstall a whole bundle (Steam Workshop collection) at once:
+     * looping `remove()` would rewrite the INI once per mod, and a collection
+     * routinely holds a dozen. Each listed Workshop item is dropped from
+     * `WorkshopItems=`, every `Mods=` entry it provides is dropped, and — as
+     * with `remove()` — anything still-enabled that transitively requires one
+     * of those mods is cascaded out too rather than left dangling. Protected
+     * mods are never removed.
+     *
+     * @param  list<string>  $workshopIds
+     * @return array{workshop_ids: list<string>, mod_ids: list<string>, cascaded: list<string>}
+     */
+    public function removeWorkshopItems(string $iniPath, array $workshopIds, string $workshopContentPath = ''): array
+    {
+        $targets = array_values(array_diff($workshopIds, array_keys(self::PROTECTED_MODS)));
+
+        $mods = $this->list($iniPath, $workshopContentPath);
+        $removedModIds = array_values(array_unique(array_map(
+            fn (array $mod): string => $mod['mod_id'],
+            array_filter($mods, fn (array $mod): bool => in_array($mod['workshop_id'], $targets, true)),
+        )));
+
+        $cascaded = [];
+        foreach ($removedModIds as $modId) {
+            $cascaded = array_merge($cascaded, $this->transitiveDependents($iniPath, $workshopContentPath, $modId));
+        }
+        $cascaded = array_values(array_diff(array_unique($cascaded), $removedModIds, self::PROTECTED_MODS));
+
+        $current = $this->readCurrentLists($iniPath);
+        $keptWorkshopIds = array_values(array_diff($current['workshop_ids'], $targets));
+        $keptModIds = array_values(array_diff($current['mod_ids'], $removedModIds, $cascaded));
+
+        $removedWorkshopIds = array_values(array_intersect($targets, $current['workshop_ids']));
+
+        if ($removedWorkshopIds === [] && $removedModIds === [] && $cascaded === []) {
+            return ['workshop_ids' => [], 'mod_ids' => [], 'cascaded' => []];
+        }
+
+        $this->writeIniAndState($iniPath, [
+            'WorkshopItems' => implode(';', $keptWorkshopIds),
+            'Mods' => implode(';', $keptModIds),
+        ]);
+
+        return [
+            'workshop_ids' => $removedWorkshopIds,
+            'mod_ids' => $removedModIds,
+            'cascaded' => $cascaded,
+        ];
+    }
+
+    /**
      * Reorder mods by replacing both lines with the given ordered list.
      *
      * @param  array<int, array{workshop_id: string, mod_id: string}>  $orderedMods
