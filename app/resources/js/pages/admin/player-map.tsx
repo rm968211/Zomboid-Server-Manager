@@ -41,6 +41,8 @@ type Props = {
     tileGenerationStage: string | null;
     tileGenerationStartedAt: string | null;
     safeZones: SafeZone[];
+    positionsStale: boolean;
+    positionsUpdatedAt: string | null;
 };
 
 const statusDotColor: Record<PlayerMarker['status'], string> = {
@@ -70,6 +72,8 @@ export default function PlayerMap({
     tileGenerationStage,
     tileGenerationStartedAt,
     safeZones,
+    positionsStale = false,
+    positionsUpdatedAt = null,
 }: Props) {
     usePoll(5000, {
         only: [
@@ -83,6 +87,8 @@ export default function PlayerMap({
             'tileGenerationStage',
             'tileGenerationStartedAt',
             'safeZones',
+            'positionsStale',
+            'positionsUpdatedAt',
         ],
     });
 
@@ -262,6 +268,17 @@ export default function PlayerMap({
                         {
                             'Server is offline. Player positions show last known locations.'
                         }
+                    </div>
+                )}
+                {positionsStale && (
+                    <div
+                        className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400"
+                        data-testid="positions-stale-banner"
+                    >
+                        <AlertTriangle className="size-4 shrink-0" />
+                        {positionsUpdatedAt
+                            ? `Live positions have stopped updating (last update ${new Date(positionsUpdatedAt).toLocaleString()}). Markers show the last known locations.`
+                            : 'Live positions have stopped updating. Markers show the last known locations.'}
                     </div>
                 )}
                 {serverStatus === 'starting' && (
