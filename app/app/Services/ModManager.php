@@ -311,19 +311,30 @@ class ModManager
 
     /**
      * Add a mod to both WorkshopItems and Mods lines.
+     *
+     * A mod can need more than one Workshop item downloaded — a base upload
+     * plus a texture or map pack that declares no mod ID of its own — so
+     * `$extraWorkshopIds` are appended to `WorkshopItems=` alongside the
+     * primary one, without adding further `Mods=` entries. Entries already
+     * present are skipped rather than duplicated, and the mod is still added
+     * when its Workshop item happens to be installed already (which is how a
+     * second mod from the same upload gets enabled).
+     *
+     * @param  list<string>  $extraWorkshopIds
      */
-    public function add(string $iniPath, string $workshopId, string $modId, ?string $mapFolder = null): void
+    public function add(string $iniPath, string $workshopId, string $modId, ?string $mapFolder = null, array $extraWorkshopIds = []): void
     {
         $current = $this->readCurrentLists($iniPath);
-        $workshopIds = $current['workshop_ids'];
-        $modIds = $current['mod_ids'];
 
-        if (in_array($workshopId, $workshopIds, true)) {
+        [$workshopIds, $workshopAdded] = $this->mergeList(
+            $current['workshop_ids'],
+            array_merge([$workshopId], $extraWorkshopIds),
+        );
+        [$modIds, $modsAdded] = $this->mergeList($current['mod_ids'], [$modId]);
+
+        if ($workshopAdded === 0 && $modsAdded === 0 && $mapFolder === null) {
             return;
         }
-
-        $workshopIds[] = $workshopId;
-        $modIds[] = $modId;
 
         $updates = [
             'WorkshopItems' => implode(';', $workshopIds),
@@ -416,6 +427,40 @@ class ModManager
         $this->writeIniAndState($iniPath, $updates);
 
         return $removed;
+    }
+
+    /**
+     * Add and/or drop `WorkshopItems=` entries without touching `Mods=`, in one
+     * write. Used when a mod's Workshop IDs are edited: the mod stays enabled,
+     * only the set of items PZ downloads for it changes.
+     *
+     * @param  list<string>  $add
+     * @param  list<string>  $remove
+     * @return array{added: list<string>, removed: list<string>}
+     */
+    public function updateWorkshopItems(string $iniPath, array $add, array $remove): array
+    {
+        $lists = $this->readCurrentLists($iniPath);
+        $current = $lists['workshop_ids'];
+
+        $protected = array_map('strval', array_keys(self::PROTECTED_MODS));
+        $remove = array_values(array_diff($remove, $protected));
+
+        $added = array_values(array_diff(array_unique($add), $current));
+        $removed = array_values(array_intersect($current, $remove));
+
+        if ($added === [] && $removed === []) {
+            return ['added' => [], 'removed' => []];
+        }
+
+        $updated = array_values(array_diff(array_merge($current, $added), $removed));
+
+        $this->writeIniAndState($iniPath, [
+            'WorkshopItems' => implode(';', $updated),
+            'Mods' => implode(';', $lists['mod_ids']),
+        ]);
+
+        return ['added' => $added, 'removed' => $removed];
     }
 
     /**

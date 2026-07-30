@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\LookupWorkshopModRequest;
 use App\Http\Requests\Admin\ModDetailsRequest;
 use App\Http\Requests\Admin\StoreModBundleRequest;
 use App\Models\ModBundle;
+use App\Models\ModWorkshopLink;
 use App\Models\WishlistMod;
 use App\Services\AuditLogger;
 use App\Services\DockerManager;
@@ -49,7 +50,7 @@ class ModController extends Controller
                 $serverRunning,
                 config('zomboid.paths.workshop_content'),
             );
-            $mods = $status['mods'];
+            $mods = $this->attachWorkshopIds($status['mods']);
             $pendingRestart = $status['pending_restart'];
         } catch (\Throwable) {
             // Config not available — render empty list rather than 500
@@ -65,6 +66,31 @@ class ModController extends Controller
                 ->pluck('workshop_id'),
             'bundles' => $this->bundleMemberships(),
         ]);
+    }
+
+    /**
+     * Give every mod row the full set of Workshop items it needs.
+     *
+     * A mod can span several uploads, which `Mods=`/`WorkshopItems=` has no way
+     * to express and the disk scan can only ever answer with one item. Stored
+     * links say what the admin actually meant, so where they exist they REPLACE
+     * the scanned value rather than merging with it — otherwise a Workshop ID
+     * the admin just removed would reappear for as long as its content is still
+     * sitting on disk.
+     *
+     * @param  array<int, array<string, mixed>>  $mods
+     * @return array<int, array<string, mixed>>
+     */
+    private function attachWorkshopIds(array $mods): array
+    {
+        $links = ModWorkshopLink::map();
+
+        foreach ($mods as $i => $mod) {
+            $mods[$i]['workshop_ids'] = $links[$mod['mod_id']]
+                ?? ($mod['workshop_id'] !== '' ? [$mod['workshop_id']] : []);
+        }
+
+        return $mods;
     }
 
     /**
@@ -516,9 +542,16 @@ class ModController extends Controller
     {
         $validated = $request->validate([
             'workshop_id' => ['required', 'string', 'regex:/^\d{1,20}$/'],
+            'workshop_ids' => ['sometimes', 'array', 'max:32'],
+            'workshop_ids.*' => ['string', 'regex:/^\d{1,20}$/'],
             'mod_id' => ['required', 'string', 'max:255', 'not_regex:/[;\r\n]/'],
             'map_folder' => ['nullable', 'string', 'max:255', 'not_regex:/[;\r\n]/'],
         ]);
+
+        $workshopIds = array_values(array_unique(array_merge(
+            [$validated['workshop_id']],
+            $validated['workshop_ids'] ?? [],
+        )));
 
         try {
             $this->modManager->add(
@@ -526,6 +559,7 @@ class ModController extends Controller
                 $validated['workshop_id'],
                 $validated['mod_id'],
                 $validated['map_folder'] ?? null,
+                array_slice($workshopIds, 1),
             );
         } catch (RuntimeException $e) {
             Log::error('Failed to add mod', ['exception' => $e, 'mod' => $validated]);
@@ -535,18 +569,109 @@ class ModController extends Controller
             ], 500);
         }
 
+        $this->linkWorkshopIds($validated['mod_id'], $workshopIds);
+
         $this->auditLogger->log(
             actor: $request->user()->name ?? 'admin',
             action: 'mod.add',
             target: $validated['workshop_id'],
-            details: $validated,
+            details: $validated + ['workshop_ids' => $workshopIds],
             ip: $request->ip(),
         );
 
         return response()->json([
-            'added' => $validated,
+            'added' => $validated + ['workshop_ids' => $workshopIds],
             'restart_required' => true,
         ], 201);
+    }
+
+    /**
+     * Replace a mod's stored Workshop links with exactly `$workshopIds`.
+     *
+     * @param  list<string>  $workshopIds
+     */
+    private function linkWorkshopIds(string $modId, array $workshopIds): void
+    {
+        ModWorkshopLink::query()->where('mod_id', $modId)->delete();
+
+        foreach ($workshopIds as $workshopId) {
+            ModWorkshopLink::query()->create([
+                'mod_id' => $modId,
+                'workshop_id' => $workshopId,
+            ]);
+        }
+    }
+
+    /**
+     * Change which Workshop items an already-installed mod needs.
+     *
+     * `WorkshopItems=` is updated to match: newly listed items are appended so
+     * PZ downloads them, dropped ones are removed — unless another still-installed
+     * mod also needs them, since `WorkshopItems=` is one shared list and pruning
+     * an item out from under a sibling mod would break it.
+     */
+    public function updateWorkshopIds(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'mod_id' => ['required', 'string', 'max:255', 'not_regex:/[;\r\n]/'],
+            'workshop_ids' => ['present', 'array', 'max:32'],
+            'workshop_ids.*' => ['string', 'regex:/^\d{1,20}$/'],
+        ]);
+
+        $modId = $validated['mod_id'];
+        $desired = array_values(array_unique($validated['workshop_ids']));
+
+        $mods = $this->attachWorkshopIds($this->modManager->list(
+            config('zomboid.paths.server_ini'),
+            config('zomboid.paths.workshop_content'),
+        ));
+
+        $target = null;
+        $claimedByOthers = [];
+
+        foreach ($mods as $mod) {
+            if ($mod['mod_id'] === $modId) {
+                $target = $mod;
+
+                continue;
+            }
+
+            $claimedByOthers = array_merge($claimedByOthers, $mod['workshop_ids']);
+        }
+
+        if ($target === null) {
+            return response()->json(['error' => 'Mod not found'], 404);
+        }
+
+        try {
+            $changed = $this->modManager->updateWorkshopItems(
+                config('zomboid.paths.server_ini'),
+                array_values(array_diff($desired, $target['workshop_ids'])),
+                array_values(array_diff($target['workshop_ids'], $desired, $claimedByOthers)),
+            );
+        } catch (RuntimeException $e) {
+            Log::error('Failed to update mod workshop ids', ['exception' => $e, 'mod_id' => $modId]);
+
+            return response()->json([
+                'error' => 'Could not write the server config. The server may still be starting, or the config volume is not writable.',
+            ], 500);
+        }
+
+        $this->linkWorkshopIds($modId, $desired);
+
+        $this->auditLogger->log(
+            actor: $request->user()->name ?? 'admin',
+            action: 'mod.workshop_ids.update',
+            target: $modId,
+            details: ['workshop_ids' => $desired] + $changed,
+            ip: $request->ip(),
+        );
+
+        return response()->json([
+            'mod_id' => $modId,
+            'workshop_ids' => $desired,
+            'restart_required' => $changed['added'] !== [] || $changed['removed'] !== [],
+        ] + $changed);
     }
 
     public function destroy(Request $request, string $workshopId): JsonResponse
@@ -581,6 +706,10 @@ class ModController extends Controller
         if (! $removed) {
             return response()->json(['error' => 'Mod not found'], 404);
         }
+
+        ModWorkshopLink::query()
+            ->whereIn('mod_id', array_merge([$removed['mod_id']], $removed['cascaded'] ?? []))
+            ->delete();
 
         $this->auditLogger->log(
             actor: $request->user()->name ?? 'admin',
@@ -632,7 +761,7 @@ class ModController extends Controller
         );
 
         return response()->json([
-            'mods' => $status['mods'],
+            'mods' => $this->attachWorkshopIds($status['mods']),
             'pending_restart' => $status['pending_restart'],
             'restart_required' => true,
         ]);
@@ -687,7 +816,7 @@ class ModController extends Controller
         );
 
         return response()->json([
-            'mods' => $status['mods'],
+            'mods' => $this->attachWorkshopIds($status['mods']),
             'pending_restart' => $status['pending_restart'],
             'summary' => $summary,
             'restart_required' => true,
