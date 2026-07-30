@@ -2,7 +2,6 @@ import { Link, usePage } from '@inertiajs/react';
 import { Menu, Skull } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { PropsWithChildren } from 'react';
-import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,7 +10,6 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
-import { useTranslation } from '@/hooks/use-translation';
 import { login, register } from '@/routes';
 
 const adminRoles = ['super_admin', 'admin', 'moderator'];
@@ -50,20 +48,19 @@ function NavLinks({
     onClick?: () => void;
 }) {
     const { auth } = usePage().props;
-    const { t } = useTranslation();
     const isAdmin =
         auth.user && adminRoles.includes((auth.user as { role: string }).role);
 
     return (
         <nav className={className}>
             <NavLink href="/status" onClick={onClick}>
-                {t('nav.server_status')}
+                Server Status
             </NavLink>
             <NavLink href="/rankings" onClick={onClick}>
-                {t('nav.rankings')}
+                Rankings
             </NavLink>
             <NavLink href="/shop" onClick={onClick}>
-                {t('nav.shop')}
+                Shop
             </NavLink>
             {auth.user ? (
                 <Link
@@ -71,7 +68,7 @@ function NavLinks({
                     className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                     onClick={onClick}
                 >
-                    {isAdmin ? t('nav.dashboard') : t('nav.my_account')}
+                    {isAdmin ? 'Dashboard' : 'My Account'}
                 </Link>
             ) : (
                 <>
@@ -80,14 +77,14 @@ function NavLinks({
                         className="rounded-md px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
                         onClick={onClick}
                     >
-                        {t('nav.login')}
+                        Log in
                     </Link>
                     <Link
                         href={register()}
                         className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                         onClick={onClick}
                     >
-                        {t('nav.register')}
+                        Register
                     </Link>
                 </>
             )}
@@ -122,7 +119,6 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                         {/* Desktop nav */}
                         <div className="hidden items-center gap-3 md:flex">
                             <NavLinks className="flex items-center gap-3" />
-                            <LanguageSwitcher />
                         </div>
 
                         {/* Mobile hamburger */}
@@ -167,9 +163,7 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                             className="flex flex-col gap-1 px-4"
                             onClick={() => setMobileOpen(false)}
                         />
-                        <div className="px-4 pt-2">
-                            <LanguageSwitcher />
-                        </div>
+                        <div className="px-4 pt-2"></div>
                     </SheetContent>
                 </Sheet>
 

@@ -48,7 +48,6 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useTableSort } from '@/hooks/use-table-sort';
-import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { fetchAction } from '@/lib/fetch-action';
 import type { BreadcrumbItem } from '@/types';
@@ -149,7 +148,6 @@ export default function PlayerInventory({
     catalog,
     deliveries,
 }: Props) {
-    const { t } = useTranslation();
     const [filter, setFilter] = useState('');
     const {
         sortKey: sortBy,
@@ -177,10 +175,10 @@ export default function PlayerInventory({
     usePoll(5000, { only: ['inventory', 'deliveries'] });
 
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: t('nav.dashboard'), href: '/dashboard' },
-        { title: t('nav.players'), href: '/admin/players' },
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Players', href: '/admin/players' },
         {
-            title: t('admin.player_inventory.breadcrumb', { username }),
+            title: `${username} Inventory`,
             href: `/admin/players/${username}/inventory`,
         },
     ];
@@ -290,7 +288,7 @@ export default function PlayerInventory({
         if (result) {
             onDone();
         } else {
-            setError(t('admin.player_inventory.action_failed'));
+            setError('Action failed');
         }
         setLoading(false);
         router.reload({ only: ['inventory', 'deliveries'] });
@@ -328,33 +326,31 @@ export default function PlayerInventory({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={t('admin.player_inventory.title', { username })} />
+            <Head title={`${username} - Inventory`} />
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">
-                            {t('admin.player_inventory.heading', { username })}
+                            {`Inventory: ${username}`}
                         </h1>
                         {inventory ? (
                             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                {t('admin.player_inventory.last_updated', {
-                                    time: formatRelativeTime(
-                                        inventory.timestamp,
-                                    ),
-                                })}
+                                {`Last updated ${formatRelativeTime(
+                                    inventory.timestamp,
+                                )}`}
                                 <RefreshCw className="size-3 animate-spin" />
                             </p>
                         ) : (
                             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                {t('admin.player_inventory.waiting')}
+                                Waiting for data...
                                 <RefreshCw className="size-3 animate-spin" />
                             </p>
                         )}
                     </div>
                     <Button onClick={() => setGiveOpen(true)}>
                         <Plus className="mr-1.5 size-4" />
-                        {t('admin.player_inventory.give_item')}
+                        Give Item
                     </Button>
                 </div>
 
@@ -374,14 +370,12 @@ export default function PlayerInventory({
                                 <Loader2 className="size-8 animate-spin text-muted-foreground" />
                                 <div>
                                     <p className="font-medium">
-                                        {t(
-                                            'admin.player_inventory.requesting_data',
-                                        )}
+                                        Requesting inventory data...
                                     </p>
                                     <p className="text-sm text-muted-foreground">
-                                        {t(
-                                            'admin.player_inventory.player_needs_online',
-                                        )}
+                                        {
+                                            'The player may need to be online for inventory to appear.'
+                                        }
                                     </p>
                                 </div>
                             </div>
@@ -400,21 +394,14 @@ export default function PlayerInventory({
                                             <span className="text-sm font-normal text-muted-foreground">
                                                 {' '}
                                                 (
-                                                {t(
-                                                    'admin.player_inventory.unique',
-                                                    {
-                                                        count: String(
-                                                            stackedItems.length,
-                                                        ),
-                                                    },
-                                                )}
+                                                {`${String(
+                                                    stackedItems.length,
+                                                )} unique`}
                                                 )
                                             </span>
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            {t(
-                                                'admin.player_inventory.total_items',
-                                            )}
+                                            Total Items
                                         </p>
                                     </div>
                                 </CardContent>
@@ -434,7 +421,7 @@ export default function PlayerInventory({
                                             </span>
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            {t('common.weight')}
+                                            Weight
                                         </p>
                                     </div>
                                 </CardContent>
@@ -447,9 +434,7 @@ export default function PlayerInventory({
                                             {categories.length}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            {t(
-                                                'admin.player_inventory.categories',
-                                            )}
+                                            Categories
                                         </p>
                                     </div>
                                 </CardContent>
@@ -461,29 +446,19 @@ export default function PlayerInventory({
                             <CardHeader>
                                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
-                                        <CardTitle>
-                                            {t('admin.player_inventory.items')}
-                                        </CardTitle>
+                                        <CardTitle>{'Items'}</CardTitle>
                                         <CardDescription>
-                                            {t(
-                                                'admin.player_inventory.items_count',
-                                                {
-                                                    filtered: String(
-                                                        filteredItems.length,
-                                                    ),
-                                                    total: String(
-                                                        stackedItems.length,
-                                                    ),
-                                                },
-                                            )}
+                                            {`${String(
+                                                filteredItems.length,
+                                            )} of ${String(
+                                                stackedItems.length,
+                                            )} unique items`}
                                         </CardDescription>
                                     </div>
                                     <div className="relative">
                                         <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
                                         <Input
-                                            placeholder={t(
-                                                'admin.player_inventory.filter_items',
-                                            )}
+                                            placeholder="Filter items..."
                                             value={filter}
                                             onChange={(e) => {
                                                 setFilter(e.target.value);
@@ -504,9 +479,7 @@ export default function PlayerInventory({
                                                     <TableHead>
                                                         <SortableHeader
                                                             column="name"
-                                                            label={t(
-                                                                'admin.player_inventory.item',
-                                                            )}
+                                                            label="Item"
                                                             sortKey={sortBy}
                                                             sortDir={sortDir}
                                                             onSort={toggleSort}
@@ -515,9 +488,7 @@ export default function PlayerInventory({
                                                     <TableHead>
                                                         <SortableHeader
                                                             column="category"
-                                                            label={t(
-                                                                'common.category',
-                                                            )}
+                                                            label="Category"
                                                             sortKey={sortBy}
                                                             sortDir={sortDir}
                                                             onSort={toggleSort}
@@ -526,9 +497,7 @@ export default function PlayerInventory({
                                                     <TableHead className="text-center">
                                                         <SortableHeader
                                                             column="totalCount"
-                                                            label={t(
-                                                                'admin.player_inventory.qty',
-                                                            )}
+                                                            label="Qty"
                                                             sortKey={sortBy}
                                                             sortDir={sortDir}
                                                             onSort={toggleSort}
@@ -537,16 +506,14 @@ export default function PlayerInventory({
                                                     <TableHead className="w-[120px]">
                                                         <SortableHeader
                                                             column="condition"
-                                                            label={t(
-                                                                'admin.player_inventory.condition',
-                                                            )}
+                                                            label="Condition"
                                                             sortKey={sortBy}
                                                             sortDir={sortDir}
                                                             onSort={toggleSort}
                                                         />
                                                     </TableHead>
                                                     <TableHead>
-                                                        {t('common.actions')}
+                                                        Actions
                                                     </TableHead>
                                                 </TableRow>
                                             </TableHeader>
@@ -575,9 +542,9 @@ export default function PlayerInventory({
                                                                 {item.equipped && (
                                                                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                                                                         <Swords className="size-3" />
-                                                                        {t(
-                                                                            'common.equipped',
-                                                                        )}
+                                                                        {
+                                                                            'Equipped'
+                                                                        }
                                                                     </span>
                                                                 )}
                                                             </div>
@@ -645,27 +612,19 @@ export default function PlayerInventory({
                                         {lastPage > 1 && (
                                             <div className="mt-4 flex items-center justify-between">
                                                 <p className="text-sm text-muted-foreground">
-                                                    {t(
-                                                        'admin.player_inventory.of_items',
-                                                        {
-                                                            start: String(
-                                                                (currentPage -
-                                                                    1) *
-                                                                    ITEMS_PER_PAGE +
-                                                                    1,
-                                                            ),
-                                                            end: String(
-                                                                Math.min(
-                                                                    currentPage *
-                                                                        ITEMS_PER_PAGE,
-                                                                    filteredItems.length,
-                                                                ),
-                                                            ),
-                                                            total: String(
-                                                                filteredItems.length,
-                                                            ),
-                                                        },
-                                                    )}
+                                                    {`${String(
+                                                        (currentPage - 1) *
+                                                            ITEMS_PER_PAGE +
+                                                            1,
+                                                    )}–${String(
+                                                        Math.min(
+                                                            currentPage *
+                                                                ITEMS_PER_PAGE,
+                                                            filteredItems.length,
+                                                        ),
+                                                    )} of ${String(
+                                                        filteredItems.length,
+                                                    )} items`}
                                                 </p>
                                                 <div className="flex items-center gap-1">
                                                     <Button
@@ -680,7 +639,7 @@ export default function PlayerInventory({
                                                             )
                                                         }
                                                     >
-                                                        {t('common.previous')}
+                                                        Previous
                                                     </Button>
                                                     <Button
                                                         variant="outline"
@@ -695,7 +654,7 @@ export default function PlayerInventory({
                                                             )
                                                         }
                                                     >
-                                                        {t('common.next')}
+                                                        Next
                                                     </Button>
                                                 </div>
                                             </div>
@@ -704,12 +663,8 @@ export default function PlayerInventory({
                                 ) : (
                                     <p className="py-8 text-center text-muted-foreground">
                                         {filter
-                                            ? t(
-                                                  'admin.player_inventory.no_items_filter',
-                                              )
-                                            : t(
-                                                  'admin.player_inventory.no_items_empty',
-                                              )}
+                                            ? 'No items match your filter'
+                                            : 'No items in inventory'}
                                     </p>
                                 )}
                             </CardContent>
@@ -724,11 +679,7 @@ export default function PlayerInventory({
                             <CardHeader className="cursor-pointer">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <CardTitle>
-                                            {t(
-                                                'admin.player_inventory.delivery_queue',
-                                            )}
-                                        </CardTitle>
+                                        <CardTitle>Delivery Queue</CardTitle>
                                         {totalDeliveries > 0 && (
                                             <Badge variant="secondary">
                                                 {totalDeliveries}
@@ -740,7 +691,7 @@ export default function PlayerInventory({
                                     />
                                 </div>
                                 <CardDescription>
-                                    {t('admin.player_inventory.delivery_desc')}
+                                    Pending and completed item deliveries
                                 </CardDescription>
                             </CardHeader>
                         </CollapsibleTrigger>
@@ -751,29 +702,13 @@ export default function PlayerInventory({
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead className="w-[30px]" />
-                                                <TableHead>
-                                                    {t(
-                                                        'admin.player_inventory.action',
-                                                    )}
-                                                </TableHead>
-                                                <TableHead>
-                                                    {t(
-                                                        'admin.player_inventory.item',
-                                                    )}
-                                                </TableHead>
+                                                <TableHead>Action</TableHead>
+                                                <TableHead>{'Item'}</TableHead>
                                                 <TableHead className="text-center">
-                                                    {t(
-                                                        'admin.player_inventory.qty',
-                                                    )}
+                                                    Qty
                                                 </TableHead>
-                                                <TableHead>
-                                                    {t('common.status')}
-                                                </TableHead>
-                                                <TableHead>
-                                                    {t(
-                                                        'admin.player_inventory.time',
-                                                    )}
-                                                </TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead>{'Time'}</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -802,9 +737,7 @@ export default function PlayerInventory({
                                                             variant="secondary"
                                                             className="text-xs"
                                                         >
-                                                            {t(
-                                                                'common.pending',
-                                                            )}
+                                                            Pending
                                                         </Badge>
                                                     </TableCell>
                                                     <TableCell>
@@ -862,9 +795,7 @@ export default function PlayerInventory({
                                     </Table>
                                 ) : (
                                     <p className="py-4 text-center text-sm text-muted-foreground">
-                                        {t(
-                                            'admin.player_inventory.no_deliveries',
-                                        )}
+                                        No delivery entries for this player
                                     </p>
                                 )}
                             </CardContent>
@@ -887,27 +818,21 @@ export default function PlayerInventory({
             >
                 <DialogContent className="overflow-hidden sm:max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>
-                            {t('admin.player_inventory.give_item_title', {
-                                username,
-                            })}
-                        </DialogTitle>
+                        <DialogTitle>{`Give Item to ${username}`}</DialogTitle>
                         <DialogDescription>
-                            {t('admin.player_inventory.give_item_desc')}
+                            {
+                                'Search the item catalog and select an item to give.'
+                            }
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="give-search">
-                                {t('admin.player_inventory.search_items')}
-                            </Label>
+                            <Label htmlFor="give-search">Search Items</Label>
                             <div className="relative">
                                 <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
                                 <Input
                                     id="give-search"
-                                    placeholder={t(
-                                        'admin.player_inventory.search_placeholder',
-                                    )}
+                                    placeholder="Type to search items..."
                                     value={giveSearch}
                                     onChange={(e) => {
                                         setGiveSearch(e.target.value);
@@ -949,7 +874,7 @@ export default function PlayerInventory({
                                 ))
                             ) : (
                                 <p className="py-4 text-center text-sm text-muted-foreground">
-                                    {t('admin.player_inventory.no_items_found')}
+                                    No items found
                                 </p>
                             )}
                         </div>
@@ -973,9 +898,7 @@ export default function PlayerInventory({
                         )}
 
                         <div className="space-y-2">
-                            <Label htmlFor="give-count">
-                                {t('common.count')}
-                            </Label>
+                            <Label htmlFor="give-count">{'Count'}</Label>
                             <Input
                                 id="give-count"
                                 type="number"
@@ -1001,13 +924,13 @@ export default function PlayerInventory({
                             variant="outline"
                             onClick={() => setGiveOpen(false)}
                         >
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             disabled={!giveSelected || loading}
                             onClick={handleGive}
                         >
-                            {t('admin.player_inventory.give_item')}
+                            Give Item
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -1025,13 +948,9 @@ export default function PlayerInventory({
             >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>
-                            {t('admin.player_inventory.remove_item')}
-                        </DialogTitle>
+                        <DialogTitle>{'Remove Item'}</DialogTitle>
                         <DialogDescription>
-                            {t('admin.player_inventory.remove_item_desc', {
-                                username,
-                            })}
+                            {`Remove this item from ${username}'s inventory.`}
                         </DialogDescription>
                     </DialogHeader>
                     {removeTarget && (
@@ -1054,9 +973,7 @@ export default function PlayerInventory({
 
                             <div className="space-y-2">
                                 <Label htmlFor="remove-count">
-                                    {t('admin.player_inventory.count_max', {
-                                        max: String(removeTarget.count),
-                                    })}
+                                    {`Count (max: ${String(removeTarget.count)})`}
                                 </Label>
                                 <Input
                                     id="remove-count"
@@ -1085,14 +1002,14 @@ export default function PlayerInventory({
                             variant="outline"
                             onClick={() => setRemoveTarget(null)}
                         >
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             variant="destructive"
                             disabled={loading}
                             onClick={handleRemove}
                         >
-                            {t('admin.player_inventory.remove_item')}
+                            Remove Item
                         </Button>
                     </DialogFooter>
                 </DialogContent>

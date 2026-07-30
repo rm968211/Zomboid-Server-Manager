@@ -29,7 +29,6 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useServerSort } from '@/hooks/use-server-sort';
-import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { formatDateTime } from '@/lib/dates';
 import type { BreadcrumbItem } from '@/types';
@@ -117,7 +116,6 @@ function getPurchasableName(purchase: AdminPurchase): string {
 }
 
 export default function ShopPurchases({ purchases, stats, filters }: Props) {
-    const { t } = useTranslation();
     const [search, setSearch] = useState(filters.search);
     const [status, setStatus] = useState(filters.status);
     const { sortKey, sortDir, toggleSort } = useServerSort<SortKey>({
@@ -146,24 +144,24 @@ export default function ShopPurchases({ purchases, stats, filters }: Props) {
     }
 
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: t('nav.dashboard'), href: '/dashboard' },
-        { title: t('admin.shop.breadcrumb'), href: '/admin/shop' },
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Shop', href: '/admin/shop' },
         {
-            title: t('admin.shop_purchases.breadcrumb'),
+            title: 'Purchases',
             href: '/admin/shop/purchases',
         },
     ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={t('admin.shop_purchases.title')} />
+            <Head title="Shop Purchases" />
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">
-                        {t('admin.shop_purchases.title')}
+                        Shop Purchases
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        {t('admin.shop_purchases.description')}
+                        View and manage all player purchases
                     </p>
                 </div>
 
@@ -177,7 +175,7 @@ export default function ShopPurchases({ purchases, stats, filters }: Props) {
                                     {coin(stats.total_revenue)}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    {t('admin.shop_purchases.total_revenue')}
+                                    Total Revenue
                                 </p>
                             </div>
                         </CardContent>
@@ -190,7 +188,7 @@ export default function ShopPurchases({ purchases, stats, filters }: Props) {
                                     {stats.total_purchases}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    {t('admin.shop_purchases.total_purchases')}
+                                    Total Purchases
                                 </p>
                             </div>
                         </CardContent>
@@ -203,7 +201,7 @@ export default function ShopPurchases({ purchases, stats, filters }: Props) {
                                     {stats.items_sold}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    {t('admin.shop_purchases.items_sold')}
+                                    Items Sold
                                 </p>
                             </div>
                         </CardContent>
@@ -215,22 +213,16 @@ export default function ShopPurchases({ purchases, stats, filters }: Props) {
                     <CardHeader>
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <CardTitle>
-                                    {t('admin.shop_purchases.all_purchases')}
-                                </CardTitle>
+                                <CardTitle>{'All Purchases'}</CardTitle>
                                 <CardDescription>
-                                    {t('admin.shop_purchases.total_count', {
-                                        count: String(purchases.total),
-                                    })}
+                                    {`${String(purchases.total)} total`}
                                 </CardDescription>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
                                 <div className="relative">
                                     <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
                                     <Input
-                                        placeholder={t(
-                                            'admin.shop_purchases.search_player',
-                                        )}
+                                        placeholder="Search player..."
                                         value={search}
                                         onChange={(e) =>
                                             setSearch(e.target.value)
@@ -248,39 +240,31 @@ export default function ShopPurchases({ purchases, stats, filters }: Props) {
                                     }}
                                 >
                                     <SelectTrigger className="w-[160px]">
-                                        <SelectValue
-                                            placeholder={t(
-                                                'admin.shop_purchases.all_statuses',
-                                            )}
-                                        />
+                                        <SelectValue placeholder="All statuses" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">
-                                            {t(
-                                                'admin.shop_purchases.all_statuses',
-                                            )}
+                                            All statuses
                                         </SelectItem>
                                         <SelectItem value="pending">
-                                            {t('admin.shop_purchases.pending')}
+                                            Pending
                                         </SelectItem>
                                         <SelectItem value="queued">
-                                            {t('admin.shop_purchases.queued')}
+                                            Queued
                                         </SelectItem>
                                         <SelectItem value="delivered">
-                                            {t(
-                                                'admin.shop_purchases.delivered',
-                                            )}
+                                            Delivered
                                         </SelectItem>
                                         <SelectItem value="partially_delivered">
-                                            {t('admin.shop_purchases.partial')}
+                                            Partial
                                         </SelectItem>
                                         <SelectItem value="failed">
-                                            {t('admin.shop_purchases.failed')}
+                                            Failed
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <Button size="sm" onClick={applyFilters}>
-                                    {t('common.filter')}
+                                    Filter
                                 </Button>
                                 {(filters.search || filters.status) && (
                                     <Button
@@ -288,7 +272,7 @@ export default function ShopPurchases({ purchases, stats, filters }: Props) {
                                         variant="ghost"
                                         onClick={clearFilters}
                                     >
-                                        {t('common.clear')}
+                                        Clear
                                     </Button>
                                 )}
                             </div>
@@ -299,18 +283,12 @@ export default function ShopPurchases({ purchases, stats, filters }: Props) {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>
-                                            {t('admin.shop_purchases.player')}
-                                        </TableHead>
-                                        <TableHead>
-                                            {t('admin.shop_purchases.item')}
-                                        </TableHead>
+                                        <TableHead>{'Player'}</TableHead>
+                                        <TableHead>{'Item'}</TableHead>
                                         <TableHead className="text-center">
                                             <SortableHeader
                                                 column="quantity_bought"
-                                                label={t(
-                                                    'admin.shop_purchases.qty',
-                                                )}
+                                                label="Qty"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
@@ -319,21 +297,19 @@ export default function ShopPurchases({ purchases, stats, filters }: Props) {
                                         <TableHead className="text-right">
                                             <SortableHeader
                                                 column="total_price"
-                                                label={t('common.price')}
+                                                label="Price"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
                                             />
                                         </TableHead>
                                         <TableHead className="text-right">
-                                            {t('admin.shop_purchases.discount')}
+                                            Discount
                                         </TableHead>
                                         <TableHead>
                                             <SortableHeader
                                                 column="delivery_status"
-                                                label={t(
-                                                    'admin.shop_purchases.delivery_status',
-                                                )}
+                                                label="Delivery Status"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
@@ -342,7 +318,7 @@ export default function ShopPurchases({ purchases, stats, filters }: Props) {
                                         <TableHead>
                                             <SortableHeader
                                                 column="created_at"
-                                                label={t('common.date')}
+                                                label="Date"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
@@ -355,9 +331,7 @@ export default function ShopPurchases({ purchases, stats, filters }: Props) {
                                         <TableRow key={purchase.id}>
                                             <TableCell className="font-medium">
                                                 {purchase.user?.username ||
-                                                    t(
-                                                        'admin.shop_purchases.unknown',
-                                                    )}
+                                                    'Unknown'}
                                             </TableCell>
                                             <TableCell>
                                                 {getPurchasableName(purchase)}
@@ -442,7 +416,7 @@ export default function ShopPurchases({ purchases, stats, filters }: Props) {
                             </Table>
                         ) : (
                             <p className="py-8 text-center text-muted-foreground">
-                                {t('admin.shop_purchases.no_purchases')}
+                                No purchases found.
                             </p>
                         )}
 

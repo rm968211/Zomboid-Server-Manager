@@ -38,7 +38,6 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useTableSort } from '@/hooks/use-table-sort';
-import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { fetchAction } from '@/lib/fetch-action';
 import type { BreadcrumbItem } from '@/types';
@@ -55,7 +54,6 @@ function coin(v: string | number): number {
 type SortKey = 'username' | 'balance' | 'total_earned' | 'total_spent';
 
 export default function Wallets({ users }: Props) {
-    const { t } = useTranslation();
     const [filter, setFilter] = useState('');
     const [creditOpen, setCreditOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<WalletUser | null>(null);
@@ -120,10 +118,7 @@ export default function Wallets({ users }: Props) {
                 amount: parseFloat(amount),
                 description: description || null,
             },
-            successMessage: t('admin.wallets.awarded_success', {
-                amount,
-                username: selectedUser.username,
-            }),
+            successMessage: `Awarded ${amount} to ${selectedUser.username}`,
         });
         setLoading(false);
         setCreditOpen(false);
@@ -139,9 +134,7 @@ export default function Wallets({ users }: Props) {
         if (!resetUser) return;
         setResetLoading(true);
         await fetchAction(`/admin/wallets/${resetUser.id}/reset`, {
-            successMessage: t('admin.wallets.reset_success', {
-                username: resetUser.username,
-            }),
+            successMessage: `${resetUser.username}'s balance has been reset to 0`,
         });
         setResetLoading(false);
         setResetOpen(false);
@@ -163,20 +156,20 @@ export default function Wallets({ users }: Props) {
     }
 
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: t('nav.dashboard'), href: '/dashboard' },
-        { title: t('admin.wallets.breadcrumb'), href: '/admin/wallets' },
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Wallets', href: '/admin/wallets' },
     ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={t('admin.wallets.title')} />
+            <Head title="Player Wallets" />
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">
-                        {t('admin.wallets.title')}
+                        Player Wallets
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        {t('admin.wallets.description')}
+                        Manage player currency balances
                     </p>
                 </div>
 
@@ -190,7 +183,7 @@ export default function Wallets({ users }: Props) {
                                     {coin(totalBalance)}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    {t('admin.wallets.total_in_circulation')}
+                                    Total in Circulation
                                 </p>
                             </div>
                         </CardContent>
@@ -203,7 +196,7 @@ export default function Wallets({ users }: Props) {
                                     {users.length}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    {t('admin.wallets.total_players')}
+                                    Total Players
                                 </p>
                             </div>
                         </CardContent>
@@ -218,7 +211,7 @@ export default function Wallets({ users }: Props) {
                                         : 0}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    {t('admin.wallets.average_balance')}
+                                    Average Balance
                                 </p>
                             </div>
                         </CardContent>
@@ -229,21 +222,15 @@ export default function Wallets({ users }: Props) {
                     <CardHeader>
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <CardTitle>
-                                    {t('admin.wallets.all_players')}
-                                </CardTitle>
+                                <CardTitle>{'All Players'}</CardTitle>
                                 <CardDescription>
-                                    {t('admin.wallets.players_count', {
-                                        count: String(filteredUsers.length),
-                                    })}
+                                    {`${String(filteredUsers.length)} players`}
                                 </CardDescription>
                             </div>
                             <div className="relative">
                                 <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
                                 <Input
-                                    placeholder={t(
-                                        'admin.wallets.search_players',
-                                    )}
+                                    placeholder="Search players..."
                                     value={filter}
                                     onChange={(e) => setFilter(e.target.value)}
                                     className="pl-9 sm:w-[250px]"
@@ -259,7 +246,7 @@ export default function Wallets({ users }: Props) {
                                         <TableHead>
                                             <SortableHeader
                                                 column="username"
-                                                label={t('common.username')}
+                                                label="Username"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
@@ -268,7 +255,7 @@ export default function Wallets({ users }: Props) {
                                         <TableHead className="text-right">
                                             <SortableHeader
                                                 column="balance"
-                                                label={t('common.balance')}
+                                                label="Balance"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
@@ -277,9 +264,7 @@ export default function Wallets({ users }: Props) {
                                         <TableHead className="text-right">
                                             <SortableHeader
                                                 column="total_earned"
-                                                label={t(
-                                                    'admin.wallets.total_earned',
-                                                )}
+                                                label="Total Earned"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
@@ -288,9 +273,7 @@ export default function Wallets({ users }: Props) {
                                         <TableHead className="text-right">
                                             <SortableHeader
                                                 column="total_spent"
-                                                label={t(
-                                                    'admin.wallets.total_spent',
-                                                )}
+                                                label="Total Spent"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
@@ -335,9 +318,7 @@ export default function Wallets({ users }: Props) {
                                                         >
                                                             <MoreHorizontal className="size-4" />
                                                             <span className="sr-only">
-                                                                {t(
-                                                                    'common.actions',
-                                                                )}
+                                                                Actions
                                                             </span>
                                                         </Button>
                                                     </DropdownMenuTrigger>
@@ -347,9 +328,7 @@ export default function Wallets({ users }: Props) {
                                                                 openCredit(user)
                                                             }
                                                         >
-                                                            {t(
-                                                                'admin.wallets.award',
-                                                            )}
+                                                            Award
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem
                                                             onClick={() =>
@@ -358,9 +337,7 @@ export default function Wallets({ users }: Props) {
                                                                 )
                                                             }
                                                         >
-                                                            {t(
-                                                                'admin.wallets.history',
-                                                            )}
+                                                            History
                                                         </DropdownMenuItem>
                                                         {user.balance > 0 && (
                                                             <>
@@ -373,9 +350,9 @@ export default function Wallets({ users }: Props) {
                                                                         )
                                                                     }
                                                                 >
-                                                                    {t(
-                                                                        'admin.wallets.reset_balance',
-                                                                    )}
+                                                                    {
+                                                                        'Reset Balance'
+                                                                    }
                                                                 </DropdownMenuItem>
                                                             </>
                                                         )}
@@ -388,7 +365,7 @@ export default function Wallets({ users }: Props) {
                             </Table>
                         ) : (
                             <p className="py-8 text-center text-muted-foreground">
-                                {t('admin.wallets.no_players')}
+                                No players found.
                             </p>
                         )}
                     </CardContent>
@@ -399,18 +376,14 @@ export default function Wallets({ users }: Props) {
             <Dialog open={creditOpen} onOpenChange={setCreditOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>
-                            {t('admin.wallets.award_currency')}
-                        </DialogTitle>
+                        <DialogTitle>{'Award Currency'}</DialogTitle>
                         <DialogDescription>
-                            {t('admin.wallets.award_currency_desc', {
-                                username: selectedUser?.username ?? '',
-                            })}
+                            {`Award currency to ${selectedUser?.username ?? ''}'s wallet.`}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label>{t('common.amount')}</Label>
+                            <Label>{'Amount'}</Label>
                             <Input
                                 type="number"
                                 step="1"
@@ -420,15 +393,11 @@ export default function Wallets({ users }: Props) {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>
-                                {t('admin.wallets.description_optional')}
-                            </Label>
+                            <Label>{'Description (optional)'}</Label>
                             <Textarea
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                placeholder={t(
-                                    'admin.wallets.description_placeholder',
-                                )}
+                                placeholder="e.g. Welcome bonus"
                             />
                         </div>
                     </div>
@@ -437,7 +406,7 @@ export default function Wallets({ users }: Props) {
                             variant="outline"
                             onClick={() => setCreditOpen(false)}
                         >
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             disabled={
@@ -445,7 +414,7 @@ export default function Wallets({ users }: Props) {
                             }
                             onClick={handleCredit}
                         >
-                            {t('admin.wallets.award')}
+                            Award
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -455,16 +424,11 @@ export default function Wallets({ users }: Props) {
             <Dialog open={resetOpen} onOpenChange={setResetOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>
-                            {t('admin.wallets.reset_title')}
-                        </DialogTitle>
+                        <DialogTitle>{'Reset Balance'}</DialogTitle>
                         <DialogDescription>
-                            {t('admin.wallets.reset_desc', {
-                                username: resetUser?.username ?? '',
-                                balance: String(
-                                    resetUser ? coin(resetUser.balance) : 0,
-                                ),
-                            })}
+                            {`This will set ${resetUser?.username ?? ''}'s balance to 0. Current balance: ${String(
+                                resetUser ? coin(resetUser.balance) : 0,
+                            )}. This action cannot be undone.`}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -472,14 +436,14 @@ export default function Wallets({ users }: Props) {
                             variant="outline"
                             onClick={() => setResetOpen(false)}
                         >
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             variant="destructive"
                             disabled={resetLoading}
                             onClick={handleReset}
                         >
-                            {t('admin.wallets.reset_to_zero')}
+                            Reset to 0
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -489,9 +453,7 @@ export default function Wallets({ users }: Props) {
             <Dialog open={txOpen} onOpenChange={setTxOpen}>
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>
-                            {t('admin.wallets.tx_history')}
-                        </DialogTitle>
+                        <DialogTitle>{'Transaction History'}</DialogTitle>
                         <DialogDescription>
                             {txUser?.username}
                         </DialogDescription>
@@ -544,16 +506,9 @@ export default function Wallets({ users }: Props) {
                                                 {coin(tx.amount)}
                                             </span>
                                             <p className="text-xs text-muted-foreground tabular-nums">
-                                                {t(
-                                                    'admin.wallets.balance_after',
-                                                    {
-                                                        balance: String(
-                                                            coin(
-                                                                tx.balance_after,
-                                                            ),
-                                                        ),
-                                                    },
-                                                )}
+                                                {`Bal: ${String(
+                                                    coin(tx.balance_after),
+                                                )}`}
                                             </p>
                                         </div>
                                     </div>
@@ -561,7 +516,7 @@ export default function Wallets({ users }: Props) {
                             </div>
                         ) : (
                             <p className="py-8 text-center text-sm text-muted-foreground">
-                                {t('admin.wallets.no_transactions')}
+                                No transactions yet.
                             </p>
                         )}
                     </div>

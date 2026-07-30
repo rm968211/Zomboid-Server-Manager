@@ -19,7 +19,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { useTranslation } from '@/hooks/use-translation';
 import { fetchAction } from '@/lib/fetch-action';
 
 type Props = {
@@ -49,7 +48,6 @@ export default function PlayerActionDialogs({
     onCloseResetTimer,
     reloadOnly,
 }: Props) {
-    const { t } = useTranslation();
     const [reason, setReason] = useState('');
     const [accessLevel, setAccessLevel] = useState('none');
     const [password, setPassword] = useState('');
@@ -77,31 +75,25 @@ export default function PlayerActionDialogs({
             >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>
-                            {t('admin.player_dialogs.kick_title', {
-                                player: kickTarget ?? '',
-                            })}
-                        </DialogTitle>
+                        <DialogTitle>{`Kick ${kickTarget ?? ''}`}</DialogTitle>
                         <DialogDescription>
-                            {t('admin.player_dialogs.kick_description')}
+                            {
+                                'This player will be disconnected from the server.'
+                            }
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2">
-                        <Label htmlFor="kick-reason">
-                            {t('admin.player_dialogs.kick_reason_label')}
-                        </Label>
+                        <Label htmlFor="kick-reason">Reason (optional)</Label>
                         <Input
                             id="kick-reason"
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
-                            placeholder={t(
-                                'admin.player_dialogs.kick_reason_placeholder',
-                            )}
+                            placeholder="Reason for kick..."
                         />
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={onCloseKick}>
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             disabled={loading}
@@ -114,7 +106,7 @@ export default function PlayerActionDialogs({
                             }
                         >
                             <UserX className="mr-1.5 size-3.5" />
-                            {t('admin.player_dialogs.kick_confirm')}
+                            Kick Player
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -124,31 +116,25 @@ export default function PlayerActionDialogs({
             <Dialog open={banTarget !== null} onOpenChange={() => onCloseBan()}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>
-                            {t('admin.player_dialogs.ban_title', {
-                                player: banTarget ?? '',
-                            })}
-                        </DialogTitle>
+                        <DialogTitle>{`Ban ${banTarget ?? ''}`}</DialogTitle>
                         <DialogDescription>
-                            {t('admin.player_dialogs.ban_description')}
+                            {
+                                'This player will be permanently banned from the server.'
+                            }
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2">
-                        <Label htmlFor="ban-reason">
-                            {t('admin.player_dialogs.ban_reason_label')}
-                        </Label>
+                        <Label htmlFor="ban-reason">Reason (optional)</Label>
                         <Input
                             id="ban-reason"
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
-                            placeholder={t(
-                                'admin.player_dialogs.ban_reason_placeholder',
-                            )}
+                            placeholder="Reason for ban..."
                         />
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={onCloseBan}>
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             variant="destructive"
@@ -162,7 +148,7 @@ export default function PlayerActionDialogs({
                             }
                         >
                             <Ban className="mr-1.5 size-3.5" />
-                            {t('admin.player_dialogs.ban_confirm')}
+                            Ban Player
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -176,16 +162,14 @@ export default function PlayerActionDialogs({
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>
-                            {t('admin.player_dialogs.access_title', {
-                                player: accessTarget ?? '',
-                            })}
+                            {`Set Access Level for ${accessTarget ?? ''}`}
                         </DialogTitle>
                         <DialogDescription>
-                            {t('admin.player_dialogs.access_description')}
+                            {"Change the player's server access level."}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2">
-                        <Label>{t('admin.player_dialogs.access_label')}</Label>
+                        <Label>{'Access Level'}</Label>
                         <Select
                             value={accessLevel}
                             onValueChange={setAccessLevel}
@@ -194,30 +178,24 @@ export default function PlayerActionDialogs({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="admin">
-                                    {t('admin.player_dialogs.access_admin')}
-                                </SelectItem>
+                                <SelectItem value="admin">{'Admin'}</SelectItem>
                                 <SelectItem value="moderator">
-                                    {t('admin.player_dialogs.access_moderator')}
+                                    Moderator
                                 </SelectItem>
                                 <SelectItem value="overseer">
-                                    {t('admin.player_dialogs.access_overseer')}
+                                    Overseer
                                 </SelectItem>
-                                <SelectItem value="gm">
-                                    {t('admin.player_dialogs.access_gm')}
-                                </SelectItem>
+                                <SelectItem value="gm">{'GM'}</SelectItem>
                                 <SelectItem value="observer">
-                                    {t('admin.player_dialogs.access_observer')}
+                                    Observer
                                 </SelectItem>
-                                <SelectItem value="none">
-                                    {t('admin.player_dialogs.access_none')}
-                                </SelectItem>
+                                <SelectItem value="none">{'None'}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={onCloseAccess}>
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             disabled={loading}
@@ -230,7 +208,7 @@ export default function PlayerActionDialogs({
                             }
                         >
                             <ShieldCheck className="mr-1.5 size-3.5" />
-                            {t('admin.player_dialogs.access_confirm')}
+                            Set Access
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -249,20 +227,18 @@ export default function PlayerActionDialogs({
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>
-                                {t('admin.player_dialogs.password_title', {
-                                    player: passwordTarget ?? '',
-                                })}
+                                {`Set Password for ${passwordTarget ?? ''}`}
                             </DialogTitle>
                             <DialogDescription>
-                                {t('admin.player_dialogs.password_description')}
+                                {
+                                    'This will update both the web login and PZ game server passwords.'
+                                }
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="new-password">
-                                    {t(
-                                        'admin.player_dialogs.new_password_label',
-                                    )}
+                                    New Password
                                 </Label>
                                 <Input
                                     id="new-password"
@@ -271,16 +247,12 @@ export default function PlayerActionDialogs({
                                     onChange={(e) =>
                                         setPassword(e.target.value)
                                     }
-                                    placeholder={t(
-                                        'admin.player_dialogs.new_password_placeholder',
-                                    )}
+                                    placeholder="New password..."
                                 />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="confirm-password">
-                                    {t(
-                                        'admin.player_dialogs.confirm_password_label',
-                                    )}
+                                    Confirm Password
                                 </Label>
                                 <Input
                                     id="confirm-password"
@@ -289,9 +261,7 @@ export default function PlayerActionDialogs({
                                     onChange={(e) =>
                                         setPasswordConfirmation(e.target.value)
                                     }
-                                    placeholder={t(
-                                        'admin.player_dialogs.confirm_password_placeholder',
-                                    )}
+                                    placeholder="Confirm password..."
                                 />
                             </div>
                         </div>
@@ -304,7 +274,7 @@ export default function PlayerActionDialogs({
                                     onClosePassword();
                                 }}
                             >
-                                {t('common.cancel')}
+                                Cancel
                             </Button>
                             <Button
                                 disabled={loading || !password}
@@ -325,7 +295,7 @@ export default function PlayerActionDialogs({
                                 }}
                             >
                                 <KeyRound className="mr-1.5 size-3.5" />
-                                {t('admin.player_dialogs.password_confirm')}
+                                Set Password
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -341,14 +311,12 @@ export default function PlayerActionDialogs({
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>
-                                {t('admin.player_dialogs.reset_timer_title', {
-                                    player: resetTimerTarget ?? '',
-                                })}
+                                {`Reset Respawn Timer for ${resetTimerTarget ?? ''}`}
                             </DialogTitle>
                             <DialogDescription>
-                                {t(
-                                    'admin.player_dialogs.reset_timer_description',
-                                )}
+                                {
+                                    'This will clear the respawn cooldown, allowing the player to rejoin immediately.'
+                                }
                             </DialogDescription>
                         </DialogHeader>
                         <DialogFooter>
@@ -356,7 +324,7 @@ export default function PlayerActionDialogs({
                                 variant="outline"
                                 onClick={onCloseResetTimer}
                             >
-                                {t('common.cancel')}
+                                Cancel
                             </Button>
                             <Button
                                 disabled={loading}
@@ -369,7 +337,7 @@ export default function PlayerActionDialogs({
                                 }
                             >
                                 <TimerReset className="mr-1.5 size-3.5" />
-                                {t('admin.player_dialogs.reset_timer_confirm')}
+                                Reset Timer
                             </Button>
                         </DialogFooter>
                     </DialogContent>

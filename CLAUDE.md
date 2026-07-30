@@ -157,14 +157,9 @@ The Laravel app is the single control plane wrapping three integration points:
 ### Code Formatting
 - Run `make exec CMD="vendor/bin/pint --dirty --format agent"` after modifying PHP files
 
-### Internationalization (i18n)
-- **Never hardcode user-facing strings** in React components — always use the `t()` function from `useTranslation()` hook (`resources/js/hooks/use-translation.ts`)
-- This applies to ALL pages: public, admin, auth, and shared components (sidebar, layouts, widgets)
-- Translation keys use dot-notation namespaces: `admin.page_name.key`, `nav.label`, `common.action`
-- English defaults live in `lang/en.json`, Georgian in `lang/ka.json`
-- DB overrides (via Translations admin page) take priority over JSON file defaults
-- When adding a new page or component, add all its translation keys to both `en.json` and `ka.json`
-- Use `:placeholder` syntax for dynamic values: `t('admin.players.count', { count: players.length })`
+### User-Facing Strings
+- The app is **English only**. There is no translation layer — write user-facing strings directly in the component.
+- Use template literals for dynamic values: `` `${players.length} players online` ``
 
 ### Inertia.js v2
 - Components live in `resources/js/pages`
