@@ -40,7 +40,7 @@ class SteamWorkshopClient
      * Bumped whenever the parsed shape changes so stale entries from
      * older releases are never served.
      */
-    private const CACHE_KEY_PREFIX = 'steam_workshop:details:v3:';
+    private const CACHE_KEY_PREFIX = 'steam_workshop:details:v4:';
 
     private const COLLECTION_CACHE_KEY_PREFIX = 'steam_workshop:collection:v1:';
 
@@ -168,8 +168,8 @@ class SteamWorkshopClient
             'title' => (string) ($file['title'] ?? ''),
             'description' => $description,
             'preview_url' => isset($file['preview_url']) ? (string) $file['preview_url'] : null,
-            'mod_ids' => $this->extractMatches('/Mod\s*ID\s*:\s*([\w.\-]+)/i', $description),
-            'map_folders' => $this->extractMatches('/Map\s*Folder\s*:\s*([\w.\-]+)/i', $description),
+            'mod_ids' => $this->extractLabelled($description, 'Mod[ \t]*IDs?'),
+            'map_folders' => $this->extractLabelled($description, 'Map[ \t]*Folders?'),
             'tags' => $tags,
             'build_compat' => $this->detectBuildCompat($tags),
             'time_updated' => isset($file['time_updated']) ? (int) $file['time_updated'] : null,
@@ -316,16 +316,56 @@ class SteamWorkshopClient
     }
 
     /**
-     * Pull unique capture-group-1 matches in the order they appear.
+     * BBCode tags Steam actually renders. Deliberately an explicit list rather
+     * than `\[[^\]]*\]`, because a leading build tag like `[B42] Tatrapan` is
+     * part of the mod ID and a greedy pattern eats it.
+     */
+    private const BBCODE_TAG = '/\[\/?(?:b|i|u|s|strike|spoiler|noparse|hr|url|img|quote|code|list|olist|table|tr|th|td|h[1-6]|\*)(?:=[^\]]*)?\]/i';
+
+    /**
+     * Pull the values off `Label: value` lines, in the order they appear.
+     *
+     * The value runs to the end of the line rather than stopping at the first
+     * unusual character, because real PZ mod IDs are not identifiers: they
+     * contain spaces, apostrophes, brackets and slashes (`GanydeBielovzki's
+     * Frockin Splendor!`, `Diederiks Tile Palooza`, `1299328280/ToadTraits`,
+     * `[B42] Tatrapan`). Stopping early is worse than not parsing at all — a
+     * truncated ID matches no mod.info, so PZ silently declines to load the
+     * mod, and several mods by one author can truncate to the SAME string and
+     * collapse into a single entry. Map folder names have spaces likewise.
+     *
+     * The label must open its own line, so prose that happens to mention
+     * "Mod ID:" mid-sentence cannot inject an entry.
      *
      * @return list<string>
      */
-    private function extractMatches(string $pattern, string $haystack): array
+    private function extractLabelled(string $haystack, string $label): array
     {
+        // Strip tags first: modders write `[b]Mod ID:[/b] Foo` as often as not,
+        // which wraps the label itself, not just the value.
+        $haystack = (string) preg_replace(self::BBCODE_TAG, '', $haystack);
+
+        $pattern = '/^[^\S\r\n]*'.$label.'[^\S\r\n]*:[^\S\r\n]*(.+)$/mi';
+
         if (! preg_match_all($pattern, $haystack, $matches)) {
             return [];
         }
 
-        return array_values(array_unique(array_map('trim', $matches[1])));
+        $values = [];
+
+        foreach ($matches[1] as $raw) {
+            $value = trim($raw);
+
+            // `;` and `=` are the INI's own separators, so a value holding one
+            // could never be written back out — skip it rather than emit an ID
+            // that would corrupt the Mods= line.
+            if ($value === '' || preg_match('/[;=]/', $value)) {
+                continue;
+            }
+
+            $values[] = $value;
+        }
+
+        return array_values(array_unique($values));
     }
 }
