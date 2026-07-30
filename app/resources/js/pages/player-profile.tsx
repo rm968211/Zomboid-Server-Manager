@@ -21,7 +21,6 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTranslation } from '@/hooks/use-translation';
 import PublicLayout from '@/layouts/public-layout';
 import { formatHours, loadHoursMode, saveHoursMode } from '@/lib/hours-format';
 import type { HoursMode } from '@/lib/hours-format';
@@ -91,7 +90,6 @@ export default function PlayerProfile({
     is_admin,
     day_length_minutes,
 }: PlayerProfilePageData) {
-    const { t } = useTranslation();
     const [hoursMode, setHoursMode] = useState<HoursMode>(() =>
         loadHoursMode(),
     );
@@ -142,7 +140,7 @@ export default function PlayerProfile({
                         </Link>
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">
-                                {t('rankings.time_unit_label')}
+                                Hours:
                             </span>
                             <div className="inline-flex overflow-hidden rounded-md border border-border text-xs">
                                 <button
@@ -153,9 +151,11 @@ export default function PlayerProfile({
                                             ? 'bg-primary text-primary-foreground'
                                             : 'text-muted-foreground hover:text-foreground'
                                     }`}
-                                    title={t('rankings.hours_ingame_tooltip')}
+                                    title={
+                                        'Show hours as counted by Project Zomboid (accelerated in-game time)'
+                                    }
                                 >
-                                    {t('rankings.hours_ingame_short')}
+                                    In-game
                                 </button>
                                 <button
                                     type="button"
@@ -165,9 +165,11 @@ export default function PlayerProfile({
                                             ? 'bg-primary text-primary-foreground'
                                             : 'text-muted-foreground hover:text-foreground'
                                     }`}
-                                    title={t('rankings.hours_real_tooltip')}
+                                    title={
+                                        'Show real elapsed time based on the configured day length'
+                                    }
                                 >
-                                    {t('rankings.hours_real_short')}
+                                    Real
                                 </button>
                             </div>
                         </div>

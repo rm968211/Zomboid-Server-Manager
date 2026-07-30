@@ -39,7 +39,6 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useTableSort } from '@/hooks/use-table-sort';
-import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { fetchAction } from '@/lib/fetch-action';
 import type { BreadcrumbItem } from '@/types';
@@ -58,7 +57,6 @@ type BundleItemEntry = { shop_item_id: string; quantity: number };
 type SortKey = 'name' | 'discount_percent' | 'price' | 'is_active';
 
 export default function ShopBundles({ bundles, shopItems }: Props) {
-    const { t } = useTranslation();
     const [dialogOpen, setDialogOpen] = useState(false);
     const { sortKey, sortDir, toggleSort } = useTableSort<SortKey>(
         'name',
@@ -146,12 +144,12 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
             await fetchAction(`/admin/shop/bundles/${editBundle.id}`, {
                 method: 'PATCH',
                 data,
-                successMessage: t('admin.shop_bundles.bundle_updated'),
+                successMessage: 'Bundle updated',
             });
         } else {
             await fetchAction('/admin/shop/bundles', {
                 data,
-                successMessage: t('admin.shop_bundles.bundle_created'),
+                successMessage: 'Bundle created',
             });
         }
         setLoading(false);
@@ -162,7 +160,7 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
     async function handleDelete(bundle: ShopBundle) {
         await fetchAction(`/admin/shop/bundles/${bundle.id}`, {
             method: 'DELETE',
-            successMessage: t('admin.shop_bundles.bundle_deleted'),
+            successMessage: 'Bundle deleted',
         });
         router.reload();
     }
@@ -175,42 +173,38 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
     }
 
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: t('nav.dashboard'), href: '/dashboard' },
-        { title: t('admin.shop.breadcrumb'), href: '/admin/shop' },
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Shop', href: '/admin/shop' },
         {
-            title: t('admin.shop_bundles.breadcrumb'),
+            title: 'Bundles',
             href: '/admin/shop/bundles',
         },
     ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={t('admin.shop_bundles.title')} />
+            <Head title="Bundles" />
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">
-                            {t('admin.shop_bundles.title')}
+                            Bundles
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            {t('admin.shop_bundles.description')}
+                            Manage item bundles for the shop
                         </p>
                     </div>
                     <Button onClick={openCreate}>
                         <Plus className="mr-1.5 size-4" />
-                        {t('admin.shop_bundles.create_bundle')}
+                        Create Bundle
                     </Button>
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>
-                            {t('admin.shop_bundles.all_bundles')}
-                        </CardTitle>
+                        <CardTitle>{'All Bundles'}</CardTitle>
                         <CardDescription>
-                            {t('admin.shop_bundles.bundles_count', {
-                                count: String(bundles.length),
-                            })}
+                            {`${String(bundles.length)} bundles`}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="overflow-x-auto">
@@ -221,21 +215,17 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                                         <TableHead>
                                             <SortableHeader
                                                 column="name"
-                                                label={t('common.name')}
+                                                label="Name"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
                                             />
                                         </TableHead>
-                                        <TableHead>
-                                            {t('common.items')}
-                                        </TableHead>
+                                        <TableHead>{'Items'}</TableHead>
                                         <TableHead className="text-center">
                                             <SortableHeader
                                                 column="discount_percent"
-                                                label={t(
-                                                    'admin.shop_bundles.discount_percent',
-                                                )}
+                                                label="Discount %"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
@@ -244,7 +234,7 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                                         <TableHead className="text-right">
                                             <SortableHeader
                                                 column="price"
-                                                label={t('common.price')}
+                                                label="Price"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
@@ -253,14 +243,14 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                                         <TableHead>
                                             <SortableHeader
                                                 column="is_active"
-                                                label={t('common.status')}
+                                                label="Status"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
                                             />
                                         </TableHead>
                                         <TableHead className="text-right">
-                                            {t('common.actions')}
+                                            Actions
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -310,9 +300,7 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                                                             </span>
                                                             {bundle.is_featured && (
                                                                 <Badge className="ml-2 bg-amber-500 text-xs">
-                                                                    {t(
-                                                                        'common.featured',
-                                                                    )}
+                                                                    Featured
                                                                 </Badge>
                                                             )}
                                                             {bundle.description && (
@@ -396,12 +384,8 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                                                             className="text-xs"
                                                         >
                                                             {bundle.is_active
-                                                                ? t(
-                                                                      'common.active',
-                                                                  )
-                                                                : t(
-                                                                      'common.inactive',
-                                                                  )}
+                                                                ? 'Active'
+                                                                : 'Inactive'}
                                                         </Badge>
                                                     </TableCell>
                                                     <TableCell className="text-right">
@@ -415,9 +399,7 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                                                                     )
                                                                 }
                                                             >
-                                                                {t(
-                                                                    'common.edit',
-                                                                )}
+                                                                Edit
                                                             </Button>
                                                             <Button
                                                                 variant="ghost"
@@ -439,7 +421,7 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                             </Table>
                         ) : (
                             <p className="py-8 text-center text-muted-foreground">
-                                {t('admin.shop_bundles.no_bundles')}
+                                No bundles yet. Create one to get started.
                             </p>
                         )}
                     </CardContent>
@@ -450,26 +432,24 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>
-                            {editBundle
-                                ? t('admin.shop_bundles.edit_title')
-                                : t('admin.shop_bundles.create_title')}
+                            {editBundle ? 'Edit Bundle' : 'Create Bundle'}
                         </DialogTitle>
                         <DialogDescription>
                             {editBundle
-                                ? t('admin.shop_bundles.edit_desc')
-                                : t('admin.shop_bundles.create_desc')}
+                                ? 'Update bundle details.'
+                                : 'Create a new item bundle.'}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
                         <div className="space-y-2">
-                            <Label>{t('common.name')}</Label>
+                            <Label>{'Name'}</Label>
                             <Input
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>{t('common.description')}</Label>
+                            <Label>{'Description'}</Label>
                             <Textarea
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
@@ -477,9 +457,7 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>
-                                    {t('admin.shop_bundles.discount_percent')}
-                                </Label>
+                                <Label>{'Discount %'}</Label>
                                 <Input
                                     type="number"
                                     step="1"
@@ -492,13 +470,11 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>
-                                    {t('admin.shop_bundles.max_per_player')}
-                                </Label>
+                                <Label>{'Max Per Player'}</Label>
                                 <Input
                                     type="number"
                                     min={1}
-                                    placeholder={t('common.unlimited')}
+                                    placeholder="Unlimited"
                                     value={maxPerPlayer}
                                     onChange={(e) =>
                                         setMaxPerPlayer(e.target.value)
@@ -510,7 +486,7 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                             <div className="rounded-md bg-muted p-3 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">
-                                        {t('admin.shop_bundles.items_total')}
+                                        Items total:
                                     </span>
                                     <span className="tabular-nums">
                                         {Math.round(itemsTotal)}
@@ -518,10 +494,7 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">
-                                        {t(
-                                            'admin.shop_bundles.discount_label',
-                                            { percent: discountPercent || '0' },
-                                        )}
+                                        {`Discount %`}
                                     </span>
                                     <span className="text-green-600 tabular-nums">
                                         -
@@ -530,9 +503,7 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                                     </span>
                                 </div>
                                 <div className="mt-1 flex justify-between border-t pt-1 font-medium">
-                                    <span>
-                                        {t('admin.shop_bundles.bundle_price')}
-                                    </span>
+                                    <span>{'Bundle price:'}</span>
                                     <span className="tabular-nums">
                                         {calculatedPrice}
                                     </span>
@@ -541,16 +512,14 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                         )}
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <Label>
-                                    {t('admin.shop_bundles.bundle_items')}
-                                </Label>
+                                <Label>{'Bundle Items'}</Label>
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={addBundleItem}
                                 >
                                     <Plus className="mr-1 size-3" />
-                                    {t('common.add')}
+                                    Add
                                 </Button>
                             </div>
                             {bundleItems.map((entry, idx) => (
@@ -569,11 +538,7 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                                         }
                                     >
                                         <SelectTrigger className="flex-1">
-                                            <SelectValue
-                                                placeholder={t(
-                                                    'admin.shop_bundles.select_item',
-                                                )}
-                                            />
+                                            <SelectValue placeholder="Select item..." />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {shopItems.map((si) => (
@@ -622,7 +587,7 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                                 }
                             />
                             <Label htmlFor="bundle-featured">
-                                {t('admin.shop_bundles.featured_bundle')}
+                                Featured bundle
                             </Label>
                         </div>
                     </div>
@@ -631,7 +596,7 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                             variant="outline"
                             onClick={() => setDialogOpen(false)}
                         >
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             disabled={
@@ -642,9 +607,7 @@ export default function ShopBundles({ bundles, shopItems }: Props) {
                             }
                             onClick={handleSave}
                         >
-                            {editBundle
-                                ? t('common.update')
-                                : t('common.create')}
+                            {editBundle ? 'Update' : 'Create'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

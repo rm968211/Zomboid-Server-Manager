@@ -15,7 +15,6 @@ import type { MapLocation, ZoneOverlay } from '@/components/pz-map';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { fetchAction } from '@/lib/fetch-action';
 import type { BreadcrumbItem } from '@/types';
@@ -76,7 +75,6 @@ export default function PlayerMap({
     positionsStale = false,
     positionsUpdatedAt = null,
 }: Props) {
-    const { t } = useTranslation();
     usePoll(5000, {
         only: [
             'markers',
@@ -96,10 +94,10 @@ export default function PlayerMap({
 
     const generationStage =
         tileGenerationStage === 'unpacking'
-            ? t('admin.player_map.unpacking_textures')
+            ? 'Unpacking textures...'
             : tileGenerationStage === 'rendering'
-              ? t('admin.player_map.rendering_tiles')
-              : t('admin.player_map.preparing_render');
+              ? 'Rendering map tiles...'
+              : 'Preparing render...';
     const generationStarted = tileGenerationStartedAt
         ? new Date(tileGenerationStartedAt).toLocaleString()
         : null;
@@ -184,9 +182,7 @@ export default function PlayerMap({
                     y: Number(teleportDestination.y),
                     z: Number(teleportDestination.z),
                 },
-                successMessage: t('admin.player_map.teleport_success', {
-                    player: teleportTarget,
-                }),
+                successMessage: `${teleportTarget} was teleported.`,
             },
         );
         setTeleportLoading(false);
@@ -219,24 +215,22 @@ export default function PlayerMap({
     }
 
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: t('nav.dashboard'), href: '/dashboard' },
-        { title: t('nav.players'), href: '/admin/players' },
-        { title: t('admin.player_map.breadcrumb'), href: '/admin/players/map' },
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Players', href: '/admin/players' },
+        { title: 'Map', href: '/admin/players/map' },
     ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={t('admin.player_map.title')} />
+            <Head title="Player Map" />
             <div className="flex flex-1 flex-col gap-4 p-4 lg:p-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">
-                            {t('admin.player_map.title')}
+                            Player Map
                         </h1>
                         <p className="text-muted-foreground">
-                            {t('admin.player_map.players_tracked', {
-                                count: String(counts.total),
-                            })}
+                            {`${String(counts.total)} players tracked`}
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -249,26 +243,20 @@ export default function PlayerMap({
                             }
                         >
                             <MapPin className="mr-1.5 size-3.5" />
-                            {t('admin.player_map.teleport_button')}
+                            Teleport Player
                         </Button>
                         <Badge variant="outline" className="text-sm">
                             <Circle className="mr-1.5 size-2 fill-green-500 text-green-500" />
-                            {t('admin.player_map.online_count', {
-                                count: String(counts.online),
-                            })}
+                            {`${String(counts.online)} Online`}
                         </Badge>
                         <Badge variant="outline" className="text-sm">
                             <Circle className="mr-1.5 size-2 fill-muted text-muted" />
-                            {t('admin.player_map.offline_count', {
-                                count: String(counts.offline),
-                            })}
+                            {`${String(counts.offline)} Offline`}
                         </Badge>
                         {counts.dead > 0 && (
                             <Badge variant="outline" className="text-sm">
                                 <Circle className="mr-1.5 size-2 fill-red-500 text-red-500" />
-                                {t('admin.player_map.dead_count', {
-                                    count: String(counts.dead),
-                                })}
+                                {`${String(counts.dead)} Dead`}
                             </Badge>
                         )}
                     </div>
@@ -277,7 +265,9 @@ export default function PlayerMap({
                 {serverStatus === 'offline' && (
                     <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
                         <AlertTriangle className="size-4 shrink-0" />
-                        {t('admin.player_map.server_offline')}
+                        {
+                            'Server is offline. Player positions show last known locations.'
+                        }
                     </div>
                 )}
                 {positionsStale && (
@@ -287,18 +277,16 @@ export default function PlayerMap({
                     >
                         <AlertTriangle className="size-4 shrink-0" />
                         {positionsUpdatedAt
-                            ? t('admin.player_map.positions_stale_since', {
-                                  time: new Date(
-                                      positionsUpdatedAt,
-                                  ).toLocaleString(),
-                              })
-                            : t('admin.player_map.positions_stale')}
+                            ? `Live positions have stopped updating (last update ${new Date(positionsUpdatedAt).toLocaleString()}). Markers show the last known locations.`
+                            : 'Live positions have stopped updating. Markers show the last known locations.'}
                     </div>
                 )}
                 {serverStatus === 'starting' && (
                     <div className="flex items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-400">
                         <Loader2 className="size-4 shrink-0 animate-spin" />
-                        {t('admin.player_map.server_starting')}
+                        {
+                            'Server is starting. Live positions will appear once the game server is ready.'
+                        }
                     </div>
                 )}
 
@@ -309,12 +297,7 @@ export default function PlayerMap({
                                 <div className="flex min-w-0 items-center gap-2">
                                     <Crosshair className="size-4 shrink-0 text-primary" />
                                     <p className="truncate text-sm font-medium">
-                                        {t(
-                                            'admin.player_map.teleport_pick_instruction',
-                                            {
-                                                player: teleportTarget,
-                                            },
-                                        )}
+                                        {`Click the destination for ${teleportTarget}`}
                                     </p>
                                 </div>
                                 <Button
@@ -322,7 +305,7 @@ export default function PlayerMap({
                                     variant="outline"
                                     onClick={() => setTeleportPicking(false)}
                                 >
-                                    {t('common.cancel')}
+                                    Cancel
                                 </Button>
                             </div>
                         )}
@@ -330,7 +313,7 @@ export default function PlayerMap({
                             <div className="absolute top-2 left-1/2 z-[1000] w-64 -translate-x-1/2 rounded-lg border bg-background/90 px-4 py-3 shadow-sm backdrop-blur-sm sm:w-72">
                                 <div className="flex items-center gap-2 text-sm font-medium">
                                     <Loader2 className="size-4 animate-spin text-primary" />
-                                    {t('admin.player_map.generating_tiles')}
+                                    Generating map tiles...
                                 </div>
                                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
                                     <div className="h-full w-full animate-pulse rounded-full bg-primary/30" />
@@ -340,12 +323,7 @@ export default function PlayerMap({
                                 </p>
                                 {generationStarted && (
                                     <p className="text-xs text-muted-foreground">
-                                        {t(
-                                            'admin.player_map.generation_started',
-                                            {
-                                                time: generationStarted,
-                                            },
-                                        )}
+                                        {`Started: ${generationStarted}`}
                                     </p>
                                 )}
                             </div>
@@ -354,26 +332,30 @@ export default function PlayerMap({
                             <div className="absolute top-2 left-1/2 z-[1000] w-72 -translate-x-1/2 rounded-lg border border-red-500/30 bg-background/95 px-4 py-3 text-xs shadow-sm backdrop-blur-sm sm:w-96">
                                 <div className="flex items-center gap-2 text-sm font-medium text-red-400">
                                     <AlertTriangle className="size-4 shrink-0" />
-                                    {t('admin.player_map.tile_error')}
+                                    Map tile generation failed.
                                 </div>
                                 <pre className="mt-1.5 max-h-24 overflow-auto rounded bg-muted/50 p-1.5 font-mono text-[11px] whitespace-pre-wrap text-muted-foreground">
                                     {tileError}
                                 </pre>
                                 <p className="mt-1.5 text-xs text-muted-foreground">
-                                    {t('admin.player_map.tile_error_hint')}{' '}
+                                    {
+                                        'Check storage/logs/pzmap2dzi.log on the app container, then re-run'
+                                    }{' '}
                                     <code className="font-mono">
-                                        {t('admin.player_map.no_tiles_command')}
+                                        {
+                                            'php artisan zomboid:generate-map-tiles'
+                                        }
                                     </code>
                                 </p>
                             </div>
                         )}
                         {!usingLocalTiles && !tilesGenerating && !tileError && (
                             <div className="absolute top-2 left-1/2 z-[1000] -translate-x-1/2 rounded-md bg-muted/80 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur-sm">
-                                {t('admin.player_map.no_tiles')}{' '}
+                                {'No map tiles available. Run'}{' '}
                                 <code className="font-mono">
-                                    {t('admin.player_map.no_tiles_command')}
+                                    php artisan zomboid:generate-map-tiles
                                 </code>{' '}
-                                {t('admin.player_map.no_tiles_suffix')}
+                                {'to generate.'}
                             </div>
                         )}
                         <PzMap
@@ -392,9 +374,7 @@ export default function PlayerMap({
                 {markers.length > 0 && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>
-                                {t('admin.player_map.player_positions')}
-                            </CardTitle>
+                            <CardTitle>{'Player Positions'}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

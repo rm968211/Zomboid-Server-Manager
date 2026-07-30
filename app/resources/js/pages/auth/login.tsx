@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { useTranslation } from '@/hooks/use-translation';
 import AuthLayout from '@/layouts/auth-layout';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
@@ -22,14 +21,12 @@ export default function Login({
     canResetPassword,
     canRegister,
 }: Props) {
-    const { t } = useTranslation();
-
     return (
         <AuthLayout
             title="Log in to your account"
             description="Enter your username and password below to log in"
         >
-            <Head title={t('auth.login')} />
+            <Head title="Log in" />
 
             <Form
                 {...store.form()}
@@ -40,9 +37,7 @@ export default function Login({
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="username">
-                                    {t('auth.username')}
-                                </Label>
+                                <Label htmlFor="username">{'Username'}</Label>
                                 <Input
                                     id="username"
                                     type="text"
@@ -51,23 +46,21 @@ export default function Login({
                                     autoFocus
                                     tabIndex={1}
                                     autoComplete="username"
-                                    placeholder={t('auth.username')}
+                                    placeholder="Username"
                                 />
                                 <InputError message={errors.username} />
                             </div>
 
                             <div className="grid gap-2">
                                 <div className="flex items-center">
-                                    <Label htmlFor="password">
-                                        {t('auth.password')}
-                                    </Label>
+                                    <Label htmlFor="password">Password</Label>
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
                                             className="ml-auto text-sm"
                                             tabIndex={5}
                                         >
-                                            {t('auth.forgot_password')}
+                                            Forgot password?
                                         </TextLink>
                                     )}
                                 </div>
@@ -78,7 +71,7 @@ export default function Login({
                                     required
                                     tabIndex={2}
                                     autoComplete="current-password"
-                                    placeholder={t('auth.password')}
+                                    placeholder="Password"
                                 />
                                 <InputError message={errors.password} />
                             </div>
@@ -93,15 +86,15 @@ export default function Login({
                                 data-test="login-button"
                             >
                                 {processing && <Spinner />}
-                                {t('auth.login')}
+                                {'Log in'}
                             </Button>
                         </div>
 
                         {canRegister && (
                             <div className="text-center text-sm text-muted-foreground">
-                                {t('auth.no_account')}{' '}
+                                {"Don't have an account?"}{' '}
                                 <TextLink href={register()} tabIndex={5}>
-                                    {t('auth.sign_up')}
+                                    Sign up
                                 </TextLink>
                             </div>
                         )}

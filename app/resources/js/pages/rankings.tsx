@@ -16,7 +16,6 @@ import { AnimatedCounter } from '@/components/animated-counter';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTranslation } from '@/hooks/use-translation';
 import PublicLayout from '@/layouts/public-layout';
 import {
     convertHours,
@@ -73,11 +72,10 @@ function RankBadge({ rank }: { rank: number }) {
 }
 
 function KillsTable({ data }: { data: LeaderboardEntry[] }) {
-    const { t } = useTranslation();
     if (data.length === 0) {
         return (
             <p className="py-8 text-center text-sm text-muted-foreground">
-                {t('rankings.no_stats')}
+                No player stats recorded yet
             </p>
         );
     }
@@ -130,11 +128,10 @@ function SurvivalTable({
     hoursMode: HoursMode;
     dayLengthMinutes: number;
 }) {
-    const { t } = useTranslation();
     if (data.length === 0) {
         return (
             <p className="py-8 text-center text-sm text-muted-foreground">
-                {t('rankings.no_stats')}
+                No player stats recorded yet
             </p>
         );
     }
@@ -183,11 +180,10 @@ function SurvivalTable({
 }
 
 function DeathsTable({ data }: { data: DeathLeaderboardEntry[] }) {
-    const { t } = useTranslation();
     if (data.length === 0) {
         return (
             <p className="py-8 text-center text-sm text-muted-foreground">
-                {t('rankings.no_deaths')}
+                No deaths recorded yet
             </p>
         );
     }
@@ -234,11 +230,10 @@ function RatioTable({
     hoursMode?: HoursMode;
     dayLengthMinutes?: number;
 }) {
-    const { t } = useTranslation();
     if (data.length === 0) {
         return (
             <p className="py-8 text-center text-sm text-muted-foreground">
-                {t('rankings.no_ratio_data')}
+                No players with at least 1 death yet
             </p>
         );
     }
@@ -302,11 +297,10 @@ function WalletTable({
     data: WalletLeaderboardEntry[];
     field: 'total_spent' | 'balance';
 }) {
-    const { t } = useTranslation();
     if (data.length === 0) {
         return (
             <p className="py-8 text-center text-sm text-muted-foreground">
-                {t('rankings.no_wallet_data')}
+                No wallet data yet
             </p>
         );
     }
@@ -362,15 +356,15 @@ function LeaderboardSkeleton() {
     );
 }
 
-const tabs: { key: TabKey; labelKey: string; icon: typeof Skull }[] = [
-    { key: 'kills', labelKey: 'rankings.tab_kills', icon: Skull },
-    { key: 'survival', labelKey: 'rankings.tab_survival', icon: Clock },
-    { key: 'deaths', labelKey: 'rankings.tab_deaths', icon: Medal },
-    { key: 'kd', labelKey: 'rankings.tab_kd', icon: Crosshair },
-    { key: 'hd', labelKey: 'rankings.tab_hd', icon: Clock },
-    { key: 'pvpd', labelKey: 'rankings.tab_pvpd', icon: Swords },
-    { key: 'spent', labelKey: 'rankings.tab_spent', icon: ShoppingCart },
-    { key: 'balance', labelKey: 'rankings.tab_balance', icon: Coins },
+const tabs: { key: TabKey; label: string; icon: typeof Skull }[] = [
+    { key: 'kills', label: 'Zombie Kills', icon: Skull },
+    { key: 'survival', label: 'Hours Survived', icon: Clock },
+    { key: 'deaths', label: 'Deaths', icon: Medal },
+    { key: 'kd', label: 'Kills/Death', icon: Crosshair },
+    { key: 'hd', label: 'Hours/Death', icon: Clock },
+    { key: 'pvpd', label: 'PvP Kills/Death', icon: Swords },
+    { key: 'spent', label: 'Spent', icon: ShoppingCart },
+    { key: 'balance', label: 'Balance', icon: Coins },
 ];
 
 export default function Rankings({
@@ -389,7 +383,6 @@ export default function Rankings({
     const [hoursMode, setHoursMode] = useState<HoursMode>(() =>
         loadHoursMode(),
     );
-    const { t } = useTranslation();
 
     const changeHoursMode = (mode: HoursMode) => {
         setHoursMode(mode);
@@ -404,16 +397,16 @@ export default function Rankings({
 
     return (
         <>
-            <Head title={t('rankings.title')} />
+            <Head title="Rankings" />
             <PublicLayout>
                 <main className="mx-auto max-w-7xl px-4 py-8">
                     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
                         <h1 className="text-3xl font-bold tracking-tight">
-                            {t('rankings.title')}
+                            Rankings
                         </h1>
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">
-                                {t('rankings.time_unit_label')}
+                                Hours:
                             </span>
                             <div className="inline-flex overflow-hidden rounded-md border border-border text-xs">
                                 <button
@@ -424,9 +417,11 @@ export default function Rankings({
                                             ? 'bg-primary text-primary-foreground'
                                             : 'text-muted-foreground hover:text-foreground'
                                     }`}
-                                    title={t('rankings.hours_ingame_tooltip')}
+                                    title={
+                                        'Show hours as counted by Project Zomboid (accelerated in-game time)'
+                                    }
                                 >
-                                    {t('rankings.hours_ingame_short')}
+                                    In-game
                                 </button>
                                 <button
                                     type="button"
@@ -436,9 +431,11 @@ export default function Rankings({
                                             ? 'bg-primary text-primary-foreground'
                                             : 'text-muted-foreground hover:text-foreground'
                                     }`}
-                                    title={t('rankings.hours_real_tooltip')}
+                                    title={
+                                        'Show real elapsed time based on the configured day length'
+                                    }
                                 >
-                                    {t('rankings.hours_real_short')}
+                                    Real
                                 </button>
                             </div>
                         </div>
@@ -453,7 +450,7 @@ export default function Rankings({
                                 </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground">
-                                        {t('rankings.total_players')}
+                                        Total Players
                                     </p>
                                     <p className="text-2xl font-bold tabular-nums">
                                         <AnimatedCounter
@@ -470,7 +467,7 @@ export default function Rankings({
                                 </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground">
-                                        {t('rankings.zombie_kills')}
+                                        Zombie Kills
                                     </p>
                                     <p className="text-2xl font-bold tabular-nums">
                                         <AnimatedCounter
@@ -489,7 +486,7 @@ export default function Rankings({
                                 </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground">
-                                        {t('rankings.hours_played')}
+                                        Hours Played
                                     </p>
                                     <p className="text-2xl font-bold tabular-nums">
                                         <AnimatedCounter
@@ -508,7 +505,7 @@ export default function Rankings({
                                 </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground">
-                                        {t('rankings.deaths')}
+                                        Deaths
                                     </p>
                                     <p className="text-2xl font-bold tabular-nums">
                                         <AnimatedCounter
@@ -525,7 +522,7 @@ export default function Rankings({
                                 </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground">
-                                        {t('rankings.pvp_kills')}
+                                        PvP Kills
                                     </p>
                                     <p className="text-2xl font-bold tabular-nums">
                                         <AnimatedCounter
@@ -543,7 +540,7 @@ export default function Rankings({
                             <div className="flex items-center justify-between">
                                 <CardTitle className="flex items-center gap-2">
                                     <Trophy className="size-5" />
-                                    {t('rankings.leaderboards')}
+                                    Leaderboards
                                 </CardTitle>
                             </div>
                             <div className="flex gap-1 overflow-x-auto border-b border-border pt-2">
@@ -558,7 +555,7 @@ export default function Rankings({
                                         }`}
                                     >
                                         <tab.icon className="size-3.5" />
-                                        {t(tab.labelKey)}
+                                        {tab.label}
                                     </button>
                                 ))}
                             </div>

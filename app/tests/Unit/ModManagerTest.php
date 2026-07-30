@@ -606,6 +606,70 @@ it('flags pending_restart when a mod was removed since last server start', funct
         ->and($byId['3685323705']['status'])->toBe('pending_restart');
 });
 
+it('keeps a mod with no Workshop item active when it is in the applied snapshot', function () {
+    // A local mod (or one whose Workshop content isn't downloaded) resolves to
+    // workshop_id '' — comparing WorkshopItems would flag it pending forever.
+    $this->parser->write($this->iniPath, [
+        'Mods' => 'SuperSurvivors;LocalOnlyMod',
+        'WorkshopItems' => '2561774086',
+    ]);
+    file_put_contents(
+        $this->tempDir.'/Server/.mod_state_applied',
+        "Mods=SuperSurvivors;LocalOnlyMod\nWorkshopItems=2561774086\n"
+    );
+
+    $result = $this->manager->listWithStatus($this->iniPath, serverRunning: true, workshopContentPath: $this->workshopContentPath);
+
+    $byModId = collect($result['mods'])->keyBy('mod_id');
+    expect($byModId['LocalOnlyMod']['workshop_id'])->toBe('')
+        ->and($byModId['LocalOnlyMod']['status'])->toBe('active')
+        ->and($result['pending_restart'])->toBeFalse();
+});
+
+it('flags pending_restart when one bundled mod is removed and WorkshopItems is unchanged', function () {
+    // One Workshop item bundling two mods: removing one edits Mods= only, so a
+    // WorkshopItems comparison would report nothing pending.
+    seedWorkshopMod($this->workshopContentPath, '7777777777', 'BundleA');
+    seedWorkshopMod($this->workshopContentPath, '7777777777', 'BundleB');
+    $this->parser->write($this->iniPath, [
+        'Mods' => 'BundleA;BundleB;ZomboidManager',
+        'WorkshopItems' => '7777777777;3685323705',
+    ]);
+    // WorkshopItems is identical before and after the removal, so only the
+    // Mods= comparison can catch this.
+    file_put_contents(
+        $this->tempDir.'/Server/.mod_state_applied',
+        "Mods=BundleA;BundleB;ZomboidManager\nWorkshopItems=7777777777;3685323705\n"
+    );
+
+    $this->manager->remove($this->iniPath, '7777777777', modId: 'BundleB', workshopContentPath: $this->workshopContentPath);
+
+    $result = $this->manager->listWithStatus($this->iniPath, serverRunning: true, workshopContentPath: $this->workshopContentPath);
+
+    expect($result['pending_restart'])->toBeTrue()
+        ->and(collect($result['mods'])->pluck('mod_id'))->not->toContain('BundleB');
+});
+
+it('flags pending_restart when the load order changed since last server start', function () {
+    file_put_contents(
+        $this->tempDir.'/Server/.mod_state_applied',
+        "Mods=SuperSurvivors;Hydrocraft;ZomboidManager\nWorkshopItems=2561774086;2286126274;3685323705\n"
+    );
+
+    $this->manager->reorder($this->iniPath, [
+        ['workshop_id' => '2286126274', 'mod_id' => 'Hydrocraft'],
+        ['workshop_id' => '2561774086', 'mod_id' => 'SuperSurvivors'],
+        ['workshop_id' => '3685323705', 'mod_id' => 'ZomboidManager'],
+    ]);
+
+    $result = $this->manager->listWithStatus($this->iniPath, serverRunning: true, workshopContentPath: $this->workshopContentPath);
+
+    // Same set of mods, different order — every mod is loaded, but PZ needs a
+    // restart to pick up the new order.
+    expect($result['pending_restart'])->toBeTrue()
+        ->and(collect($result['mods'])->pluck('status')->all())->each->toBe('active');
+});
+
 it('falls back to active when applied snapshot is missing on running server', function () {
     $result = $this->manager->listWithStatus($this->iniPath, serverRunning: true, workshopContentPath: $this->workshopContentPath);
 
