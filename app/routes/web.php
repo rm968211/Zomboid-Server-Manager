@@ -80,7 +80,7 @@ Route::middleware(['auth', 'admin', 'throttle:admin'])->group(function () {
         Route::post('mods/import', [Admin\ModController::class, 'import'])->name('mods.import');
         Route::delete('mods/{workshopId}', [Admin\ModController::class, 'destroy'])->name('mods.destroy');
         Route::put('mods/order', [Admin\ModController::class, 'reorder'])->name('mods.reorder');
-        Route::put('mods/workshop-ids', [Admin\ModController::class, 'updateWorkshopIds'])->name('mods.workshop-ids');
+        Route::put('mods/mod-id', [Admin\ModController::class, 'updateModId'])->name('mods.mod-id');
 
         // Backups
         Route::get('backups', [Admin\BackupController::class, 'index'])->name('backups');
