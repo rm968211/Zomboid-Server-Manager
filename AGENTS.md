@@ -4,7 +4,7 @@
 
 The root `package.json` is the release-version source of truth. The publish
 workflow reads its `version` field and applies that version to both the
-`zomboid-manager` and `zomboid-server` Docker images.
+`zomboid-server-manager` and `zomboid-server` Docker images.
 
 Every pull request that changes either published image must include an
 appropriate semantic-version bump in the root `package.json`:

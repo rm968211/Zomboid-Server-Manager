@@ -1,6 +1,6 @@
 {
     "name": "zomboid-server-manager",
-    "version": "1.3.2",
+    "version": "2.0.0",
     "private": true,
-    "description": "Version source of truth — CI tags the zomboid-manager and zomboid-server images from the version field"
+    "description": "Version source of truth — CI tags the zomboid-server-manager and zomboid-server images from the version field"
 }
