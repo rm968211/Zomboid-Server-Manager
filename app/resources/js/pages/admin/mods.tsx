@@ -2410,9 +2410,7 @@ export default function Mods({
                         {lookup.status === 'bundle' ? (
                             <Button
                                 disabled={loading}
-                                onClick={() =>
-                                    installBundle(workshopId.trim())
-                                }
+                                onClick={() => installBundle(workshopId.trim())}
                                 data-testid="install-bundle-button"
                             >
                                 <Boxes className="mr-1.5 size-4" />

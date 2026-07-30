@@ -146,26 +146,28 @@ class ModController extends Controller
 
     /**
      * Replace every collection ID in a pasted list with the mods it contains,
-     * recording each one as a bundle. Non-collection IDs pass through as-is and
-     * order is preserved. Batched so a 100-ID paste is two Steam calls, not 200.
+     * recording each one as a bundle. Non-collection IDs pass through as-is,
+     * order and duplicates intact — callers report "skipped" against the length
+     * of this list, so silently collapsing repeats here would undercount it.
+     * Steam lookups are batched, so a 100-ID paste costs two calls, not 200.
      *
      * @param  list<string>  $workshopIds
      * @return list<string>
      */
     private function expandBundlesInList(array $workshopIds): array
     {
-        $ids = array_values(array_unique($workshopIds));
+        $unique = array_values(array_unique($workshopIds));
 
         try {
-            $details = $this->workshopClient->getDetailsMany($ids);
+            $details = $this->workshopClient->getDetailsMany($unique);
 
             $bundleIds = array_values(array_filter(
-                $ids,
+                $unique,
                 fn (string $id): bool => (bool) ($details[$id]['is_collection'] ?? false),
             ));
 
             if ($bundleIds === []) {
-                return $ids;
+                return array_values($workshopIds);
             }
 
             $children = $this->workshopClient->getCollectionChildrenMany($bundleIds);
@@ -174,12 +176,12 @@ class ModController extends Controller
             // the whole paste; collections can be re-added once it's back.
             Log::warning('Workshop collection expansion failed', ['exception' => $e]);
 
-            return $ids;
+            return array_values($workshopIds);
         }
 
         $expanded = [];
 
-        foreach ($ids as $id) {
+        foreach ($workshopIds as $id) {
             if (! in_array($id, $bundleIds, true)) {
                 $expanded[] = $id;
 
@@ -194,7 +196,7 @@ class ModController extends Controller
             $expanded = array_merge($expanded, $children[$id]);
         }
 
-        return array_values(array_unique($expanded));
+        return array_values($expanded);
     }
 
     /**
