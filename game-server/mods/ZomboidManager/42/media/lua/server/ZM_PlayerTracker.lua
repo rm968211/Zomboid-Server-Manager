@@ -3,24 +3,11 @@
 --
 
 local JSON = require("ZM_JSON")
+require("ZM_Utils")
 
 ZM_PlayerTracker = {}
 
 local POSITIONS_FILE = "players_live.json"
-
---- Get ISO 8601 timestamp
-local function getTimestamp()
-    if getGameTime then
-        local gt = getGameTime()
-        return string.format("%04d-%02d-%02dT%02d:%02d:%02d",
-            gt:getYear(), gt:getMonth() + 1, gt:getDay(),
-            gt:getHour(), gt:getMinutes(), 0)
-    end
-    local cal = Calendar.getInstance()
-    return string.format("%04d-%02d-%02dT%02d:%02d:%02d",
-        cal:get(Calendar.YEAR), cal:get(Calendar.MONTH) + 1, cal:get(Calendar.DAY_OF_MONTH),
-        cal:get(Calendar.HOUR_OF_DAY), cal:get(Calendar.MINUTE), cal:get(Calendar.SECOND))
-end
 
 --- Export positions of all online players
 function ZM_PlayerTracker.exportPositions()
@@ -45,8 +32,11 @@ function ZM_PlayerTracker.exportPositions()
         end
     end
 
+    -- Wall-clock, NOT getGameTime(): PHP compares this against the real clock to
+    -- decide whether positions are still fresh, and PZ's in-game calendar starts
+    -- in 1993, which reads as decades stale.
     local data = {
-        timestamp = getTimestamp(),
+        timestamp = ZM_Utils.getTimestamp(),
         players = players,
     }
 

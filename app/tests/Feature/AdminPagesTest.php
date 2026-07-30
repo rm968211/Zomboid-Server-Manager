@@ -646,12 +646,12 @@ function mockPlayersDbReader(array $players = []): void
     app()->instance(PlayersDbReader::class, $reader);
 }
 
-function mockPlayerPositionReader(?array $data = null): void
+function mockPlayerPositionReader(?array $data = null, ?bool $stale = null): void
 {
     $reader = Mockery::mock(PlayerPositionReader::class);
     $reader->shouldReceive('getLivePositions')->andReturn($data)->byDefault();
     $reader->shouldReceive('getPlayerPosition')->andReturn(null)->byDefault();
-    $reader->shouldReceive('isStale')->andReturn($data === null)->byDefault();
+    $reader->shouldReceive('isStale')->andReturn($stale ?? ($data === null))->byDefault();
 
     app()->instance(PlayerPositionReader::class, $reader);
 }
@@ -682,6 +682,50 @@ it('renders the player map page with merged data', function () {
         ->where('markers.1.username', 'Bob')
         ->where('markers.1.status', 'offline')
     );
+});
+
+it('flags stale live positions while players are online', function () {
+    mockPlayersDbReader([
+        ['username' => 'Alice', 'name' => 'Alice', 'x' => 100.0, 'y' => 200.0, 'z' => 0, 'is_dead' => false],
+    ]);
+    mockPlayerPositionReader([
+        'timestamp' => '2026-01-15T14:30:00',
+        'players' => [
+            ['username' => 'Alice', 'x' => 300.0, 'y' => 400.0, 'z' => 0, 'is_dead' => false],
+        ],
+    ], stale: true);
+
+    // Stale positions make OnlinePlayersReader skip the Lua bridge and fall
+    // through to RCON, which still reports Alice connected — that combination
+    // (online player, frozen position) is exactly what the banner is for.
+    $onlinePlayers = Mockery::mock(OnlinePlayersReader::class);
+    $onlinePlayers->shouldReceive('getOnlineUsernames')->andReturn(['Alice']);
+    $onlinePlayers->shouldReceive('getOnlinePlayers')->andReturn(['usernames' => ['Alice'], 'source' => 'rcon']);
+    app()->instance(OnlinePlayersReader::class, $onlinePlayers);
+
+    $this->actingAs(adminUser())->get('/admin/players/map')
+        ->assertInertia(fn ($page) => $page
+            ->where('positionsStale', true)
+            ->where('positionsUpdatedAt', '2026-01-15T14:30:00')
+            // Still plotted from the live file — it beats the players.db
+            // fallback, which is only written on save/logout.
+            ->where('markers.0.x', 300)
+        );
+});
+
+it('does not flag stale positions when nobody is online', function () {
+    mockPlayersDbReader([
+        ['username' => 'Alice', 'name' => 'Alice', 'x' => 100.0, 'y' => 200.0, 'z' => 0, 'is_dead' => false],
+    ]);
+    mockPlayerPositionReader(null);
+
+    $onlinePlayers = Mockery::mock(OnlinePlayersReader::class);
+    $onlinePlayers->shouldReceive('getOnlineUsernames')->andReturn([]);
+    $onlinePlayers->shouldReceive('getOnlinePlayers')->andReturn(['usernames' => [], 'source' => 'none']);
+    app()->instance(OnlinePlayersReader::class, $onlinePlayers);
+
+    $this->actingAs(adminUser())->get('/admin/players/map')
+        ->assertInertia(fn ($page) => $page->where('positionsStale', false));
 });
 
 it('renders player map with empty data', function () {
