@@ -42,8 +42,8 @@ sudo dnf install make
 ## Step 1 — Clone the repo
 
 ```bash
-git clone https://github.com/YOUR_ORG/zomboid-manager.git
-cd zomboid-manager
+git clone https://github.com/rm968211/Zomboid-Server-Manager.git
+cd Zomboid-Server-Manager
 ```
 
 ## Step 2 — Configure and start
