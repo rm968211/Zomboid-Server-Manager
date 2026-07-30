@@ -274,8 +274,10 @@ it('does not error when setting access level for an unregistered player', functi
 });
 
 it('can teleport an online player to map coordinates', function () {
+    // `teleportto`, not `teleport` — PZ's `teleport` only accepts player names
+    // and answers a coordinate argument with its usage text.
     mockAdminRcon([
-        'teleport "Alice" 10500,9800,0' => '',
+        'teleportto "Alice" 10500,9800,0' => '',
     ]);
 
     $response = $this->actingAs(adminUser())
@@ -288,11 +290,42 @@ it('can teleport an online player to map coordinates', function () {
     $response->assertOk()
         ->assertJson([
             'message' => 'Teleported Alice',
-            'command' => 'teleport "Alice" 10500,9800,0',
+            'command' => 'teleportto "Alice" 10500,9800,0',
         ]);
 
     $this->assertDatabaseHas('audit_logs', [
         'action' => 'player.teleport',
+        'target' => 'Alice',
+    ]);
+});
+
+it('can teleport an online player to another player', function () {
+    mockAdminRcon([
+        'teleport "Alice" "Bob"' => '',
+    ]);
+
+    $this->actingAs(adminUser())
+        ->postJson('/admin/players/Alice/teleport', ['target_player' => 'Bob'])
+        ->assertOk()
+        ->assertJson(['command' => 'teleport "Alice" "Bob"']);
+});
+
+it('reports a refused teleport instead of claiming success', function () {
+    mockAdminRcon([
+        'teleportto "Alice" 10500,9800,0' => "Can't find player Alice",
+    ]);
+
+    $this->actingAs(adminUser())
+        ->postJson('/admin/players/Alice/teleport', [
+            'x' => 10500,
+            'y' => 9800,
+            'z' => 0,
+        ])
+        ->assertStatus(409)
+        ->assertJson(['error' => "Can't find player Alice"]);
+
+    $this->assertDatabaseHas('audit_logs', [
+        'action' => 'player.teleport.failed',
         'target' => 'Alice',
     ]);
 });

@@ -241,7 +241,7 @@ it('teleports to coordinates', function () {
     $rcon = Mockery::mock(RconClient::class);
     $rcon->shouldReceive('connect')->once();
     $rcon->shouldReceive('command')
-        ->with('teleport "Player1" 100,200,0')
+        ->with('teleportto "Player1" 100,200,0')
         ->once()
         ->andReturn('');
     app()->instance(RconClient::class, $rcon);
@@ -257,7 +257,7 @@ it('teleports to another player', function () {
     $rcon = Mockery::mock(RconClient::class);
     $rcon->shouldReceive('connect')->once();
     $rcon->shouldReceive('command')
-        ->with('teleportto "Player1" "Player2"')
+        ->with('teleport "Player1" "Player2"')
         ->once()
         ->andReturn('');
     app()->instance(RconClient::class, $rcon);
