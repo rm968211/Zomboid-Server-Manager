@@ -34,6 +34,14 @@ class PlayerMapController extends Controller
         // Use OnlinePlayersReader for reliable online detection (log → RCON → Lua)
         $onlineUsernames = $this->onlinePlayers->getOnlineUsernames();
 
+        // Positions keep being used when stale — the last known spot beats the
+        // players.db fallback, which is only written on save/logout and is
+        // usually older still. The UI is told instead, so an out-of-date dot
+        // isn't presented as current. PZ pauses the world with nobody online,
+        // which stops the export tick, so staleness is normal after a quiet
+        // spell and only worth flagging while someone is actually connected.
+        $positionsStale = $this->positionReader->isStale();
+
         $livePositions = [];
 
         if ($liveData !== null && ! empty($liveData['players'])) {
@@ -110,6 +118,8 @@ class PlayerMapController extends Controller
             'markers' => $markers,
             'onlineCount' => $resolved['player_count'],
             'serverStatus' => $resolved['game_status'],
+            'positionsStale' => $positionsStale && $onlineUsernames !== [],
+            'positionsUpdatedAt' => $liveData['timestamp'] ?? null,
             'mapConfig' => $mapConfig,
             'hasTiles' => $mapConfig['tileUrl'] !== null,
             'usingLocalTiles' => $mapConfig['source'] === 'local',

@@ -42,6 +42,8 @@ type Props = {
     tileGenerationStage: string | null;
     tileGenerationStartedAt: string | null;
     safeZones: SafeZone[];
+    positionsStale: boolean;
+    positionsUpdatedAt: string | null;
 };
 
 const statusDotColor: Record<PlayerMarker['status'], string> = {
@@ -71,6 +73,8 @@ export default function PlayerMap({
     tileGenerationStage,
     tileGenerationStartedAt,
     safeZones,
+    positionsStale = false,
+    positionsUpdatedAt = null,
 }: Props) {
     const { t } = useTranslation();
     usePoll(5000, {
@@ -85,6 +89,8 @@ export default function PlayerMap({
             'tileGenerationStage',
             'tileGenerationStartedAt',
             'safeZones',
+            'positionsStale',
+            'positionsUpdatedAt',
         ],
     });
 
@@ -272,6 +278,21 @@ export default function PlayerMap({
                     <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
                         <AlertTriangle className="size-4 shrink-0" />
                         {t('admin.player_map.server_offline')}
+                    </div>
+                )}
+                {positionsStale && (
+                    <div
+                        className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400"
+                        data-testid="positions-stale-banner"
+                    >
+                        <AlertTriangle className="size-4 shrink-0" />
+                        {positionsUpdatedAt
+                            ? t('admin.player_map.positions_stale_since', {
+                                  time: new Date(
+                                      positionsUpdatedAt,
+                                  ).toLocaleString(),
+                              })
+                            : t('admin.player_map.positions_stale')}
                     </div>
                 )}
                 {serverStatus === 'starting' && (
