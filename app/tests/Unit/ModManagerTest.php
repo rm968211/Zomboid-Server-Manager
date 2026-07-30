@@ -370,8 +370,11 @@ it('writes mod state file when reordering mods', function () {
     expect(file_exists($stateFile))->toBeTrue();
 
     $content = file_get_contents($stateFile);
+    // Only Mods= is reordered. WorkshopItems= keeps its existing order, because
+    // rebuilding it from the per-mod rows pairs the two lists by position —
+    // which duplicates any item providing two enabled mods.
     expect($content)->toContain('Mods=Hydrocraft;SuperSurvivors;ZomboidManager')
-        ->and($content)->toContain('WorkshopItems=2286126274;2561774086;3685323705');
+        ->and($content)->toContain('WorkshopItems=2561774086;2286126274;3685323705');
 });
 
 it('does not write mod state file when adding duplicate mod', function () {
