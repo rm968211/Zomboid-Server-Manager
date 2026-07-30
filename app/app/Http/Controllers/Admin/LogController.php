@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\DockerManager;
+use App\Services\LogFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,6 +14,7 @@ class LogController extends Controller
 {
     public function __construct(
         private readonly DockerManager $docker,
+        private readonly LogFormatter $formatter,
     ) {}
 
     public function index(): Response
@@ -20,7 +22,7 @@ class LogController extends Controller
         $lines = [];
 
         try {
-            $lines = $this->docker->getContainerLogs(100);
+            $lines = $this->formatter->format($this->docker->getContainerLogs(100));
         } catch (\Throwable) {
             // Container not available
         }
@@ -35,7 +37,7 @@ class LogController extends Controller
         $tail = min((int) $request->query('tail', 100), 500);
 
         try {
-            $lines = $this->docker->getContainerLogs($tail);
+            $lines = $this->formatter->format($this->docker->getContainerLogs($tail));
         } catch (\Throwable $e) {
             return response()->json([
                 'error' => 'Failed to fetch logs: '.$e->getMessage(),

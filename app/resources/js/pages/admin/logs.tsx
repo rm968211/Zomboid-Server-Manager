@@ -18,9 +18,37 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
+import { formatDateTime, formatTime } from '@/lib/dates';
 import type { BreadcrumbItem } from '@/types';
 
-export default function Logs({ lines: initialLines }: { lines: string[] }) {
+/** Shape produced by App\Services\LogFormatter. */
+type LogEntry = {
+    time: string | null;
+    level: 'error' | 'warn' | 'log' | 'info';
+    source: string | null;
+    message: string;
+    details: string[];
+};
+
+const LEVEL_STYLES: Record<
+    LogEntry['level'],
+    { label: string; text: string; border: string }
+> = {
+    error: {
+        label: 'ERROR',
+        text: 'text-red-400',
+        border: 'border-red-500/60',
+    },
+    warn: {
+        label: 'WARN',
+        text: 'text-amber-400',
+        border: 'border-amber-500/50',
+    },
+    log: { label: 'LOG', text: 'text-zinc-500', border: 'border-transparent' },
+    info: { label: '', text: 'text-zinc-500', border: 'border-transparent' },
+};
+
+export default function Logs({ lines: initialLines }: { lines: LogEntry[] }) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Server Logs', href: '/admin/logs' },
@@ -134,7 +162,7 @@ export default function Logs({ lines: initialLines }: { lines: string[] }) {
                                 Container Output
                             </CardTitle>
                             <CardDescription>
-                                {`${String(lines.length)} lines`}
+                                {`${String(lines.length)} entries`}
                             </CardDescription>
                         </div>
                         {autoRefresh && (
@@ -150,17 +178,62 @@ export default function Logs({ lines: initialLines }: { lines: string[] }) {
                             className="max-h-[70vh] min-h-[500px] overflow-auto rounded-lg bg-zinc-950 p-4 font-mono text-xs leading-relaxed"
                         >
                             {lines.length > 0 ? (
-                                lines.map((line, i) => (
-                                    <div
-                                        key={i}
-                                        className="text-zinc-300 hover:bg-zinc-900/50"
-                                    >
-                                        <span className="mr-3 text-zinc-600 select-none">
-                                            {i + 1}
-                                        </span>
-                                        {line}
-                                    </div>
-                                ))
+                                lines.map((entry, i) => {
+                                    const style =
+                                        LEVEL_STYLES[entry.level] ??
+                                        LEVEL_STYLES.info;
+
+                                    return (
+                                        <div
+                                            key={i}
+                                            className={`border-l-2 py-0.5 pl-2 hover:bg-zinc-900/50 ${style.border}`}
+                                        >
+                                            <div className="flex gap-3">
+                                                <span
+                                                    className="w-[62px] shrink-0 text-zinc-600 tabular-nums select-none"
+                                                    title={
+                                                        entry.time
+                                                            ? formatDateTime(
+                                                                  entry.time,
+                                                              )
+                                                            : undefined
+                                                    }
+                                                >
+                                                    {entry.time
+                                                        ? formatTime(
+                                                              new Date(
+                                                                  entry.time,
+                                                              ),
+                                                          )
+                                                        : ''}
+                                                </span>
+                                                <span
+                                                    className={`w-11 shrink-0 font-semibold ${style.text}`}
+                                                >
+                                                    {style.label}
+                                                </span>
+                                                <span className="w-20 shrink-0 truncate text-cyan-400/70">
+                                                    {entry.source ?? ''}
+                                                </span>
+                                                <span className="min-w-0 flex-1 break-words whitespace-pre-wrap text-zinc-300">
+                                                    {entry.message}
+                                                </span>
+                                            </div>
+                                            {entry.details.length > 0 && (
+                                                <details className="ml-[122px]">
+                                                    <summary className="cursor-pointer text-zinc-600 select-none hover:text-zinc-400">
+                                                        {`${String(entry.details.length)} more lines`}
+                                                    </summary>
+                                                    <pre className="overflow-x-auto py-1 text-zinc-500">
+                                                        {entry.details.join(
+                                                            '\n',
+                                                        )}
+                                                    </pre>
+                                                </details>
+                                            )}
+                                        </div>
+                                    );
+                                })
                             ) : (
                                 <p className="text-zinc-500">
                                     No log output available
