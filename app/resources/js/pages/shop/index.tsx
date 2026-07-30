@@ -35,7 +35,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useTranslation } from '@/hooks/use-translation';
 import PublicLayout from '@/layouts/public-layout';
 import { fetchAction } from '@/lib/fetch-action';
 import type {
@@ -267,7 +266,6 @@ export default function ShopIndex({
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const purchasePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const { t } = useTranslation();
 
     // ── Derived ──────────────────────────────────────────────────────
     const filteredItems = useMemo(() => {
@@ -401,16 +399,16 @@ export default function ShopIndex({
             if (data.is_complete) {
                 setPendingPurchaseId(null);
                 if (data.delivery_status === 'delivered')
-                    toast.success(t('shop.items_delivered'));
+                    toast.success('Items delivered and payment confirmed!');
                 else if (data.delivery_status === 'failed')
-                    toast.error(t('shop.delivery_failed'));
-                else toast.warning(t('shop.delivery_partial'));
+                    toast.error('Delivery failed — no payment was charged.');
+                else toast.warning('Some items could not be delivered.');
                 router.reload();
             }
         } catch {
             /* ignore */
         }
-    }, [pendingPurchaseId, t]);
+    }, [pendingPurchaseId]);
 
     useEffect(() => {
         if (!pendingPurchaseId) {
@@ -442,10 +440,7 @@ export default function ShopIndex({
             `/shop/${buyItem.slug}/purchase`,
             {
                 data: { quantity, promotion_code: promoCode || undefined },
-                successMessage: t('shop.delivering_item', {
-                    count: String(quantity),
-                    name: buyItem.name,
-                }),
+                successMessage: `Delivering ${String(quantity)} x ${buyItem.name}...`,
             },
         );
         setLoading(false);
@@ -467,9 +462,7 @@ export default function ShopIndex({
             `/shop/bundle/${buyBundle.slug}/purchase`,
             {
                 data: { promotion_code: promoCode || undefined },
-                successMessage: t('shop.delivering_bundle', {
-                    name: buyBundle.name,
-                }),
+                successMessage: `Delivering ${buyBundle.name}...`,
             },
         );
         setLoading(false);
@@ -514,14 +507,14 @@ export default function ShopIndex({
             });
             const json = await res.json().catch(() => ({}));
             if (res.ok) {
-                toast.success(t('shop.deposit_request_sent'));
+                toast.success('Deposit request sent! Stay online in-game.');
                 setPendingDeposit(true);
                 setLastDepositResult(null);
             } else if (res.status === 429) {
                 startCooldown(
                     parseInt(res.headers.get('Retry-After') || '60', 10),
                 );
-                setDepositError(t('shop.too_many_requests'));
+                setDepositError('Too many deposit requests. Please wait.');
             } else {
                 setDepositError(
                     json.error ||
@@ -530,7 +523,7 @@ export default function ShopIndex({
                 );
             }
         } catch {
-            setDepositError(t('shop.network_error'));
+            setDepositError('Network error — could not reach the server');
         }
         setDepositLoading(false);
     }
@@ -545,16 +538,16 @@ export default function ShopIndex({
 
     return (
         <PublicLayout>
-            <Head title={t('shop.title')} />
+            <Head title="Shop" />
             <div className="mx-auto max-w-7xl space-y-6 p-4 lg:p-6">
                 {/* Header */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">
-                            {t('shop.title')}
+                            Shop
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            {t('shop.description')}
+                            Browse and purchase items for your character
                         </p>
                     </div>
                     {balance !== null && (
@@ -567,11 +560,9 @@ export default function ShopIndex({
                                 {availableBalance !== null &&
                                     availableBalance < balance && (
                                         <span className="text-xs text-muted-foreground tabular-nums">
-                                            {t('shop.available', {
-                                                count: String(
-                                                    coin(availableBalance),
-                                                ),
-                                            })}
+                                            {`${String(
+                                                coin(availableBalance),
+                                            )} available`}
                                         </span>
                                     )}
                             </div>
@@ -586,23 +577,33 @@ export default function ShopIndex({
                     <CardHeader>
                         <div className="flex items-center gap-2">
                             <ArrowDownToLine className="size-5 text-green-600 dark:text-green-400" />
-                            <CardTitle>{t('shop.deposit_title')}</CardTitle>
+                            <CardTitle>{'Deposit In-Game Money'}</CardTitle>
                         </div>
                         <CardDescription>
-                            {t('shop.deposit_description')}
+                            {
+                                'Convert Money and MoneyBundle items from your inventory into shop coins'
+                            }
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div className="space-y-2">
                                 <p className="text-sm font-medium">
-                                    {t('shop.how_it_works')}
+                                    How It Works
                                 </p>
                                 <ol className="space-y-1 text-sm text-muted-foreground">
-                                    <li>{t('shop.deposit_step_1')}</li>
-                                    <li>{t('shop.deposit_step_2')}</li>
-                                    <li>{t('shop.deposit_step_3')}</li>
-                                    <li>{t('shop.deposit_step_4')}</li>
+                                    <li>1. Make sure you are online in-game</li>
+                                    <li>{'2. Click "Deposit" below'}</li>
+                                    <li>
+                                        {
+                                            '3. Within ~15 seconds, all money items are removed from your inventory'
+                                        }
+                                    </li>
+                                    <li>
+                                        {
+                                            '4. Your wallet is credited automatically'
+                                        }
+                                    </li>
                                 </ol>
                                 <div className="flex gap-3 pt-1">
                                     <Badge
@@ -610,14 +611,14 @@ export default function ShopIndex({
                                         className="text-xs"
                                     >
                                         <Coins className="mr-1 size-3 text-amber-500" />
-                                        {t('shop.money_rate')}
+                                        Money = 1 coin
                                     </Badge>
                                     <Badge
                                         variant="outline"
                                         className="text-xs"
                                     >
                                         <Coins className="mr-1 size-3 text-amber-500" />
-                                        {t('shop.bundle_rate')}
+                                        MoneyBundle = 100 coins
                                     </Badge>
                                 </div>
                             </div>
@@ -625,7 +626,7 @@ export default function ShopIndex({
                                 {!isAuthenticated ? (
                                     <>
                                         <p className="text-center text-sm text-muted-foreground">
-                                            {t('shop.login_to_deposit')}
+                                            Log in to deposit money
                                         </p>
                                         <Button
                                             size="sm"
@@ -635,21 +636,25 @@ export default function ShopIndex({
                                                 )
                                             }
                                         >
-                                            {t('auth.login')}
+                                            Log in
                                         </Button>
                                     </>
                                 ) : !hasPzAccount ? (
                                     <p className="text-center text-sm text-muted-foreground">
-                                        {t('shop.link_pz_account')}
+                                        {
+                                            'Link your PZ account first via the whitelist to use deposits'
+                                        }
                                     </p>
                                 ) : pendingDeposit ? (
                                     <>
                                         <Loader2 className="size-6 animate-spin text-amber-500" />
                                         <p className="text-sm font-medium">
-                                            {t('shop.deposit_in_progress')}
+                                            Deposit in progress...
                                         </p>
                                         <p className="text-center text-xs text-muted-foreground">
-                                            {t('shop.stay_online')}
+                                            {
+                                                'Stay online in-game. Your money will be collected shortly.'
+                                            }
                                         </p>
                                     </>
                                 ) : (
@@ -668,11 +673,8 @@ export default function ShopIndex({
                                             <ArrowDownToLine className="mr-1.5 size-4" />
                                         )}
                                         {depositCooldown > 0
-                                            ? t('shop.wait_seconds', {
-                                                  seconds:
-                                                      String(depositCooldown),
-                                              })
-                                            : t('shop.deposit_money')}
+                                            ? `Wait ${String(depositCooldown)} s`
+                                            : 'Deposit Money'}
                                     </Button>
                                 )}
                                 {depositError && !pendingDeposit && (
@@ -706,20 +708,16 @@ export default function ShopIndex({
                                         <span className="flex-1">
                                             {lastDepositResult.status ===
                                             'success'
-                                                ? t('shop.deposit_success', {
-                                                      coins: String(
-                                                          lastDepositResult.total_coins,
-                                                      ),
-                                                      money: String(
-                                                          lastDepositResult.money_count,
-                                                      ),
-                                                      bundles: String(
-                                                          lastDepositResult.bundle_count ??
-                                                              0,
-                                                      ),
-                                                  })
+                                                ? `Deposited ${String(
+                                                      lastDepositResult.total_coins,
+                                                  )} coins (${String(
+                                                      lastDepositResult.money_count,
+                                                  )} Money + ${String(
+                                                      lastDepositResult.bundle_count ??
+                                                          0,
+                                                  )} MoneyBundle)`
                                                 : lastDepositResult.message ||
-                                                  t('shop.deposit_failed')}
+                                                  'Deposit failed'}
                                         </span>
                                         <button
                                             type="button"
@@ -742,10 +740,12 @@ export default function ShopIndex({
                         <Loader2 className="size-5 animate-spin text-blue-500" />
                         <div>
                             <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                                {t('shop.delivering_items')}
+                                Delivering items...
                             </p>
                             <p className="text-xs text-blue-600 dark:text-blue-400">
-                                {t('shop.payment_on_delivery')}
+                                {
+                                    'Payment will be charged once delivery is confirmed.'
+                                }
                             </p>
                         </div>
                     </div>
@@ -757,7 +757,7 @@ export default function ShopIndex({
                         <CardHeader>
                             <div className="flex items-center gap-2">
                                 <Star className="size-5 text-amber-500" />
-                                <CardTitle>{t('shop.featured')}</CardTitle>
+                                <CardTitle>{'Featured'}</CardTitle>
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -833,7 +833,7 @@ export default function ShopIndex({
                             size="sm"
                             onClick={() => setActiveCategory(null)}
                         >
-                            {t('shop.all')}
+                            All
                         </Button>
                         {categories.map((cat) => (
                             <Button
@@ -853,7 +853,7 @@ export default function ShopIndex({
                     <div className="relative">
                         <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
                         <Input
-                            placeholder={t('shop.search_items')}
+                            placeholder="Search items..."
                             value={filter}
                             onChange={(e) => setFilter(e.target.value)}
                             className="pl-9 sm:w-[250px]"
@@ -892,9 +892,7 @@ export default function ShopIndex({
                             <CoinPrice amount={coin(item.price)} />
                             {item.quantity > 1 && (
                                 <span className="text-xs text-muted-foreground">
-                                    {t('shop.per_purchase', {
-                                        count: String(item.quantity),
-                                    })}
+                                    {`x${String(item.quantity)} per purchase`}
                                 </span>
                             )}
                             {item.stock !== null && item.stock <= 5 && (
@@ -903,10 +901,8 @@ export default function ShopIndex({
                                     className="text-xs"
                                 >
                                     {item.stock === 0
-                                        ? t('shop.out_of_stock')
-                                        : t('shop.only_left', {
-                                              count: String(item.stock),
-                                          })}
+                                        ? 'Out of stock'
+                                        : `Only ${String(item.stock)} left`}
                                 </Badge>
                             )}
                         </button>
@@ -914,7 +910,7 @@ export default function ShopIndex({
                 </div>
                 {filteredItems.length === 0 && (
                     <p className="py-12 text-center text-muted-foreground">
-                        {t('shop.no_items_found')}
+                        No items found.
                     </p>
                 )}
 
@@ -924,10 +920,10 @@ export default function ShopIndex({
                         <CardHeader>
                             <div className="flex items-center gap-2">
                                 <Package className="size-5" />
-                                <CardTitle>{t('shop.bundles')}</CardTitle>
+                                <CardTitle>{'Bundles'}</CardTitle>
                             </div>
                             <CardDescription>
-                                {t('shop.save_with_bundles')}
+                                Save with item bundles
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -977,11 +973,9 @@ export default function ShopIndex({
                                                     items={bundle.items}
                                                 />
                                                 <span className="text-xs text-muted-foreground">
-                                                    {t('shop.items_count', {
-                                                        count: String(
-                                                            bundle.items.length,
-                                                        ),
-                                                    })}
+                                                    {`${String(
+                                                        bundle.items.length,
+                                                    )} items`}
                                                 </span>
                                             </div>
                                         </button>
@@ -1006,9 +1000,9 @@ export default function ShopIndex({
             >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('shop.purchase_item')}</DialogTitle>
+                        <DialogTitle>{'Purchase Item'}</DialogTitle>
                         <DialogDescription>
-                            {t('shop.confirm_purchase')}
+                            Confirm your purchase.
                         </DialogDescription>
                     </DialogHeader>
                     {buyItem && (
@@ -1031,15 +1025,13 @@ export default function ShopIndex({
                                             amount={coin(buyItem.price)}
                                             size="sm"
                                         />{' '}
-                                        {t('shop.each')}{' '}
+                                        {'each'}{' '}
                                         {buyItem.quantity > 1 && (
                                             <span>
                                                 ·{' '}
-                                                {t('shop.items_per_unit', {
-                                                    count: String(
-                                                        buyItem.quantity,
-                                                    ),
-                                                })}
+                                                {`x${String(
+                                                    buyItem.quantity,
+                                                )} items per unit`}
                                             </span>
                                         )}
                                     </p>
@@ -1047,7 +1039,7 @@ export default function ShopIndex({
                             </div>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label>{t('shop.quantity')}</Label>
+                                    <Label>{'Quantity'}</Label>
                                     <Input
                                         type="number"
                                         min={1}
@@ -1065,9 +1057,9 @@ export default function ShopIndex({
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>{t('shop.promo_code')}</Label>
+                                    <Label>{'Promo Code'}</Label>
                                     <Input
-                                        placeholder={t('shop.optional')}
+                                        placeholder="Optional"
                                         value={promoCode}
                                         onChange={(e) =>
                                             setPromoCode(
@@ -1079,19 +1071,17 @@ export default function ShopIndex({
                             </div>
                             <div className="flex items-center justify-between rounded-md bg-muted p-3">
                                 <span className="text-sm font-medium">
-                                    {t('shop.total')}
+                                    Total
                                 </span>
                                 <CoinPrice amount={itemTotal} size="lg" />
                             </div>
                             {!canAffordItem && (
                                 <p className="text-sm text-destructive">
-                                    {t('shop.insufficient_balance', {
-                                        amount: String(
-                                            itemTotal - coin(availableBalance!),
-                                        ),
-                                    })}
+                                    {`Insufficient balance. You need ${String(
+                                        itemTotal - coin(availableBalance!),
+                                    )} more.`}
                                     {availableBalance! < (balance ?? 0) &&
-                                        ` ${t('shop.pending_deliveries_note')}`}
+                                        ` ${'(some balance is held for pending deliveries)'}`}
                                 </p>
                             )}
                         </div>
@@ -1101,7 +1091,7 @@ export default function ShopIndex({
                             variant="outline"
                             onClick={() => setBuyItem(null)}
                         >
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             disabled={
@@ -1113,7 +1103,7 @@ export default function ShopIndex({
                             onClick={handleBuyItem}
                         >
                             <ShoppingBag className="mr-1.5 size-4" />
-                            {t('shop.buy_now')}
+                            Buy Now
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -1131,9 +1121,9 @@ export default function ShopIndex({
             >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('shop.purchase_bundle')}</DialogTitle>
+                        <DialogTitle>{'Purchase Bundle'}</DialogTitle>
                         <DialogDescription>
-                            {t('shop.confirm_bundle')}
+                            Confirm your bundle purchase.
                         </DialogDescription>
                     </DialogHeader>
                     {buyBundle &&
@@ -1160,7 +1150,7 @@ export default function ShopIndex({
                                     </div>
                                     <div className="space-y-1.5">
                                         <Label className="text-sm">
-                                            {t('shop.includes')}
+                                            Includes:
                                         </Label>
                                         {buyBundle.items.map((item) => (
                                             <div
@@ -1199,9 +1189,9 @@ export default function ShopIndex({
                                         ))}
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>{t('shop.promo_code')}</Label>
+                                        <Label>{'Promo Code'}</Label>
                                         <Input
-                                            placeholder={t('shop.optional')}
+                                            placeholder="Optional"
                                             value={promoCode}
                                             onChange={(e) =>
                                                 setPromoCode(
@@ -1215,7 +1205,7 @@ export default function ShopIndex({
                                             <>
                                                 <div className="flex justify-between">
                                                     <span className="text-muted-foreground">
-                                                        {t('shop.items_total')}
+                                                        Items total:
                                                     </span>
                                                     <span className="tabular-nums">
                                                         {total}
@@ -1223,15 +1213,9 @@ export default function ShopIndex({
                                                 </div>
                                                 <div className="flex justify-between text-green-600 dark:text-green-400">
                                                     <span>
-                                                        {t(
-                                                            'shop.bundle_discount',
-                                                            {
-                                                                percent:
-                                                                    String(
-                                                                        discount,
-                                                                    ),
-                                                            },
-                                                        )}
+                                                        {`Bundle discount (${String(
+                                                            discount,
+                                                        )}%):`}
                                                         :
                                                     </span>
                                                     <span className="tabular-nums">
@@ -1243,7 +1227,7 @@ export default function ShopIndex({
                                         <div
                                             className={`flex items-center justify-between ${discount > 0 ? 'border-t pt-1 font-medium' : 'font-medium'}`}
                                         >
-                                            <span>{t('shop.total')}</span>
+                                            <span>{'Total'}</span>
                                             <CoinPrice
                                                 amount={coin(buyBundle.price)}
                                                 size="lg"
@@ -1252,15 +1236,13 @@ export default function ShopIndex({
                                     </div>
                                     {!canAffordBundle && (
                                         <p className="text-sm text-destructive">
-                                            {t('shop.insufficient_balance', {
-                                                amount: String(
-                                                    coin(buyBundle.price) -
-                                                        coin(availableBalance!),
-                                                ),
-                                            })}
+                                            {`Insufficient balance. You need ${String(
+                                                coin(buyBundle.price) -
+                                                    coin(availableBalance!),
+                                            )} more.`}
                                             {availableBalance! <
                                                 (balance ?? 0) &&
-                                                ` ${t('shop.pending_deliveries_note')}`}
+                                                ` ${'(some balance is held for pending deliveries)'}`}
                                         </p>
                                     )}
                                 </div>
@@ -1271,7 +1253,7 @@ export default function ShopIndex({
                             variant="outline"
                             onClick={() => setBuyBundle(null)}
                         >
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             disabled={
@@ -1283,7 +1265,7 @@ export default function ShopIndex({
                             onClick={handleBuyBundle}
                         >
                             <ShoppingBag className="mr-1.5 size-4" />
-                            {t('shop.buy_now')}
+                            Buy Now
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -44,7 +44,6 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useTableSort } from '@/hooks/use-table-sort';
-import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { formatDateTime } from '@/lib/dates';
 import { fetchAction } from '@/lib/fetch-action';
@@ -105,11 +104,9 @@ export default function SafeZones({
     mapConfig,
     hasTiles,
 }: Props) {
-    const { t } = useTranslation();
-
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: t('nav.dashboard'), href: '/dashboard' },
-        { title: t('admin.safe_zones.title'), href: '/admin/safe-zones' },
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Safe Zones', href: '/admin/safe-zones' },
     ];
 
     const [showAddDialog, setShowAddDialog] = useState(false);
@@ -169,8 +166,8 @@ export default function SafeZones({
             method: 'PATCH',
             data: { enabled: !config.enabled },
             successMessage: config.enabled
-                ? t('admin.safe_zones.toast_disabled')
-                : t('admin.safe_zones.toast_enabled'),
+                ? 'Safe zones disabled'
+                : 'Safe zones enabled',
         });
         setLoading(false);
         router.reload({ only: ['config'] });
@@ -284,7 +281,7 @@ export default function SafeZones({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={t('admin.safe_zones.title')} />
+            <Head title="Safe Zones" />
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4 lg:p-6">
                 {/* Map */}
                 <Card>
@@ -293,10 +290,10 @@ export default function SafeZones({
                             <div>
                                 <CardTitle className="flex items-center gap-2">
                                     <MapPin className="size-5" />
-                                    {t('admin.safe_zones.zone_map')}
+                                    Zone Map
                                 </CardTitle>
                                 <CardDescription>
-                                    {t('admin.safe_zones.zone_map_description')}
+                                    View and draw safe zones on the map
                                 </CardDescription>
                             </div>
                             <div className="flex items-center gap-2">
@@ -310,14 +307,12 @@ export default function SafeZones({
                                     {drawingMode ? (
                                         <>
                                             <X className="mr-1.5 size-3.5" />
-                                            {t(
-                                                'admin.safe_zones.cancel_drawing',
-                                            )}
+                                            Cancel Drawing
                                         </>
                                     ) : (
                                         <>
                                             <Pencil className="mr-1.5 size-3.5" />
-                                            {t('admin.safe_zones.draw_zone')}
+                                            Draw Zone
                                         </>
                                     )}
                                 </Button>
@@ -337,7 +332,7 @@ export default function SafeZones({
                                     }}
                                 >
                                     <Plus className="mr-1.5 size-3.5" />
-                                    {t('admin.safe_zones.add_zone')}
+                                    Add Zone
                                 </Button>
                             </div>
                         </div>
@@ -346,7 +341,9 @@ export default function SafeZones({
                         {drawingMode && (
                             <div className="mb-3 flex items-center gap-2 rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-blue-400">
                                 <MousePointerClick className="size-4 shrink-0" />
-                                {t('admin.safe_zones.drawing_hint')}
+                                {
+                                    'Click and drag on the map to draw a safe zone rectangle. Press Escape to cancel.'
+                                }
                             </div>
                         )}
                         <div className="h-[400px] overflow-hidden rounded-md border">
@@ -370,17 +367,17 @@ export default function SafeZones({
                             <div>
                                 <CardTitle className="flex items-center gap-2">
                                     <ShieldAlert className="size-5" />
-                                    {t('admin.safe_zones.config_title')}
+                                    Safe Zone Configuration
                                 </CardTitle>
                                 <CardDescription>
-                                    {t('admin.safe_zones.config_description')}
+                                    {
+                                        'Define PvP-free zones where player damage is prevented'
+                                    }
                                 </CardDescription>
                             </div>
                             <div className="flex items-center gap-3">
                                 <Label htmlFor="sz-enabled" className="text-sm">
-                                    {config.enabled
-                                        ? t('common.enabled')
-                                        : t('common.disabled')}
+                                    {config.enabled ? 'Enabled' : 'Disabled'}
                                 </Label>
                                 <Switch
                                     id="sz-enabled"
@@ -394,9 +391,7 @@ export default function SafeZones({
                     <CardContent className="overflow-x-auto">
                         <div className="mb-4">
                             <span className="text-sm text-muted-foreground">
-                                {t('admin.safe_zones.zones_defined', {
-                                    count: String(config.zones.length),
-                                })}
+                                {`${String(config.zones.length)} zone(s) defined`}
                             </span>
                         </div>
 
@@ -405,18 +400,10 @@ export default function SafeZones({
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead className="w-4" />
-                                        <TableHead>
-                                            {t('admin.safe_zones.table_id')}
-                                        </TableHead>
-                                        <TableHead>
-                                            {t('admin.safe_zones.table_name')}
-                                        </TableHead>
-                                        <TableHead>
-                                            {t('admin.safe_zones.table_from')}
-                                        </TableHead>
-                                        <TableHead>
-                                            {t('admin.safe_zones.table_to')}
-                                        </TableHead>
+                                        <TableHead>{'ID'}</TableHead>
+                                        <TableHead>{'Name'}</TableHead>
+                                        <TableHead>{'From (X, Y)'}</TableHead>
+                                        <TableHead>{'To (X, Y)'}</TableHead>
                                         <TableHead className="w-16" />
                                     </TableRow>
                                 </TableHeader>
@@ -478,7 +465,9 @@ export default function SafeZones({
                             </Table>
                         ) : (
                             <p className="text-sm text-muted-foreground">
-                                {t('admin.safe_zones.no_zones')}
+                                {
+                                    'No safe zones defined. Draw a zone on the map or add one manually.'
+                                }
                             </p>
                         )}
                     </CardContent>
@@ -491,7 +480,7 @@ export default function SafeZones({
                             <div>
                                 <CardTitle className="flex items-center gap-2">
                                     <AlertTriangle className="size-5" />
-                                    {t('admin.safe_zones.violations_title')}
+                                    {'PvP Violations'}
                                     {pendingCount > 0 && (
                                         <Badge variant="destructive">
                                             {pendingCount}
@@ -499,20 +488,20 @@ export default function SafeZones({
                                     )}
                                 </CardTitle>
                                 <CardDescription>
-                                    {t(
-                                        'admin.safe_zones.violations_description',
-                                    )}
+                                    {
+                                        'Players who attacked others in safe zones (2+ strikes)'
+                                    }
                                 </CardDescription>
                             </div>
                             <div className="flex flex-wrap gap-1">
                                 {(
                                     [
-                                        'pending',
-                                        'actioned',
-                                        'dismissed',
-                                        'all',
+                                        ['pending', 'Pending'],
+                                        ['actioned', 'Actioned'],
+                                        ['dismissed', 'Dismissed'],
+                                        ['all', 'All'],
                                     ] as const
-                                ).map((s) => (
+                                ).map(([s, label]) => (
                                     <Button
                                         key={s}
                                         variant={
@@ -523,7 +512,7 @@ export default function SafeZones({
                                         size="sm"
                                         onClick={() => setStatusFilter(s)}
                                     >
-                                        {t(`admin.safe_zones.filter_${s}`)}
+                                        {label}
                                     </Button>
                                 ))}
                             </div>
@@ -537,42 +526,28 @@ export default function SafeZones({
                                         <TableHead>
                                             <SortableHeader
                                                 column="attacker"
-                                                label={t(
-                                                    'admin.safe_zones.table_attacker',
-                                                )}
+                                                label="Attacker"
                                                 sortKey={vSortKey}
                                                 sortDir={vSortDir}
                                                 onSort={toggleVSort}
                                             />
                                         </TableHead>
-                                        <TableHead>
-                                            {t('admin.safe_zones.table_victim')}
-                                        </TableHead>
-                                        <TableHead>
-                                            {t('admin.safe_zones.table_zone')}
-                                        </TableHead>
+                                        <TableHead>{'Victim'}</TableHead>
+                                        <TableHead>{'Zone'}</TableHead>
                                         <TableHead>
                                             <SortableHeader
                                                 column="strike_number"
-                                                label={t(
-                                                    'admin.safe_zones.table_strike',
-                                                )}
+                                                label="Strike #"
                                                 sortKey={vSortKey}
                                                 sortDir={vSortDir}
                                                 onSort={toggleVSort}
                                             />
                                         </TableHead>
-                                        <TableHead>
-                                            {t(
-                                                'admin.safe_zones.table_location',
-                                            )}
-                                        </TableHead>
+                                        <TableHead>{'Location'}</TableHead>
                                         <TableHead>
                                             <SortableHeader
                                                 column="occurred_at"
-                                                label={t(
-                                                    'admin.safe_zones.table_time',
-                                                )}
+                                                label="Time"
                                                 sortKey={vSortKey}
                                                 sortDir={vSortDir}
                                                 onSort={toggleVSort}
@@ -581,16 +556,14 @@ export default function SafeZones({
                                         <TableHead>
                                             <SortableHeader
                                                 column="status"
-                                                label={t(
-                                                    'admin.safe_zones.table_status',
-                                                )}
+                                                label="Status"
                                                 sortKey={vSortKey}
                                                 sortDir={vSortDir}
                                                 onSort={toggleVSort}
                                             />
                                         </TableHead>
                                         <TableHead className="text-right">
-                                            {t('common.actions')}
+                                            Actions
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -654,7 +627,7 @@ export default function SafeZones({
                                                                 )
                                                             }
                                                         >
-                                                            {t('common.kick')}
+                                                            Kick
                                                         </Button>
                                                         <Button
                                                             variant="destructive"
@@ -666,7 +639,7 @@ export default function SafeZones({
                                                                 )
                                                             }
                                                         >
-                                                            {t('common.ban')}
+                                                            Ban
                                                         </Button>
                                                         <Button
                                                             variant="ghost"
@@ -685,9 +658,7 @@ export default function SafeZones({
                                                             }}
                                                         >
                                                             <X className="mr-1 size-3" />
-                                                            {t(
-                                                                'common.dismiss',
-                                                            )}
+                                                            Dismiss
                                                         </Button>
                                                     </div>
                                                 )}
@@ -705,10 +676,8 @@ export default function SafeZones({
                         ) : (
                             <p className="text-sm text-muted-foreground">
                                 {statusFilter === 'all'
-                                    ? t('admin.safe_zones.no_violations_all')
-                                    : t('admin.safe_zones.no_violations', {
-                                          status: statusFilter,
-                                      })}
+                                    ? 'No violations found.'
+                                    : `No ${statusFilter} violations found.`}
                             </p>
                         )}
                     </CardContent>
@@ -719,24 +688,20 @@ export default function SafeZones({
             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>
-                            {t('admin.safe_zones.add_dialog_title')}
-                        </DialogTitle>
+                        <DialogTitle>{'Add Safe Zone'}</DialogTitle>
                         <DialogDescription>
-                            {t('admin.safe_zones.add_dialog_description')}
+                            {
+                                'Define a rectangular area where PvP damage is prevented.'
+                            }
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="zone-id">
-                                    {t('admin.safe_zones.zone_id_label')}
-                                </Label>
+                                <Label htmlFor="zone-id">{'Zone ID'}</Label>
                                 <Input
                                     id="zone-id"
-                                    placeholder={t(
-                                        'admin.safe_zones.zone_id_placeholder',
-                                    )}
+                                    placeholder="spawn_safezone"
                                     value={newZone.id}
                                     onChange={(e) =>
                                         setNewZone({
@@ -747,14 +712,10 @@ export default function SafeZones({
                                 />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="zone-name">
-                                    {t('admin.safe_zones.name_label')}
-                                </Label>
+                                <Label htmlFor="zone-name">{'Name'}</Label>
                                 <Input
                                     id="zone-name"
-                                    placeholder={t(
-                                        'admin.safe_zones.name_placeholder',
-                                    )}
+                                    placeholder="Spawn Safe Zone"
                                     value={newZone.name}
                                     onChange={(e) =>
                                         setNewZone({
@@ -767,9 +728,7 @@ export default function SafeZones({
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="zone-x1">
-                                    {t('admin.safe_zones.x1_label')}
-                                </Label>
+                                <Label htmlFor="zone-x1">{'X1 (West)'}</Label>
                                 <Input
                                     id="zone-x1"
                                     type="number"
@@ -784,9 +743,7 @@ export default function SafeZones({
                                 />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="zone-y1">
-                                    {t('admin.safe_zones.y1_label')}
-                                </Label>
+                                <Label htmlFor="zone-y1">{'Y1 (North)'}</Label>
                                 <Input
                                     id="zone-y1"
                                     type="number"
@@ -803,9 +760,7 @@ export default function SafeZones({
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="zone-x2">
-                                    {t('admin.safe_zones.x2_label')}
-                                </Label>
+                                <Label htmlFor="zone-x2">{'X2 (East)'}</Label>
                                 <Input
                                     id="zone-x2"
                                     type="number"
@@ -820,9 +775,7 @@ export default function SafeZones({
                                 />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="zone-y2">
-                                    {t('admin.safe_zones.y2_label')}
-                                </Label>
+                                <Label htmlFor="zone-y2">{'Y2 (South)'}</Label>
                                 <Input
                                     id="zone-y2"
                                     type="number"
@@ -844,7 +797,7 @@ export default function SafeZones({
                             onClick={() => setShowAddDialog(false)}
                             disabled={loading}
                         >
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             onClick={handleAddZone}
@@ -859,9 +812,7 @@ export default function SafeZones({
                             }
                         >
                             <Check className="mr-1.5 size-3.5" />
-                            {loading
-                                ? t('admin.safe_zones.adding')
-                                : t('admin.safe_zones.add_zone')}
+                            {loading ? 'Adding...' : 'Add Zone'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -874,13 +825,9 @@ export default function SafeZones({
             >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>
-                            {t('admin.safe_zones.delete_dialog_title')}
-                        </DialogTitle>
+                        <DialogTitle>{'Delete Safe Zone'}</DialogTitle>
                         <DialogDescription>
-                            {t('admin.safe_zones.delete_dialog_description', {
-                                name: showDeleteDialog?.name ?? '',
-                            })}
+                            {`Are you sure you want to delete the zone "${showDeleteDialog?.name ?? ''}"? PvP will no longer be prevented in this area.`}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -889,16 +836,14 @@ export default function SafeZones({
                             onClick={() => setShowDeleteDialog(null)}
                             disabled={loading}
                         >
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             variant="destructive"
                             onClick={handleDeleteZone}
                             disabled={loading}
                         >
-                            {loading
-                                ? t('admin.safe_zones.deleting')
-                                : t('admin.safe_zones.delete_confirm')}
+                            {loading ? 'Deleting...' : 'Delete Zone'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -911,26 +856,19 @@ export default function SafeZones({
             >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>
-                            {t('admin.safe_zones.resolve_dialog_title')}
-                        </DialogTitle>
+                        <DialogTitle>{'Dismiss Violation'}</DialogTitle>
                         <DialogDescription>
-                            {t('admin.safe_zones.resolve_dialog_description', {
-                                attacker: showResolveDialog?.attacker ?? '',
-                                victim: showResolveDialog?.victim ?? '',
-                            })}
+                            {`Dismiss the violation from ${showResolveDialog?.attacker ?? ''} against ${showResolveDialog?.victim ?? ''}.`}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
                             <Label htmlFor="resolve-note">
-                                {t('admin.safe_zones.resolve_note_label')}
+                                Note (optional)
                             </Label>
                             <Textarea
                                 id="resolve-note"
-                                placeholder={t(
-                                    'admin.safe_zones.resolve_note_placeholder',
-                                )}
+                                placeholder="Reason for dismissal..."
                                 value={resolveNote}
                                 onChange={(e) => setResolveNote(e.target.value)}
                                 maxLength={500}
@@ -943,12 +881,10 @@ export default function SafeZones({
                             onClick={() => setShowResolveDialog(null)}
                             disabled={loading}
                         >
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button onClick={handleResolve} disabled={loading}>
-                            {loading
-                                ? t('admin.safe_zones.resolving')
-                                : t('common.dismiss')}
+                            {loading ? 'Resolving...' : 'Dismiss'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -79,7 +79,6 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { fetchAction } from '@/lib/fetch-action';
 import { parseModImport } from '@/lib/parse-mod-import';
@@ -119,8 +118,6 @@ type LookupState =
     | { status: 'error' };
 
 function StatusBadge({ status }: { status: ModEntry['status'] }) {
-    const { t } = useTranslation();
-
     if (status === 'active') {
         return (
             <Badge
@@ -129,7 +126,7 @@ function StatusBadge({ status }: { status: ModEntry['status'] }) {
                 data-testid="mod-status-active"
             >
                 <CheckCircle2 className="size-3" />
-                {t('admin.mods.status_active')}
+                Active
             </Badge>
         );
     }
@@ -142,7 +139,7 @@ function StatusBadge({ status }: { status: ModEntry['status'] }) {
                 data-testid="mod-status-pending"
             >
                 <Clock className="size-3" />
-                {t('admin.mods.status_pending')}
+                Pending restart
             </Badge>
         );
     }
@@ -153,7 +150,7 @@ function StatusBadge({ status }: { status: ModEntry['status'] }) {
             className="gap-1 text-muted-foreground"
             data-testid="mod-status-stopped"
         >
-            {t('admin.mods.status_stopped')}
+            Stopped
         </Badge>
     );
 }
@@ -177,8 +174,6 @@ function fmtDate(unixSeconds: number): string {
 }
 
 function CompatBadge({ compat }: { compat?: BuildCompat }) {
-    const { t } = useTranslation();
-
     if (!compat) {
         return null;
     }
@@ -190,7 +185,7 @@ function CompatBadge({ compat }: { compat?: BuildCompat }) {
                 className="border-emerald-500/40 bg-emerald-500/10 text-xs text-emerald-700 dark:text-emerald-400"
                 data-testid="compat-b42"
             >
-                {t('admin.mods.compat_b42')}
+                B42
             </Badge>
         );
     }
@@ -202,7 +197,7 @@ function CompatBadge({ compat }: { compat?: BuildCompat }) {
                 className="border-rose-500/40 bg-rose-500/10 text-xs text-rose-700 dark:text-rose-400"
                 data-testid="compat-b41"
             >
-                {t('admin.mods.compat_b41')}
+                B41 only
             </Badge>
         );
     }
@@ -213,7 +208,7 @@ function CompatBadge({ compat }: { compat?: BuildCompat }) {
             className="text-xs text-muted-foreground"
             data-testid="compat-unknown"
         >
-            {t('admin.mods.compat_unknown')}
+            B42 unknown
         </Badge>
     );
 }
@@ -244,8 +239,6 @@ function ModThumb({
 }
 
 function ModMeta({ details }: { details: WorkshopDetails }) {
-    const { t } = useTranslation();
-
     return (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
             {details.subscriptions != null && (
@@ -255,11 +248,7 @@ function ModMeta({ details }: { details: WorkshopDetails }) {
                 </span>
             )}
             {details.time_updated != null && (
-                <span>
-                    {t('admin.mods.meta_updated', {
-                        date: fmtDate(details.time_updated),
-                    })}
-                </span>
+                <span>{`Updated ${fmtDate(details.time_updated)}`}</span>
             )}
             {details.file_size != null && details.file_size > 0 && (
                 <span>{fmtSize(details.file_size)}</span>
@@ -367,7 +356,6 @@ function SortableModRow({
     installedModIds: Set<string>;
     details?: WorkshopDetails | null;
 }) {
-    const { t } = useTranslation();
     const {
         attributes,
         listeners,
@@ -437,7 +425,7 @@ function SortableModRow({
                         </span>
                         {isProtected && (
                             <Badge variant="outline" className="text-xs">
-                                {t('admin.mods.required_badge')}
+                                Required
                             </Badge>
                         )}
                     </div>
@@ -476,7 +464,7 @@ function SortableModRow({
                                         variant="outline"
                                         className="text-xs"
                                     >
-                                        {t('admin.mods.required_badge')}
+                                        Required
                                     </Badge>
                                 )}
                                 <CompatBadge compat={details?.build_compat} />
@@ -489,11 +477,9 @@ function SortableModRow({
                                                 data-testid="bundle-badge"
                                             >
                                                 <Layers className="size-3" />
-                                                {t('admin.mods.bundle_badge', {
-                                                    count: String(
-                                                        group.siblings.length,
-                                                    ),
-                                                })}
+                                                {`Bundle ×${String(
+                                                    group.siblings.length,
+                                                )}`}
                                             </Badge>
                                         </TooltipTrigger>
                                         <TooltipContent>
@@ -520,16 +506,12 @@ function SortableModRow({
                         {missingRequires.length > 0 && (
                             <AlertTriangle className="mr-1 inline size-3" />
                         )}
-                        {t('admin.mods.requires_label', {
-                            mods: requires.join(', '),
-                        })}
+                        {`Requires: ${requires.join(', ')}`}
                     </div>
                 )}
                 {blocked && (
                     <div className="mt-1 truncate text-xs text-amber-600 dark:text-amber-400">
-                        {t('admin.mods.required_by_label', {
-                            mods: requiredBy.join(', '),
-                        })}
+                        {`Required by: ${requiredBy.join(', ')}`}
                     </div>
                 )}
             </TableCell>
@@ -570,15 +552,14 @@ export default function Mods({
     serverStatus?: 'offline' | 'starting' | 'online';
     wishlist?: string[];
 }) {
-    const { t } = useTranslation();
     const protectedSet = useMemo(
         () => new Set(protectedWorkshopIds),
         [protectedWorkshopIds],
     );
 
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: t('nav.dashboard'), href: '/dashboard' },
-        { title: t('admin.mods.title'), href: '/admin/mods' },
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Mod Manager', href: '/admin/mods' },
     ];
     const [showAdd, setShowAdd] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<ModEntry | null>(null);
@@ -730,9 +711,7 @@ export default function Mods({
                 mod_ids: bulkModIds,
                 map: bulkMapFolders,
             },
-            successMessage: t('admin.mods.bulk_toast_imported', {
-                count: String(bulkModIds.length || bulkWorkshopIds.length),
-            }),
+            successMessage: `Imported ${String(bulkModIds.length || bulkWorkshopIds.length)} mod(s). Restart the server to load them.`,
         });
         setImporting(false);
         if (result) {
@@ -969,7 +948,7 @@ export default function Mods({
                     mod_id: m.mod_id,
                 })),
             },
-            successMessage: t('admin.mods.toast_order_updated'),
+            successMessage: 'Mod load order updated',
         });
 
         router.reload({ only: ['mods', 'pendingRestart', 'serverStatus'] });
@@ -979,7 +958,8 @@ export default function Mods({
         setRestarting(true);
         const started = await fetchAction('/admin/server/restart', {
             method: 'POST',
-            successMessage: t('admin.mods.toast_restart_started'),
+            successMessage:
+                'Server restart started — mods will load in a moment',
         });
         // The request only *queues* the restart (the controller defers the
         // container work until after it responds), so keep the busy state until
@@ -1006,7 +986,7 @@ export default function Mods({
                 mod_id: modId,
                 map_folder: mapFolder || null,
             },
-            successMessage: t('admin.mods.toast_added', { mod_id: modId }),
+            successMessage: `Added mod ${modId}`,
         });
         // Installing a wishlisted mod removes it from the wishlist.
         if (result && pendingInstall === workshopId.trim()) {
@@ -1037,12 +1017,8 @@ export default function Mods({
                 // multiple mods).
                 data: { mod_id: mod.mod_id },
                 successMessage: toWishlist
-                    ? t('admin.mods.toast_moved_to_wishlist', {
-                          mod_id: mod.mod_id,
-                      })
-                    : t('admin.mods.toast_removed', {
-                          mod_id: mod.mod_id,
-                      }),
+                    ? `${mod.mod_id} moved to the wishlist`
+                    : `Removed mod ${mod.mod_id}`,
             },
         );
         if (result && toWishlist) {
@@ -1062,7 +1038,7 @@ export default function Mods({
         setWishLoading(true);
         const result = await fetchAction('/admin/mods/wishlist', {
             data: { workshop_id: wishId.trim() },
-            successMessage: t('admin.mods.toast_wishlist_added'),
+            successMessage: 'Added to wishlist',
         });
         setWishLoading(false);
         if (result) {
@@ -1075,7 +1051,7 @@ export default function Mods({
     async function removeWish(id: string) {
         await fetchAction(`/admin/mods/wishlist/${id}`, {
             method: 'DELETE',
-            successMessage: t('admin.mods.toast_wishlist_removed'),
+            successMessage: 'Removed from wishlist',
         });
         router.reload({ only: ['wishlist'] });
     }
@@ -1108,9 +1084,7 @@ export default function Mods({
         setWishlistBulkImporting(true);
         const result = (await fetchAction('/admin/mods/wishlist/import', {
             data: { workshop_ids: wishlistBulkIds },
-            successMessage: t('admin.mods.wishlist_bulk_toast_imported', {
-                count: String(wishlistBulkIds.length),
-            }),
+            successMessage: `Added ${String(wishlistBulkIds.length)} mod(s) to the wishlist`,
         })) as { added?: string[]; skipped?: number } | null;
         setWishlistBulkImporting(false);
 
@@ -1122,17 +1096,15 @@ export default function Mods({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={t('admin.mods.title')} />
+            <Head title="Mod Manager" />
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">
-                            {t('admin.mods.title')}
+                            Mod Manager
                         </h1>
                         <p className="text-muted-foreground">
-                            {t('admin.mods.mods_installed', {
-                                count: String(mods.length),
-                            })}
+                            {`${String(mods.length)} mod(s) installed`}
                         </p>
                     </div>
                     <div className="flex gap-2">
@@ -1144,11 +1116,11 @@ export default function Mods({
                                     data-testid="bulk-import-button"
                                 >
                                     <FileUp className="mr-1.5 size-4" />
-                                    {t('admin.mods.bulk_import')}
+                                    Bulk import
                                 </Button>
                                 <Button onClick={() => setShowAdd(true)}>
                                     <Plus className="mr-1.5 size-4" />
-                                    {t('admin.mods.add_mod')}
+                                    Add Mod
                                 </Button>
                             </>
                         ) : (
@@ -1159,14 +1131,14 @@ export default function Mods({
                                     data-testid="wishlist-bulk-import-button"
                                 >
                                     <FileUp className="mr-1.5 size-4" />
-                                    {t('admin.mods.bulk_import')}
+                                    Bulk import
                                 </Button>
                                 <Button
                                     onClick={() => setShowWish(true)}
                                     data-testid="wishlist-mod-button"
                                 >
                                     <BookmarkPlus className="mr-1.5 size-4" />
-                                    {t('admin.mods.wishlist_mod')}
+                                    Wishlist mod
                                 </Button>
                             </>
                         )}
@@ -1189,14 +1161,14 @@ export default function Mods({
                         data-testid="tab-installed"
                     >
                         <Package className="mr-1.5 size-4" />
-                        {t('admin.mods.tab_installed')} ({mods.length})
+                        {'Installed'} ({mods.length})
                     </ToggleGroupItem>
                     <ToggleGroupItem
                         value="wishlist"
                         data-testid="tab-wishlist"
                     >
                         <Bookmark className="mr-1.5 size-4" />
-                        {t('admin.mods.tab_wishlist')} ({wishlist.length})
+                        {'Wishlist'} ({wishlist.length})
                     </ToggleGroupItem>
                 </ToggleGroup>
 
@@ -1207,26 +1179,18 @@ export default function Mods({
                                 <div>
                                     <CardTitle className="flex items-center gap-2">
                                         <Package className="size-5" />
-                                        {t('admin.mods.installed_mods')}
+                                        Installed Mods
                                     </CardTitle>
                                     <CardDescription>
-                                        {t(
-                                            'admin.mods.installed_mods_description',
-                                            {
-                                                filtered: String(
-                                                    filteredMods.length,
-                                                ),
-                                                total: String(mods.length),
-                                            },
-                                        )}
+                                        {`${String(
+                                            filteredMods.length,
+                                        )} of ${String(mods.length)} mods · Drag to reorder load order`}
                                     </CardDescription>
                                 </div>
                                 <div className="relative">
                                     <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
                                     <Input
-                                        placeholder={t(
-                                            'admin.mods.search_placeholder',
-                                        )}
+                                        placeholder="Search mods..."
                                         value={search}
                                         onChange={(e) =>
                                             setSearch(e.target.value)
@@ -1250,12 +1214,8 @@ export default function Mods({
                                     <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                         <span>
                                             {restartInProgress
-                                                ? t(
-                                                      'admin.mods.restart_in_progress',
-                                                  )
-                                                : t(
-                                                      'admin.mods.pending_restart_banner',
-                                                  )}
+                                                ? 'Server is restarting — mod changes will take effect once it finishes loading.'
+                                                : 'Mod changes are waiting for a server restart to take effect.'}
                                         </span>
                                         <Button
                                             size="sm"
@@ -1271,8 +1231,8 @@ export default function Mods({
                                                 className={`mr-1.5 size-4 ${restartInProgress ? 'animate-spin' : ''}`}
                                             />
                                             {restartInProgress
-                                                ? t('admin.mods.restarting')
-                                                : t('admin.mods.restart_now')}
+                                                ? 'Restarting...'
+                                                : 'Restart server'}
                                         </Button>
                                     </AlertDescription>
                                 </Alert>
@@ -1289,23 +1249,13 @@ export default function Mods({
                                                 <TableHead className="w-[50px]">
                                                     {isFiltering ? '#' : ''}
                                                 </TableHead>
-                                                <TableHead>
-                                                    {t(
-                                                        'admin.mods.table_mod_id',
-                                                    )}
-                                                </TableHead>
+                                                <TableHead>Mod ID</TableHead>
                                                 <TableHead className="hidden sm:table-cell">
-                                                    {t(
-                                                        'admin.mods.table_workshop_id',
-                                                    )}
+                                                    Workshop ID
                                                 </TableHead>
-                                                <TableHead>
-                                                    {t(
-                                                        'admin.mods.table_status',
-                                                    )}
-                                                </TableHead>
+                                                <TableHead>Status</TableHead>
                                                 <TableHead className="text-right">
-                                                    {t('common.actions')}
+                                                    Actions
                                                 </TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -1355,8 +1305,8 @@ export default function Mods({
                             ) : (
                                 <p className="py-8 text-center text-muted-foreground">
                                     {search
-                                        ? t('admin.mods.no_mods_search')
-                                        : t('admin.mods.no_mods')}
+                                        ? 'No mods match your search'
+                                        : 'No mods installed'}
                                 </p>
                             )}
                         </CardContent>
@@ -1370,12 +1320,10 @@ export default function Mods({
                                 <div>
                                     <CardTitle className="flex items-center gap-2">
                                         <Bookmark className="size-5" />
-                                        {t('admin.mods.wishlist_title')}
+                                        Wishlist
                                     </CardTitle>
                                     <CardDescription>
-                                        {t('admin.mods.wishlist_description', {
-                                            count: String(wishlist.length),
-                                        })}
+                                        {`${String(wishlist.length)} mod(s) you follow without installing`}
                                     </CardDescription>
                                 </div>
                                 <Select
@@ -1392,10 +1340,10 @@ export default function Mods({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="added">
-                                            {t('admin.mods.sort_added')}
+                                            Recently added
                                         </SelectItem>
                                         <SelectItem value="b42">
-                                            {t('admin.mods.sort_b42')}
+                                            Build 42 first
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -1406,19 +1354,13 @@ export default function Mods({
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>
-                                                {t('admin.mods.table_mod')}
-                                            </TableHead>
+                                            <TableHead>{'Mod'}</TableHead>
                                             <TableHead className="hidden sm:table-cell">
-                                                {t(
-                                                    'admin.mods.table_workshop_id',
-                                                )}
+                                                Workshop ID
                                             </TableHead>
-                                            <TableHead>
-                                                {t('admin.mods.table_b42')}
-                                            </TableHead>
+                                            <TableHead>{'Build 42'}</TableHead>
                                             <TableHead className="text-right">
-                                                {t('common.actions')}
+                                                Actions
                                             </TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -1502,9 +1444,9 @@ export default function Mods({
                                                                         variant="outline"
                                                                         className="text-xs text-muted-foreground"
                                                                     >
-                                                                        {t(
-                                                                            'admin.mods.already_installed',
-                                                                        )}
+                                                                        {
+                                                                            'Installed'
+                                                                        }
                                                                     </Badge>
                                                                 ) : (
                                                                     <Button
@@ -1518,9 +1460,9 @@ export default function Mods({
                                                                         data-testid="wishlist-install"
                                                                     >
                                                                         <Download className="mr-1.5 size-4" />
-                                                                        {t(
-                                                                            'admin.mods.install',
-                                                                        )}
+                                                                        {
+                                                                            'Install'
+                                                                        }
                                                                     </Button>
                                                                 )}
                                                                 <Button
@@ -1546,7 +1488,9 @@ export default function Mods({
                                 </Table>
                             ) : (
                                 <p className="py-8 text-center text-muted-foreground">
-                                    {t('admin.mods.no_wishlist')}
+                                    {
+                                        'No wishlisted mods yet. Use "Wishlist mod" to follow a Workshop mod without installing it.'
+                                    }
                                 </p>
                             )}
                         </CardContent>
@@ -1563,18 +1507,16 @@ export default function Mods({
             >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>
-                            {t('admin.mods.add_dialog_title')}
-                        </DialogTitle>
+                        <DialogTitle>{'Add Mod'}</DialogTitle>
                         <DialogDescription>
-                            {t('admin.mods.add_dialog_description')}
+                            {
+                                'Add a Steam Workshop mod. Both Workshop ID and Mod ID are required.'
+                            }
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="workshop-id">
-                                {t('admin.mods.table_workshop_id')}
-                            </Label>
+                            <Label htmlFor="workshop-id">{'Workshop ID'}</Label>
                             <div className="relative">
                                 <Input
                                     id="workshop-id"
@@ -1583,9 +1525,7 @@ export default function Mods({
                                     onChange={(e) =>
                                         setWorkshopId(e.target.value)
                                     }
-                                    placeholder={t(
-                                        'admin.mods.workshop_id_placeholder',
-                                    )}
+                                    placeholder="e.g. 2313387159"
                                     data-testid="workshop-id-input"
                                 />
                                 {lookup.status === 'loading' && (
@@ -1612,26 +1552,30 @@ export default function Mods({
                             )}
                             {lookup.status === 'not_found' && (
                                 <p className="text-xs text-amber-600 dark:text-amber-400">
-                                    {t('admin.mods.lookup_not_found')}
+                                    {
+                                        'Workshop item not found. You can enter the Mod ID manually.'
+                                    }
                                 </p>
                             )}
                             {lookup.status === 'error' && (
                                 <p className="text-xs text-destructive">
-                                    {t('admin.mods.lookup_error')}
+                                    {
+                                        'Could not reach Steam. You can enter the Mod ID manually.'
+                                    }
                                 </p>
                             )}
                             {lookup.status === 'no_mod_ids' && (
                                 <p className="text-xs text-amber-600 dark:text-amber-400">
-                                    {t('admin.mods.lookup_no_mod_ids')}
+                                    {
+                                        'No "Mod ID:" line found in the Workshop description. Please enter the Mod ID manually.'
+                                    }
                                 </p>
                             )}
                         </div>
 
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <Label htmlFor="mod-id">
-                                    {t('admin.mods.table_mod_id')}
-                                </Label>
+                                <Label htmlFor="mod-id">{'Mod ID'}</Label>
                                 {lookup.status === 'success' &&
                                     !manualOverride && (
                                         <Button
@@ -1645,7 +1589,7 @@ export default function Mods({
                                             data-testid="mod-id-edit-manually"
                                         >
                                             <Pencil className="mr-1 size-3" />
-                                            {t('admin.mods.edit_manually')}
+                                            Edit manually
                                         </Button>
                                     )}
                             </div>
@@ -1672,9 +1616,7 @@ export default function Mods({
                                     id="mod-id"
                                     value={modId}
                                     onChange={(e) => setModId(e.target.value)}
-                                    placeholder={t(
-                                        'admin.mods.mod_id_placeholder',
-                                    )}
+                                    placeholder="e.g. Arsenal(26)GunFighter"
                                     disabled={
                                         lookup.status === 'loading' ||
                                         (lookup.status === 'success' &&
@@ -1685,14 +1627,16 @@ export default function Mods({
                             )}
                             {lookup.status === 'success' && !manualOverride && (
                                 <p className="text-xs text-muted-foreground">
-                                    {t('admin.mods.mod_id_auto_filled')}
+                                    {
+                                        'Auto-filled from the Workshop description.'
+                                    }
                                 </p>
                             )}
                         </div>
 
                         <div className="space-y-2">
                             <Label htmlFor="map-folder">
-                                {t('admin.mods.map_folder_label')}
+                                Map Folder (optional)
                             </Label>
                             {lookup.status === 'success' &&
                             lookup.mapFolders.length > 1 ? (
@@ -1707,7 +1651,7 @@ export default function Mods({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="__none__">
-                                            {t('admin.mods.map_folder_none')}
+                                            None
                                         </SelectItem>
                                         {lookup.mapFolders.map((f) => (
                                             <SelectItem key={f} value={f}>
@@ -1723,16 +1667,14 @@ export default function Mods({
                                     onChange={(e) =>
                                         setMapFolder(e.target.value)
                                     }
-                                    placeholder={t(
-                                        'admin.mods.map_folder_placeholder',
-                                    )}
+                                    placeholder="Only for map mods"
                                 />
                             )}
                         </div>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={closeAddDialog}>
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             disabled={
@@ -1743,7 +1685,7 @@ export default function Mods({
                             }
                             onClick={addMod}
                         >
-                            {t('admin.mods.add_mod')}
+                            Add Mod
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -1758,11 +1700,11 @@ export default function Mods({
             >
                 <DialogContent className="max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>
-                            {t('admin.mods.bulk_dialog_title')}
-                        </DialogTitle>
+                        <DialogTitle>{'Bulk import mods'}</DialogTitle>
                         <DialogDescription>
-                            {t('admin.mods.bulk_dialog_description')}
+                            {
+                                'Paste your WorkshopItems= and Mods= lines (and optional Map=) from a working server.ini, or just a list of Workshop IDs. Imported mods are merged into your list and saved permanently.'
+                            }
                         </DialogDescription>
                     </DialogHeader>
 
@@ -1772,12 +1714,16 @@ export default function Mods({
                                 value={bulkText}
                                 onChange={(e) => setBulkText(e.target.value)}
                                 rows={8}
-                                placeholder={t('admin.mods.bulk_placeholder')}
+                                placeholder={
+                                    'WorkshopItems=2900580391;2772575623\nMods=ModA;ModB\nMap=MyMap;Muldraugh, KY\n\n— or —\n\n2900580391;2772575623;3005903549'
+                                }
                                 className="font-mono text-xs"
                                 data-testid="bulk-import-textarea"
                             />
                             <p className="text-xs text-muted-foreground">
-                                {t('admin.mods.bulk_hint')}
+                                {
+                                    'Pasting only Workshop IDs works too, but each ID is looked up on Steam (slower). Pasting the Mods= line is instant and most reliable.'
+                                }
                             </p>
                         </div>
                     )}
@@ -1786,10 +1732,7 @@ export default function Mods({
                         <div className="space-y-3 py-2">
                             <div className="flex items-center gap-2 text-sm">
                                 <Loader2 className="size-4 animate-spin" />
-                                {t('admin.mods.bulk_resolving', {
-                                    done: String(bulkProgress.done),
-                                    total: String(bulkProgress.total),
-                                })}
+                                {`Looking up mods on Steam… ${String(bulkProgress.done)} / ${String(bulkProgress.total)}`}
                             </div>
                             <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                                 <div
@@ -1813,7 +1756,7 @@ export default function Mods({
                                         {bulkNewMods}
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                        {t('admin.mods.bulk_new_mods')}
+                                        New mods
                                     </div>
                                 </div>
                                 <div className="rounded-md border p-2">
@@ -1821,7 +1764,7 @@ export default function Mods({
                                         {bulkNewWorkshop}
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                        {t('admin.mods.bulk_new_workshop')}
+                                        New Workshop items
                                     </div>
                                 </div>
                                 <div className="rounded-md border p-2">
@@ -1829,22 +1772,22 @@ export default function Mods({
                                         {bulkUnresolved.length}
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                        {t('admin.mods.bulk_unresolved')}
+                                        Unresolved
                                     </div>
                                 </div>
                             </div>
                             {bulkMapFolders.length > 0 && (
                                 <p className="text-xs text-muted-foreground">
-                                    {t('admin.mods.bulk_maps', {
-                                        count: String(bulkMapFolders.length),
-                                    })}
+                                    {`${String(bulkMapFolders.length)} map folder(s) will be merged into Map=`}
                                 </p>
                             )}
                             {bulkUnresolved.length > 0 && (
                                 <Alert className="border-amber-500/40 bg-amber-500/10">
                                     <AlertTriangle className="size-4" />
                                     <AlertDescription className="text-xs">
-                                        {t('admin.mods.bulk_unresolved_hint')}
+                                        {
+                                            'These Workshop IDs could not be resolved (no Mod ID found on Steam). Add them individually from the Add Mod dialog:'
+                                        }
                                         <span className="mt-1 block font-mono break-all">
                                             {bulkUnresolved.join('; ')}
                                         </span>
@@ -1853,7 +1796,9 @@ export default function Mods({
                             )}
                             {!bulkHasSomething && (
                                 <p className="text-sm text-muted-foreground">
-                                    {t('admin.mods.bulk_nothing')}
+                                    {
+                                        'Nothing to import — no valid mods were found in the pasted text.'
+                                    }
                                 </p>
                             )}
                         </div>
@@ -1863,20 +1808,20 @@ export default function Mods({
                         {bulkPhase === 'input' && (
                             <>
                                 <Button variant="outline" onClick={closeBulk}>
-                                    {t('common.cancel')}
+                                    Cancel
                                 </Button>
                                 <Button
                                     disabled={bulkText.trim() === ''}
                                     onClick={prepareBulk}
                                     data-testid="bulk-prepare-button"
                                 >
-                                    {t('admin.mods.bulk_prepare')}
+                                    Prepare import
                                 </Button>
                             </>
                         )}
                         {bulkPhase === 'resolving' && (
                             <Button variant="outline" onClick={closeBulk}>
-                                {t('common.cancel')}
+                                Cancel
                             </Button>
                         )}
                         {bulkPhase === 'ready' && (
@@ -1885,7 +1830,7 @@ export default function Mods({
                                     variant="outline"
                                     onClick={() => setBulkPhase('input')}
                                 >
-                                    {t('admin.mods.bulk_back')}
+                                    Back
                                 </Button>
                                 <Button
                                     disabled={importing || !bulkHasSomething}
@@ -1893,13 +1838,11 @@ export default function Mods({
                                     data-testid="bulk-import-submit"
                                 >
                                     {importing
-                                        ? t('admin.mods.bulk_importing')
-                                        : t('admin.mods.bulk_do_import', {
-                                              count: String(
-                                                  bulkModIds.length ||
-                                                      bulkWorkshopIds.length,
-                                              ),
-                                          })}
+                                        ? 'Importing…'
+                                        : `Import ${String(
+                                              bulkModIds.length ||
+                                                  bulkWorkshopIds.length,
+                                          )} mod(s)`}
                                 </Button>
                             </>
                         )}
@@ -1914,14 +1857,9 @@ export default function Mods({
             >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>
-                            {t('admin.mods.delete_dialog_title')}
-                        </DialogTitle>
+                        <DialogTitle>{'Remove Mod'}</DialogTitle>
                         <DialogDescription>
-                            {t('admin.mods.delete_dialog_description', {
-                                mod_id: deleteTarget?.mod_id ?? '',
-                                workshop_id: deleteTarget?.workshop_id ?? '',
-                            })}
+                            {`Are you sure you want to remove ${deleteTarget?.mod_id ?? ''} (${deleteTarget?.workshop_id ?? ''})? A server restart will be required.`}
                         </DialogDescription>
                     </DialogHeader>
                     {deleteCascade.length > 0 && (
@@ -1931,9 +1869,7 @@ export default function Mods({
                         >
                             <AlertTriangle className="size-4" />
                             <AlertDescription>
-                                {t('admin.mods.delete_cascade_description', {
-                                    mods: deleteCascade.join(', '),
-                                })}
+                                {`Also removes ${deleteCascade.join(', ')}, since they require this mod.`}
                             </AlertDescription>
                         </Alert>
                     )}
@@ -1942,7 +1878,7 @@ export default function Mods({
                             variant="outline"
                             onClick={() => setDeleteTarget(null)}
                         >
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             variant="outline"
@@ -1953,7 +1889,7 @@ export default function Mods({
                             data-testid="move-to-wishlist-button"
                         >
                             <Bookmark className="mr-1.5 size-4" />
-                            {t('admin.mods.move_to_wishlist')}
+                            Move to wishlist
                         </Button>
                         <Button
                             variant="destructive"
@@ -1962,7 +1898,7 @@ export default function Mods({
                                 deleteTarget && removeMod(deleteTarget)
                             }
                         >
-                            {t('admin.mods.delete_dialog_title')}
+                            Remove Mod
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -1980,25 +1916,23 @@ export default function Mods({
             >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>
-                            {t('admin.mods.wishlist_dialog_title')}
-                        </DialogTitle>
+                        <DialogTitle>{'Add to Wishlist'}</DialogTitle>
                         <DialogDescription>
-                            {t('admin.mods.wishlist_dialog_description')}
+                            {
+                                'Track a Steam Workshop mod without installing it on the server.'
+                            }
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2">
                         <Label htmlFor="wishlist-workshop-id">
-                            {t('admin.mods.table_workshop_id')}
+                            Workshop ID
                         </Label>
                         <Input
                             id="wishlist-workshop-id"
                             inputMode="numeric"
                             value={wishId}
                             onChange={(e) => setWishId(e.target.value)}
-                            placeholder={t(
-                                'admin.mods.workshop_id_placeholder',
-                            )}
+                            placeholder="e.g. 2313387159"
                             data-testid="wishlist-workshop-id-input"
                         />
                     </div>
@@ -2010,7 +1944,7 @@ export default function Mods({
                                 setWishId('');
                             }}
                         >
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             disabled={
@@ -2019,7 +1953,7 @@ export default function Mods({
                             onClick={addWish}
                             data-testid="wishlist-submit-button"
                         >
-                            {t('admin.mods.wishlist_mod')}
+                            Wishlist mod
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -2034,11 +1968,11 @@ export default function Mods({
             >
                 <DialogContent className="max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>
-                            {t('admin.mods.wishlist_bulk_dialog_title')}
-                        </DialogTitle>
+                        <DialogTitle>{'Bulk add to wishlist'}</DialogTitle>
                         <DialogDescription>
-                            {t('admin.mods.wishlist_bulk_dialog_description')}
+                            {
+                                'Paste a list of Workshop IDs (semicolons, commas, or newlines). IDs already installed or already on the wishlist are skipped.'
+                            }
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-3">
@@ -2048,23 +1982,19 @@ export default function Mods({
                                 setWishlistBulkText(e.target.value)
                             }
                             rows={8}
-                            placeholder={t(
-                                'admin.mods.wishlist_bulk_placeholder',
-                            )}
+                            placeholder="2900580391;2772575623;3005903549"
                             className="font-mono text-xs"
                             data-testid="wishlist-bulk-import-textarea"
                         />
                         <p className="text-xs text-muted-foreground">
                             {wishlistBulkIds.length > 0
-                                ? t('admin.mods.wishlist_bulk_count', {
-                                      count: String(wishlistBulkIds.length),
-                                  })
-                                : t('admin.mods.wishlist_bulk_hint')}
+                                ? `${String(wishlistBulkIds.length)} Workshop ID(s) found`
+                                : 'Paste Workshop IDs separated by semicolons, commas, or newlines.'}
                         </p>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={closeWishlistBulk}>
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             disabled={
@@ -2075,10 +2005,8 @@ export default function Mods({
                             data-testid="wishlist-bulk-import-submit"
                         >
                             {wishlistBulkImporting
-                                ? t('admin.mods.bulk_importing')
-                                : t('admin.mods.wishlist_bulk_do_import', {
-                                      count: String(wishlistBulkIds.length),
-                                  })}
+                                ? 'Importing…'
+                                : `Add ${String(wishlistBulkIds.length)} mod(s)`}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

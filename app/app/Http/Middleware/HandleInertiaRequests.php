@@ -2,12 +2,8 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Language;
 use App\Models\SiteSetting;
-use App\Services\TranslationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -40,7 +36,7 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $siteSettings = $request->attributes->get('site_settings') ?? SiteSetting::cached();
+        $siteSettings = SiteSetting::cached();
 
         view()->share('siteFavicon', $siteSettings->faviconUrl());
 
@@ -61,23 +57,7 @@ class HandleInertiaRequests extends Middleware
                 'favicon_url' => $siteSettings->faviconUrl(),
                 'footer_text' => $siteSettings->footer_text,
                 'theme_colors' => $siteSettings->theme_colors,
-                'default_locale' => $siteSettings->default_locale,
             ],
-            'locale' => fn () => App::getLocale(),
-            'translations' => fn () => TranslationService::getForLocale(App::getLocale()),
-            'available_locales' => fn () => Cache::remember('active_languages', 3600, function () {
-                $locales = Language::query()
-                    ->where('is_active', true)
-                    ->get(['code', 'name', 'native_name'])
-                    ->toArray();
-
-                // Ensure English is always available even if not in the languages table
-                if (! collect($locales)->contains('code', 'en')) {
-                    array_unshift($locales, ['code' => 'en', 'name' => 'English', 'native_name' => 'English']);
-                }
-
-                return $locales;
-            }),
         ];
     }
 }

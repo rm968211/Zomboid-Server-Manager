@@ -43,7 +43,6 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useTableSort } from '@/hooks/use-table-sort';
-import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { formatShortDate } from '@/lib/dates';
 import { fetchAction } from '@/lib/fetch-action';
@@ -83,15 +82,7 @@ type SortKey =
     | 'starts_at'
     | 'status';
 
-const statusLabelKey: Record<StatusLabel, string> = {
-    Active: 'common.active',
-    Scheduled: 'admin.shop_promotions.scheduled',
-    Inactive: 'common.inactive',
-    Expired: 'admin.shop_promotions.expired',
-};
-
 export default function ShopPromotions({ promotions }: Props) {
-    const { t } = useTranslation();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editPromo, setEditPromo] = useState<ShopPromotion | null>(null);
     const [loading, setLoading] = useState(false);
@@ -202,12 +193,12 @@ export default function ShopPromotions({ promotions }: Props) {
             await fetchAction(`/admin/shop/promotions/${editPromo.id}`, {
                 method: 'PATCH',
                 data,
-                successMessage: t('admin.shop_promotions.promotion_updated'),
+                successMessage: 'Promotion updated',
             });
         } else {
             await fetchAction('/admin/shop/promotions', {
                 data,
-                successMessage: t('admin.shop_promotions.promotion_created'),
+                successMessage: 'Promotion created',
             });
         }
         setLoading(false);
@@ -218,7 +209,7 @@ export default function ShopPromotions({ promotions }: Props) {
     async function handleDelete(promo: ShopPromotion) {
         await fetchAction(`/admin/shop/promotions/${promo.id}`, {
             method: 'DELETE',
-            successMessage: t('admin.shop_promotions.promotion_deleted'),
+            successMessage: 'Promotion deleted',
         });
         router.reload();
     }
@@ -226,49 +217,45 @@ export default function ShopPromotions({ promotions }: Props) {
     async function handleToggle(promo: ShopPromotion) {
         await fetchAction(`/admin/shop/promotions/${promo.id}/toggle`, {
             successMessage: promo.is_active
-                ? t('admin.shop_promotions.promotion_deactivated')
-                : t('admin.shop_promotions.promotion_activated'),
+                ? 'Promotion deactivated'
+                : 'Promotion activated',
         });
         router.reload();
     }
 
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: t('nav.dashboard'), href: '/dashboard' },
-        { title: t('admin.shop.breadcrumb'), href: '/admin/shop' },
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Shop', href: '/admin/shop' },
         {
-            title: t('admin.shop_promotions.breadcrumb'),
+            title: 'Promotions',
             href: '/admin/shop/promotions',
         },
     ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={t('admin.shop_promotions.title')} />
+            <Head title="Promotions" />
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">
-                            {t('admin.shop_promotions.title')}
+                            Promotions
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            {t('admin.shop_promotions.description')}
+                            Manage discount codes and automatic promotions
                         </p>
                     </div>
                     <Button onClick={openCreate}>
                         <Plus className="mr-1.5 size-4" />
-                        {t('admin.shop_promotions.create_promotion')}
+                        Create Promotion
                     </Button>
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>
-                            {t('admin.shop_promotions.all_promotions')}
-                        </CardTitle>
+                        <CardTitle>{'All Promotions'}</CardTitle>
                         <CardDescription>
-                            {t('admin.shop_promotions.promotions_count', {
-                                count: String(promotions.length),
-                            })}
+                            {`${String(promotions.length)} promotions`}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -279,19 +266,17 @@ export default function ShopPromotions({ promotions }: Props) {
                                         <TableHead>
                                             <SortableHeader
                                                 column="name"
-                                                label={t('common.name')}
+                                                label="Name"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
                                             />
                                         </TableHead>
-                                        <TableHead>
-                                            {t('common.code')}
-                                        </TableHead>
+                                        <TableHead>{'Code'}</TableHead>
                                         <TableHead>
                                             <SortableHeader
                                                 column="type"
-                                                label={t('common.type')}
+                                                label="Type"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
@@ -300,23 +285,17 @@ export default function ShopPromotions({ promotions }: Props) {
                                         <TableHead>
                                             <SortableHeader
                                                 column="value"
-                                                label={t('common.value')}
+                                                label="Value"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
                                             />
                                         </TableHead>
-                                        <TableHead>
-                                            {t(
-                                                'admin.shop_promotions.applies_to',
-                                            )}
-                                        </TableHead>
+                                        <TableHead>{'Applies To'}</TableHead>
                                         <TableHead>
                                             <SortableHeader
                                                 column="usage_count"
-                                                label={t(
-                                                    'admin.shop_promotions.usage',
-                                                )}
+                                                label="Usage"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
@@ -325,9 +304,7 @@ export default function ShopPromotions({ promotions }: Props) {
                                         <TableHead>
                                             <SortableHeader
                                                 column="starts_at"
-                                                label={t(
-                                                    'admin.shop_promotions.date_range',
-                                                )}
+                                                label="Date Range"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
@@ -336,7 +313,7 @@ export default function ShopPromotions({ promotions }: Props) {
                                         <TableHead>
                                             <SortableHeader
                                                 column="status"
-                                                label={t('common.status')}
+                                                label="Status"
                                                 sortKey={sortKey}
                                                 sortDir={sortDir}
                                                 onSort={toggleSort}
@@ -344,7 +321,7 @@ export default function ShopPromotions({ promotions }: Props) {
                                         </TableHead>
                                         <TableHead className="w-[50px]">
                                             <span className="sr-only">
-                                                {t('common.actions')}
+                                                Actions
                                             </span>
                                         </TableHead>
                                     </TableRow>
@@ -374,12 +351,8 @@ export default function ShopPromotions({ promotions }: Props) {
                                                 </TableCell>
                                                 <TableCell className="capitalize">
                                                     {promo.type === 'percentage'
-                                                        ? t(
-                                                              'admin.shop_promotions.percentage_type',
-                                                          )
-                                                        : t(
-                                                              'admin.shop_promotions.fixed_amount_type',
-                                                          )}
+                                                        ? 'percentage'
+                                                        : 'fixed amount'}
                                                 </TableCell>
                                                 <TableCell className="tabular-nums">
                                                     {promo.type === 'percentage'
@@ -407,11 +380,7 @@ export default function ShopPromotions({ promotions }: Props) {
                                                             )}
                                                         </div>
                                                     ) : (
-                                                        <div>
-                                                            {t(
-                                                                'admin.shop_promotions.no_end',
-                                                            )}
-                                                        </div>
+                                                        <div>{'No end'}</div>
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
@@ -419,11 +388,7 @@ export default function ShopPromotions({ promotions }: Props) {
                                                         variant={status.variant}
                                                         className="text-xs"
                                                     >
-                                                        {t(
-                                                            statusLabelKey[
-                                                                status.label
-                                                            ],
-                                                        )}
+                                                        {status.label}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
@@ -438,9 +403,7 @@ export default function ShopPromotions({ promotions }: Props) {
                                                             >
                                                                 <MoreHorizontal className="size-4" />
                                                                 <span className="sr-only">
-                                                                    {t(
-                                                                        'common.actions',
-                                                                    )}
+                                                                    Actions
                                                                 </span>
                                                             </Button>
                                                         </DropdownMenuTrigger>
@@ -454,12 +417,8 @@ export default function ShopPromotions({ promotions }: Props) {
                                                             >
                                                                 <Power className="mr-2 size-4" />
                                                                 {promo.is_active
-                                                                    ? t(
-                                                                          'admin.shop_promotions.deactivate',
-                                                                      )
-                                                                    : t(
-                                                                          'admin.shop_promotions.activate',
-                                                                      )}
+                                                                    ? 'Deactivate'
+                                                                    : 'Activate'}
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 onClick={() =>
@@ -469,9 +428,7 @@ export default function ShopPromotions({ promotions }: Props) {
                                                                 }
                                                             >
                                                                 <Pencil className="mr-2 size-4" />
-                                                                {t(
-                                                                    'common.edit',
-                                                                )}
+                                                                Edit
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 variant="destructive"
@@ -482,9 +439,7 @@ export default function ShopPromotions({ promotions }: Props) {
                                                                 }
                                                             >
                                                                 <Trash2 className="mr-2 size-4" />
-                                                                {t(
-                                                                    'common.delete',
-                                                                )}
+                                                                Delete
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
@@ -496,7 +451,7 @@ export default function ShopPromotions({ promotions }: Props) {
                             </Table>
                         ) : (
                             <p className="py-8 text-center text-muted-foreground">
-                                {t('admin.shop_promotions.no_promotions')}
+                                No promotions yet.
                             </p>
                         )}
                     </CardContent>
@@ -507,33 +462,27 @@ export default function ShopPromotions({ promotions }: Props) {
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>
-                            {editPromo
-                                ? t('admin.shop_promotions.edit_title')
-                                : t('admin.shop_promotions.create_title')}
+                            {editPromo ? 'Edit Promotion' : 'Create Promotion'}
                         </DialogTitle>
                         <DialogDescription>
                             {editPromo
-                                ? t('admin.shop_promotions.edit_desc')
-                                : t('admin.shop_promotions.create_desc')}
+                                ? 'Update promotion details.'
+                                : 'Create a new discount promotion.'}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>{t('common.name')}</Label>
+                                <Label>{'Name'}</Label>
                                 <Input
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>
-                                    {t('admin.shop_promotions.code_optional')}
-                                </Label>
+                                <Label>{'Code (optional)'}</Label>
                                 <Input
-                                    placeholder={t(
-                                        'admin.shop_promotions.code_placeholder',
-                                    )}
+                                    placeholder="e.g. SAVE20"
                                     value={code}
                                     onChange={(e) =>
                                         setCode(e.target.value.toUpperCase())
@@ -543,7 +492,7 @@ export default function ShopPromotions({ promotions }: Props) {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>{t('common.type')}</Label>
+                                <Label>{'Type'}</Label>
                                 <Select
                                     value={type}
                                     onValueChange={(v) =>
@@ -557,20 +506,16 @@ export default function ShopPromotions({ promotions }: Props) {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="percentage">
-                                            {t(
-                                                'admin.shop_promotions.percentage',
-                                            )}
+                                            Percentage
                                         </SelectItem>
                                         <SelectItem value="fixed_amount">
-                                            {t(
-                                                'admin.shop_promotions.fixed_amount',
-                                            )}
+                                            Fixed Amount
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label>{t('common.value')}</Label>
+                                <Label>{'Value'}</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -586,9 +531,7 @@ export default function ShopPromotions({ promotions }: Props) {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label>
-                                {t('admin.shop_promotions.applies_to')}
-                            </Label>
+                            <Label>{'Applies To'}</Label>
                             <Select
                                 value={appliesTo}
                                 onValueChange={(v) =>
@@ -600,32 +543,28 @@ export default function ShopPromotions({ promotions }: Props) {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">
-                                        {t('admin.shop_promotions.all_items')}
+                                        All Items
                                     </SelectItem>
                                     <SelectItem value="category">
-                                        {t('admin.shop_promotions.category')}
+                                        Category
                                     </SelectItem>
                                     <SelectItem value="item">
-                                        {t(
-                                            'admin.shop_promotions.specific_item',
-                                        )}
+                                        Specific Item
                                     </SelectItem>
                                     <SelectItem value="bundle">
-                                        {t('admin.shop_promotions.bundle')}
+                                        Bundle
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>
-                                    {t('admin.shop_promotions.min_purchase')}
-                                </Label>
+                                <Label>{'Min Purchase'}</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
                                     min={0}
-                                    placeholder={t('common.none')}
+                                    placeholder="None"
                                     value={minPurchase}
                                     onChange={(e) =>
                                         setMinPurchase(e.target.value)
@@ -633,14 +572,12 @@ export default function ShopPromotions({ promotions }: Props) {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>
-                                    {t('admin.shop_promotions.max_discount')}
-                                </Label>
+                                <Label>{'Max Discount'}</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
                                     min={0}
-                                    placeholder={t('common.none')}
+                                    placeholder="None"
                                     value={maxDiscount}
                                     onChange={(e) =>
                                         setMaxDiscount(e.target.value)
@@ -650,13 +587,11 @@ export default function ShopPromotions({ promotions }: Props) {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>
-                                    {t('admin.shop_promotions.usage_limit')}
-                                </Label>
+                                <Label>{'Usage Limit'}</Label>
                                 <Input
                                     type="number"
                                     min={1}
-                                    placeholder={t('common.unlimited')}
+                                    placeholder="Unlimited"
                                     value={usageLimit}
                                     onChange={(e) =>
                                         setUsageLimit(e.target.value)
@@ -664,13 +599,11 @@ export default function ShopPromotions({ promotions }: Props) {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>
-                                    {t('admin.shop_promotions.per_user_limit')}
-                                </Label>
+                                <Label>{'Per User Limit'}</Label>
                                 <Input
                                     type="number"
                                     min={1}
-                                    placeholder={t('common.unlimited')}
+                                    placeholder="Unlimited"
                                     value={perUserLimit}
                                     onChange={(e) =>
                                         setPerUserLimit(e.target.value)
@@ -680,9 +613,7 @@ export default function ShopPromotions({ promotions }: Props) {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>
-                                    {t('admin.shop_promotions.starts_at')}
-                                </Label>
+                                <Label>{'Starts At'}</Label>
                                 <Input
                                     type="datetime-local"
                                     value={startsAt}
@@ -692,9 +623,7 @@ export default function ShopPromotions({ promotions }: Props) {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>
-                                    {t('admin.shop_promotions.ends_at')}
-                                </Label>
+                                <Label>{'Ends At (optional)'}</Label>
                                 <Input
                                     type="datetime-local"
                                     value={endsAt}
@@ -708,15 +637,13 @@ export default function ShopPromotions({ promotions }: Props) {
                             variant="outline"
                             onClick={() => setDialogOpen(false)}
                         >
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             disabled={!name || !value || !startsAt || loading}
                             onClick={handleSave}
                         >
-                            {editPromo
-                                ? t('common.update')
-                                : t('common.create')}
+                            {editPromo ? 'Update' : 'Create'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

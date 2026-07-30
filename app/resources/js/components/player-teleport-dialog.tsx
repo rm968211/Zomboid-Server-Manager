@@ -17,7 +17,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { useTranslation } from '@/hooks/use-translation';
 import type { PlayerMarker } from '@/types/server';
 
 export type TeleportDestination = {
@@ -51,7 +50,6 @@ export default function PlayerTeleportDialog({
     onPickLocation,
     onConfirm,
 }: Props) {
-    const { t } = useTranslation();
     const selectedPlayer = players.find((player) => player.username === target);
     const hasDestination =
         destination.x.trim() !== '' &&
@@ -75,26 +73,20 @@ export default function PlayerTeleportDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>
-                        {t('admin.player_map.teleport_title')}
-                    </DialogTitle>
+                    <DialogTitle>{'Teleport Player'}</DialogTitle>
                     <DialogDescription>
-                        {t('admin.player_map.teleport_description')}
+                        {
+                            'Choose an online player and select a destination on the map or enter its coordinates.'
+                        }
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="teleport-player">
-                            {t('admin.player_map.teleport_player_label')}
-                        </Label>
+                        <Label htmlFor="teleport-player">Online Player</Label>
                         <Select value={target} onValueChange={onTargetChange}>
                             <SelectTrigger id="teleport-player">
-                                <SelectValue
-                                    placeholder={t(
-                                        'admin.player_map.teleport_player_placeholder',
-                                    )}
-                                />
+                                <SelectValue placeholder="Select a player" />
                             </SelectTrigger>
                             <SelectContent>
                                 {players.map((player) => (
@@ -119,7 +111,7 @@ export default function PlayerTeleportDialog({
                         onClick={onPickLocation}
                     >
                         <Crosshair className="mr-2 size-4" />
-                        {t('admin.player_map.teleport_pick_location')}
+                        Choose Destination on Map
                     </Button>
 
                     <div className="grid grid-cols-3 gap-3">
@@ -149,11 +141,7 @@ export default function PlayerTeleportDialog({
 
                     {selectedPlayer && (
                         <p className="text-xs text-muted-foreground">
-                            {t('admin.player_map.teleport_current_position', {
-                                x: selectedPlayer.x.toFixed(0),
-                                y: selectedPlayer.y.toFixed(0),
-                                z: String(selectedPlayer.z),
-                            })}
+                            {`Current position: X ${selectedPlayer.x.toFixed(0)}, Y ${selectedPlayer.y.toFixed(0)}, Z ${String(selectedPlayer.z)}`}
                         </p>
                     )}
                 </div>
@@ -164,7 +152,7 @@ export default function PlayerTeleportDialog({
                         onClick={() => onOpenChange(false)}
                         disabled={loading}
                     >
-                        {t('common.cancel')}
+                        Cancel
                     </Button>
                     <Button
                         onClick={onConfirm}
@@ -175,7 +163,7 @@ export default function PlayerTeleportDialog({
                         ) : (
                             <MapPin className="mr-2 size-4" />
                         )}
-                        {t('admin.player_map.teleport_confirm')}
+                        {'Teleport'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

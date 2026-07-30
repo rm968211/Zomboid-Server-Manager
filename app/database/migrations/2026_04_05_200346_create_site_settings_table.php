@@ -25,7 +25,6 @@ return new class extends Migration
             $table->jsonb('features')->default('[]');
             $table->jsonb('landing_sections')->default('[]');
             $table->jsonb('theme_colors')->nullable();
-            $table->string('default_locale')->default('en');
             $table->timestamps();
         });
     }
