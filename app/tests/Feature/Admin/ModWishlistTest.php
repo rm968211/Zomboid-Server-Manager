@@ -3,11 +3,16 @@
 use App\Models\User;
 use App\Models\WishlistMod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->admin = User::factory()->admin()->create();
+    // Adding to the wishlist asks Steam whether the ID is a collection, so it
+    // can be expanded into its members — see ModBundleTest. An empty fake makes
+    // every ID here an ordinary mod without touching the network.
+    Http::fake();
 });
 
 it('adds a workshop id to the wishlist', function () {
@@ -19,12 +24,12 @@ it('adds a workshop id to the wishlist', function () {
     $this->assertDatabaseHas('wishlist_mods', ['workshop_id' => '2561774086']);
 });
 
-it('is idempotent when adding an id already on the wishlist', function () {
+it('rejects an id that is already on the wishlist', function () {
     WishlistMod::factory()->create(['workshop_id' => '2561774086']);
 
     $this->actingAs($this->admin)
         ->postJson('/admin/mods/wishlist', ['workshop_id' => '2561774086'])
-        ->assertCreated();
+        ->assertStatus(422);
 
     $this->assertDatabaseCount('wishlist_mods', 1);
 });

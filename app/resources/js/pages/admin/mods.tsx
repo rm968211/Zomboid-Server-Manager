@@ -20,6 +20,7 @@ import {
     AlertTriangle,
     Bookmark,
     BookmarkPlus,
+    Boxes,
     CheckCircle2,
     Clock,
     Download,
@@ -34,6 +35,8 @@ import {
     Search,
     Star,
     Trash2,
+    Unlink,
+    X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -85,6 +88,7 @@ import { parseModImport } from '@/lib/parse-mod-import';
 import type {
     BreadcrumbItem,
     BuildCompat,
+    ModBundles,
     ModEntry,
     WorkshopDetails,
 } from '@/types';
@@ -96,6 +100,8 @@ type LookupResult = {
     preview_url?: string | null;
     mod_ids?: string[];
     map_folders?: string[];
+    is_bundle?: boolean;
+    members?: string[];
 };
 
 type LookupState =
@@ -114,6 +120,12 @@ type LookupState =
           title: string;
           previewUrl: string | null;
           mapFolders: string[];
+      }
+    | {
+          status: 'bundle';
+          title: string;
+          previewUrl: string | null;
+          members: string[];
       }
     | { status: 'error' };
 
@@ -153,6 +165,18 @@ function StatusBadge({ status }: { status: ModEntry['status'] }) {
             Stopped
         </Badge>
     );
+}
+
+/**
+ * A mod's Workshop items, tolerating rows from older responses that only ever
+ * carried the single scanned `workshop_id`.
+ */
+function modWorkshopIds(mod: ModEntry): string[] {
+    if (mod.workshop_ids) {
+        return mod.workshop_ids;
+    }
+
+    return mod.workshop_id ? [mod.workshop_id] : [];
 }
 
 function workshopUrl(workshopId: string): string {
@@ -261,6 +285,149 @@ type GroupPosition = 'solo' | 'start' | 'middle' | 'end';
 type GroupInfo = { position: GroupPosition; siblings: string[] };
 
 /**
+ * Editable list of the Workshop items one mod needs. Used both when adding a
+ * mod and when correcting an existing one, so the two never drift apart.
+ */
+function WorkshopIdEditor({
+    ids,
+    onChange,
+    details,
+    lockedIds = [],
+}: {
+    ids: string[];
+    onChange: (ids: string[]) => void;
+    details: Record<string, WorkshopDetails | null>;
+    /** IDs that identify the mod itself and so can't be dropped here. */
+    lockedIds?: string[];
+}) {
+    const [draft, setDraft] = useState('');
+
+    const trimmed = draft.trim();
+    const canAdd = /^\d{1,20}$/.test(trimmed) && !ids.includes(trimmed);
+
+    function commit() {
+        if (!canAdd) {
+            return;
+        }
+        onChange([...ids, trimmed]);
+        setDraft('');
+    }
+
+    return (
+        <div className="space-y-2" data-testid="workshop-id-editor">
+            {ids.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                    {ids.map((id) => (
+                        <Badge
+                            key={id}
+                            variant="secondary"
+                            className="max-w-full gap-1 text-xs"
+                            data-testid="workshop-id-chip"
+                        >
+                            <span className="truncate">
+                                {details[id]?.title || id}
+                            </span>
+                            {!lockedIds.includes(id) && (
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        onChange(ids.filter((x) => x !== id))
+                                    }
+                                    aria-label={`Remove Workshop ID ${id}`}
+                                    className="text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="size-3" />
+                                </button>
+                            )}
+                        </Badge>
+                    ))}
+                </div>
+            ) : (
+                <p className="text-xs text-muted-foreground">
+                    No Workshop IDs — add one below.
+                </p>
+            )}
+            <div className="flex gap-2">
+                <Input
+                    inputMode="numeric"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            commit();
+                        }
+                    }}
+                    placeholder="e.g. 2313387159"
+                    data-testid="workshop-id-draft"
+                />
+                <Button
+                    type="button"
+                    variant="outline"
+                    disabled={!canAdd}
+                    onClick={commit}
+                    data-testid="workshop-id-add"
+                >
+                    <Plus className="size-4" />
+                </Button>
+            </div>
+        </div>
+    );
+}
+
+/** A row's membership in a Steam Workshop collection the admin tracks. */
+type BundleInfo = {
+    bundleId: string;
+    title: string;
+    /** How many rows of the current list belong to this bundle. */
+    count: number;
+    /** First row of this bundle in the current list — carries the badge. */
+    isFirst: boolean;
+};
+
+/**
+ * Badge marking a row as part of a tracked Workshop collection, with the
+ * escape hatch: unbundling leaves every mod exactly where it is and stops
+ * treating them as one unit.
+ */
+function BundleBadge({
+    bundle,
+    onUnbundle,
+}: {
+    bundle: BundleInfo;
+    onUnbundle: (bundleId: string) => void;
+}) {
+    return (
+        <span className="inline-flex items-center gap-1">
+            <Badge
+                variant="outline"
+                className="gap-1 border-sky-500/40 bg-sky-500/10 text-xs text-sky-700 dark:text-sky-400"
+                data-testid="bundle-badge"
+            >
+                <Boxes className="size-3" />
+                {`${bundle.title} ×${bundle.count}`}
+            </Badge>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto px-1 py-0.5 text-xs text-muted-foreground"
+                        onClick={() => onUnbundle(bundle.bundleId)}
+                        data-testid="unbundle-button"
+                    >
+                        <Unlink className="size-3" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    Unbundle — manage these mods individually
+                </TooltipContent>
+            </Tooltip>
+        </span>
+    );
+}
+
+/**
  * A single Workshop item can bundle several mods (e.g. one upload containing
  * seven sub-mods) — they're installed as consecutive `Mods=` entries. This
  * clusters visually-adjacent rows sharing a workshop_id into a group, without
@@ -311,6 +478,60 @@ function computeGroups(mods: ModEntry[]): GroupInfo[] {
 }
 
 /**
+ * Flatten the bundle → members map the server sends into a member → bundle
+ * lookup. A Workshop item claimed by two collections is attributed to whichever
+ * comes first; the grouping is presentational, so a stable pick is enough.
+ */
+function invertBundles(bundles: ModBundles): Map<string, string> {
+    const byMember = new Map<string, string>();
+
+    Object.entries(bundles).forEach(([bundleId, members]) => {
+        members.forEach((member) => {
+            if (!byMember.has(member)) {
+                byMember.set(member, bundleId);
+            }
+        });
+    });
+
+    return byMember;
+}
+
+/**
+ * Reorder a wishlist so every bundle's members sit together, anchored at the
+ * position of whichever member came first. Unlike the installed list — where
+ * row order IS the PZ load order and must not be touched — wishlist order
+ * carries no meaning beyond the chosen sort, so clustering is free.
+ */
+function clusterByBundle<T extends { id: string }>(
+    entries: T[],
+    bundleOf: Map<string, string>,
+): T[] {
+    const emitted = new Set<string>();
+    const clustered: T[] = [];
+
+    entries.forEach((entry) => {
+        const bundleId = bundleOf.get(entry.id);
+
+        if (!bundleId) {
+            clustered.push(entry);
+
+            return;
+        }
+
+        if (emitted.has(bundleId)) {
+            return;
+        }
+
+        emitted.add(bundleId);
+        clustered.push(
+            ...entries.filter((e) => bundleOf.get(e.id) === bundleId),
+        );
+    });
+
+    return clustered;
+}
+
+/**
  * Every currently installed mod that transitively requires `modId` — mirrors
  * ModManager::transitiveDependents() so the delete dialog can preview exactly
  * what a cascade will remove before the request is sent.
@@ -346,6 +567,9 @@ function SortableModRow({
     details,
     group,
     installedModIds,
+    bundle,
+    onUnbundle,
+    onEditWorkshopIds,
 }: {
     mod: ModEntry;
     index: number;
@@ -355,6 +579,9 @@ function SortableModRow({
     group: GroupInfo;
     installedModIds: Set<string>;
     details?: WorkshopDetails | null;
+    bundle?: BundleInfo;
+    onUnbundle: (bundleId: string) => void;
+    onEditWorkshopIds: (mod: ModEntry) => void;
 }) {
     const {
         attributes,
@@ -383,6 +610,7 @@ function SortableModRow({
     // Steam" (null) — only the former gets a skeleton. A blank workshop_id
     // is never fetched at all, so it doesn't get a perpetual skeleton either.
     const isLoadingDetails = mod.workshop_id !== '' && details === undefined;
+    const workshopIds = modWorkshopIds(mod);
     const requires = mod.requires ?? [];
     const missingRequires = requires.filter((r) => !installedModIds.has(r));
     const requiredBy = mod.required_by ?? [];
@@ -394,10 +622,15 @@ function SortableModRow({
             style={style}
             className={[
                 isDragging ? 'bg-muted' : '',
-                isGrouped ? 'border-l-2 border-l-primary/40' : '',
+                bundle
+                    ? 'border-l-2 border-l-sky-500/60'
+                    : isGrouped
+                      ? 'border-l-2 border-l-primary/40'
+                      : '',
             ]
                 .filter(Boolean)
                 .join(' ')}
+            data-testid={bundle ? 'bundled-mod-row' : undefined}
         >
             <TableCell className="w-[50px]">
                 {!isDragDisabled ? (
@@ -474,18 +707,22 @@ function SortableModRow({
                                             <Badge
                                                 variant="outline"
                                                 className="gap-1 text-xs"
-                                                data-testid="bundle-badge"
+                                                data-testid="multimod-badge"
                                             >
                                                 <Layers className="size-3" />
-                                                {`Bundle ×${String(
-                                                    group.siblings.length,
-                                                )}`}
+                                                {`Multi-mod upload ×${group.siblings.length}`}
                                             </Badge>
                                         </TooltipTrigger>
                                         <TooltipContent>
                                             {group.siblings.join(', ')}
                                         </TooltipContent>
                                     </Tooltip>
+                                )}
+                                {bundle?.isFirst && (
+                                    <BundleBadge
+                                        bundle={bundle}
+                                        onUnbundle={onUnbundle}
+                                    />
                                 )}
                             </div>
                             <div className="truncate font-mono text-xs text-muted-foreground">
@@ -516,24 +753,57 @@ function SortableModRow({
                 )}
             </TableCell>
             <TableCell className="hidden sm:table-cell">
-                <Badge variant="secondary" className="text-xs">
-                    {mod.workshop_id}
-                </Badge>
+                <div className="flex flex-wrap gap-1">
+                    {workshopIds.length > 0 ? (
+                        workshopIds.map((id) => (
+                            <Badge
+                                key={id}
+                                variant="secondary"
+                                className="text-xs"
+                            >
+                                {id}
+                            </Badge>
+                        ))
+                    ) : (
+                        <Badge
+                            variant="outline"
+                            className="text-xs text-muted-foreground"
+                            data-testid="workshop-id-missing"
+                        >
+                            unknown
+                        </Badge>
+                    )}
+                </div>
             </TableCell>
             <TableCell>
                 <StatusBadge status={mod.status} />
             </TableCell>
             <TableCell className="text-right">
-                {!isProtected && (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => onDelete(mod)}
-                    >
-                        <Trash2 className="size-4" />
-                    </Button>
-                )}
+                <div className="flex items-center justify-end gap-1">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onEditWorkshopIds(mod)}
+                                data-testid="edit-workshop-ids"
+                            >
+                                <Pencil className="size-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit Workshop IDs</TooltipContent>
+                    </Tooltip>
+                    {!isProtected && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => onDelete(mod)}
+                        >
+                            <Trash2 className="size-4" />
+                        </Button>
+                    )}
+                </div>
             </TableCell>
         </TableRow>
     );
@@ -545,12 +815,14 @@ export default function Mods({
     pendingRestart = false,
     serverStatus = 'offline',
     wishlist = [],
+    bundles = {},
 }: {
     mods: ModEntry[];
     protectedWorkshopIds?: string[];
     pendingRestart?: boolean;
     serverStatus?: 'offline' | 'starting' | 'online';
     wishlist?: string[];
+    bundles?: ModBundles;
 }) {
     const protectedSet = useMemo(
         () => new Set(protectedWorkshopIds),
@@ -586,6 +858,14 @@ export default function Mods({
     const [details, setDetails] = useState<
         Record<string, WorkshopDetails | null>
     >({});
+    const [bundleDeleteTarget, setBundleDeleteTarget] = useState<{
+        bundleId: string;
+        target: 'installed' | 'wishlist';
+    } | null>(null);
+    /** Extra Workshop items the mod being added needs, beyond the primary one. */
+    const [addWorkshopIds, setAddWorkshopIds] = useState<string[]>([]);
+    const [editTarget, setEditTarget] = useState<ModEntry | null>(null);
+    const [editWorkshopIds, setEditWorkshopIds] = useState<string[]>([]);
     const [wishSort, setWishSort] = useState<'added' | 'b42'>('added');
     const [showWish, setShowWish] = useState(false);
     const [wishId, setWishId] = useState('');
@@ -599,9 +879,59 @@ export default function Mods({
         () => new Set(mods.map((m) => m.workshop_id).filter(Boolean)),
         [mods],
     );
+    // Read inside the debounced lookup without making it a dependency, which
+    // would re-run the Steam lookup every time the mod list changes.
+    const existingModIdsRef = useRef<Set<string>>(new Set());
     const existingModIds = useMemo(
         () => new Set(mods.map((m) => m.mod_id).filter(Boolean)),
         [mods],
+    );
+    useEffect(() => {
+        existingModIdsRef.current = existingModIds;
+    }, [existingModIds]);
+
+    /** Blocks the Add button — a repeated `Mods=` entry is a real fault. */
+    const isDuplicateMod = modId !== '' && existingModIds.has(modId);
+    const wishDuplicate = existingWorkshopIds.has(wishId.trim())
+        ? 'installed'
+        : wishlist.includes(wishId.trim())
+          ? 'wishlisted'
+          : null;
+
+    const bundleOf = useMemo(() => invertBundles(bundles), [bundles]);
+    const bundleTitle = useCallback(
+        (bundleId: string) => details[bundleId]?.title || bundleId,
+        [details],
+    );
+
+    /**
+     * Resolve a row's bundle badge against the list it is rendered in, so the
+     * count reflects what's actually visible (installed vs wishlisted) rather
+     * than the collection's full size on Steam.
+     */
+    const bundleInfoIn = useCallback(
+        (rows: string[][], index: number): BundleInfo | undefined => {
+            const bundleIdOf = (ids: string[]) =>
+                ids.map((id) => bundleOf.get(id)).find(Boolean);
+
+            const bundleId = bundleIdOf(rows[index]);
+
+            if (!bundleId) {
+                return undefined;
+            }
+
+            const memberRows = rows
+                .map((ids, i) => (bundleIdOf(ids) === bundleId ? i : -1))
+                .filter((i) => i >= 0);
+
+            return {
+                bundleId,
+                title: bundleTitle(bundleId),
+                count: memberRows.length,
+                isFirst: memberRows[0] === index,
+            };
+        },
+        [bundleOf, bundleTitle],
     );
 
     const [showBulk, setShowBulk] = useState(false);
@@ -614,6 +944,7 @@ export default function Mods({
     const [bulkModIds, setBulkModIds] = useState<string[]>([]);
     const [bulkMapFolders, setBulkMapFolders] = useState<string[]>([]);
     const [bulkUnresolved, setBulkUnresolved] = useState<string[]>([]);
+    const [bulkBundleIds, setBulkBundleIds] = useState<string[]>([]);
     const [importing, setImporting] = useState(false);
     const bulkCancelled = useRef(false);
 
@@ -624,7 +955,9 @@ export default function Mods({
         (w) => !existingWorkshopIds.has(w),
     ).length;
     const bulkHasSomething =
-        bulkModIds.length > 0 || bulkWorkshopIds.length > 0;
+        bulkModIds.length > 0 ||
+        bulkWorkshopIds.length > 0 ||
+        bulkBundleIds.length > 0;
 
     function openBulk() {
         bulkCancelled.current = false;
@@ -635,6 +968,7 @@ export default function Mods({
         setBulkModIds([]);
         setBulkMapFolders([]);
         setBulkUnresolved([]);
+        setBulkBundleIds([]);
         setShowBulk(true);
     }
 
@@ -651,6 +985,7 @@ export default function Mods({
             setBulkWorkshopIds(parsed.workshopIds);
             setBulkModIds(parsed.modIds);
             setBulkUnresolved([]);
+            setBulkBundleIds([]);
             setBulkPhase('ready');
             return;
         }
@@ -665,6 +1000,7 @@ export default function Mods({
         const modIds: string[] = [];
         const mapFolders: string[] = [...parsed.mapFolders];
         const unresolved: string[] = [];
+        const bundleIds: string[] = [];
 
         for (let i = 0; i < parsed.workshopIds.length; i++) {
             if (bulkCancelled.current) {
@@ -674,11 +1010,18 @@ export default function Mods({
             const json = (await fetchAction('/admin/mods/lookup', {
                 data: { workshop_id: id },
                 silent: true,
-            })) as {
-                found?: boolean;
-                mod_ids?: string[];
-                map_folders?: string[];
-            } | null;
+            })) as LookupResult | null;
+
+            // Collections carry no mods of their own — hand them to the bundle
+            // endpoint at submit time, which expands and records them serverside.
+            if (json?.is_bundle && (json.members ?? []).length > 0) {
+                bundleIds.push(id);
+                setBulkProgress({
+                    done: i + 1,
+                    total: parsed.workshopIds.length,
+                });
+                continue;
+            }
 
             const ids = json?.mod_ids ?? [];
             if (json && json.found !== false && ids.length > 0) {
@@ -700,24 +1043,44 @@ export default function Mods({
         setBulkModIds(modIds);
         setBulkMapFolders(mapFolders);
         setBulkUnresolved(unresolved);
+        setBulkBundleIds(bundleIds);
         setBulkPhase('ready');
     }
 
     async function submitBulk() {
         setImporting(true);
-        const result = await fetchAction('/admin/mods/import', {
-            data: {
-                workshop_ids: bulkWorkshopIds,
-                mod_ids: bulkModIds,
-                map: bulkMapFolders,
-            },
-            successMessage: `Imported ${String(bulkModIds.length || bulkWorkshopIds.length)} mod(s). Restart the server to load them.`,
-        });
+
+        const hasPlainMods =
+            bulkWorkshopIds.length > 0 || bulkModIds.length > 0;
+
+        let succeeded = false;
+
+        if (hasPlainMods) {
+            succeeded = Boolean(
+                await fetchAction('/admin/mods/import', {
+                    data: {
+                        workshop_ids: bulkWorkshopIds,
+                        mod_ids: bulkModIds,
+                        map: bulkMapFolders,
+                    },
+                    successMessage: `Imported ${bulkModIds.length || bulkWorkshopIds.length} mod(s). Restart the server to load them.`,
+                }),
+            );
+        }
+
+        for (const bundleId of bulkBundleIds) {
+            const installed = await fetchAction('/admin/mods/bundles', {
+                data: { workshop_id: bundleId, target: 'installed' },
+                successMessage: `Installed bundle ${bundleId}`,
+            });
+            succeeded = succeeded || Boolean(installed);
+        }
+
         setImporting(false);
-        if (result) {
+        if (succeeded) {
             closeBulk();
             router.reload({
-                only: ['mods', 'pendingRestart', 'serverStatus'],
+                only: ['mods', 'bundles', 'pendingRestart', 'serverStatus'],
             });
         }
     }
@@ -761,11 +1124,16 @@ export default function Mods({
     // for every installed + wishlisted mod that we haven't resolved yet.
     useEffect(() => {
         const wanted = new Set<string>(wishlist);
-        mods.forEach((m) => {
-            if (m.workshop_id) {
-                wanted.add(m.workshop_id);
-            }
-        });
+        mods.forEach((m) => modWorkshopIds(m).forEach((id) => wanted.add(id)));
+        // Chips in the add/edit editors show a title once resolved.
+        addWorkshopIds.forEach((id) => wanted.add(id));
+        editWorkshopIds.forEach((id) => wanted.add(id));
+        // Bundles are Workshop items too — their title and thumbnail come from
+        // the same batch, and members previewed in the add dialog need theirs.
+        Object.keys(bundles).forEach((id) => wanted.add(id));
+        if (lookup.status === 'bundle') {
+            lookup.members.forEach((id) => wanted.add(id));
+        }
         const missing = [...wanted].filter((id) => !(id in details));
         if (missing.length === 0) {
             return;
@@ -794,7 +1162,15 @@ export default function Mods({
         return () => {
             cancelled = true;
         };
-    }, [mods, wishlist, details]);
+    }, [
+        mods,
+        wishlist,
+        details,
+        bundles,
+        lookup,
+        addWorkshopIds,
+        editWorkshopIds,
+    ]);
 
     const sortedWishlist = useMemo(() => {
         // Keep `undefined` (still loading) distinct from `null` (fetched,
@@ -809,14 +1185,22 @@ export default function Mods({
                 unknown: 1,
                 b41: 2,
             };
-            return [...entries].sort(
-                (a, b) =>
-                    rank[a.details?.build_compat ?? 'unknown'] -
-                    rank[b.details?.build_compat ?? 'unknown'],
+            return clusterByBundle(
+                [...entries].sort(
+                    (a, b) =>
+                        rank[a.details?.build_compat ?? 'unknown'] -
+                        rank[b.details?.build_compat ?? 'unknown'],
+                ),
+                bundleOf,
             );
         }
-        return entries;
-    }, [wishlist, details, wishSort]);
+        return clusterByBundle(entries, bundleOf);
+    }, [wishlist, details, wishSort, bundleOf]);
+
+    const wishlistIds = useMemo(
+        () => sortedWishlist.map((e) => [e.id]),
+        [sortedWishlist],
+    );
 
     const resetLookupState = useCallback(() => {
         setLookup({ status: 'idle' });
@@ -869,6 +1253,22 @@ export default function Mods({
         const title = json.title ?? '';
         const previewUrl = json.preview_url ?? null;
 
+        // A collection has no Mod IDs of its own — it's installed by expanding
+        // it, so the dialog switches to bundle mode instead of asking for one.
+        if (json.is_bundle && (json.members ?? []).length > 0) {
+            setLookup({
+                status: 'bundle',
+                title,
+                previewUrl,
+                members: json.members ?? [],
+            });
+            setModId('');
+            setMapFolder('');
+            setManualOverride(false);
+
+            return;
+        }
+
         if (modIds.length === 0) {
             setLookup({ status: 'no_mod_ids', title, previewUrl, mapFolders });
             setModId('');
@@ -878,7 +1278,13 @@ export default function Mods({
         }
 
         setLookup({ status: 'success', title, previewUrl, modIds, mapFolders });
-        setModId(modIds[0]);
+        // One Workshop upload can provide several mods, and you often already
+        // have some of them — start on one that isn't installed so the dialog
+        // opens ready to submit rather than blocked on a duplicate.
+        setModId(
+            modIds.find((id) => !existingModIdsRef.current.has(id)) ??
+                modIds[0],
+        );
         setMapFolder(mapFolders[0] ?? '');
         setManualOverride(false);
     }, []);
@@ -920,6 +1326,11 @@ export default function Mods({
     // as standalone rows instead of a broken-looking group.
     const modGroups = useMemo(
         () => computeGroups(filteredMods),
+        [filteredMods],
+    );
+
+    const filteredWorkshopIds = useMemo(
+        () => filteredMods.map(modWorkshopIds),
         [filteredMods],
     );
 
@@ -975,7 +1386,37 @@ export default function Mods({
         setShowAdd(false);
         setWorkshopId('');
         setPendingInstall(null);
+        setAddWorkshopIds([]);
         resetLookupState();
+    }
+
+    function openEditWorkshopIds(mod: ModEntry) {
+        setEditTarget(mod);
+        setEditWorkshopIds(modWorkshopIds(mod));
+    }
+
+    async function saveWorkshopIds() {
+        if (!editTarget) {
+            return;
+        }
+
+        setLoading(true);
+        const result = await fetchAction('/admin/mods/workshop-ids', {
+            method: 'PUT',
+            data: {
+                mod_id: editTarget.mod_id,
+                workshop_ids: editWorkshopIds,
+            },
+            successMessage: `Updated Workshop IDs for ${editTarget.mod_id}`,
+        });
+        setLoading(false);
+
+        if (result) {
+            setEditTarget(null);
+            router.reload({
+                only: ['mods', 'bundles', 'pendingRestart', 'serverStatus'],
+            });
+        }
     }
 
     async function addMod() {
@@ -983,6 +1424,7 @@ export default function Mods({
         const result = await fetchAction('/admin/mods', {
             data: {
                 workshop_id: workshopId,
+                workshop_ids: [workshopId.trim(), ...addWorkshopIds],
                 mod_id: modId,
                 map_folder: mapFolder || null,
             },
@@ -1032,6 +1474,66 @@ export default function Mods({
         router.reload({
             only: ['mods', 'wishlist', 'pendingRestart', 'serverStatus'],
         });
+    }
+
+    /**
+     * Install every mod in a collection. Also used from the wishlist, where a
+     * bundled row's Install button installs the whole bundle rather than the
+     * one mod the button happens to sit on.
+     */
+    async function installBundle(bundleId: string) {
+        setLoading(true);
+        const result = await fetchAction('/admin/mods/bundles', {
+            data: { workshop_id: bundleId, target: 'installed' },
+            successMessage: `Installed bundle ${bundleTitle(bundleId)}`,
+        });
+        setLoading(false);
+        if (result) {
+            closeAddDialog();
+            router.reload({
+                only: [
+                    'mods',
+                    'wishlist',
+                    'bundles',
+                    'pendingRestart',
+                    'serverStatus',
+                ],
+            });
+        }
+    }
+
+    async function removeBundle(
+        bundleId: string,
+        target: 'installed' | 'wishlist',
+        toWishlist = false,
+    ) {
+        setLoading(true);
+        await fetchAction(`/admin/mods/bundles/${bundleId}/mods`, {
+            method: 'DELETE',
+            data: { target, to_wishlist: toWishlist },
+            successMessage: toWishlist
+                ? `Moved bundle ${bundleTitle(bundleId)} to the wishlist`
+                : `Removed bundle ${bundleTitle(bundleId)}`,
+        });
+        setLoading(false);
+        setBundleDeleteTarget(null);
+        router.reload({
+            only: [
+                'mods',
+                'wishlist',
+                'bundles',
+                'pendingRestart',
+                'serverStatus',
+            ],
+        });
+    }
+
+    async function unbundle(bundleId: string) {
+        await fetchAction(`/admin/mods/bundles/${bundleId}`, {
+            method: 'DELETE',
+            successMessage: `Unbundled ${bundleTitle(bundleId)}`,
+        });
+        router.reload({ only: ['bundles'] });
     }
 
     async function addWish() {
@@ -1274,9 +1776,35 @@ export default function Mods({
                                                             key={mod.mod_id}
                                                             mod={mod}
                                                             index={index}
-                                                            onDelete={
-                                                                setDeleteTarget
-                                                            }
+                                                            onDelete={(m) => {
+                                                                const bundleId =
+                                                                    modWorkshopIds(
+                                                                        m,
+                                                                    )
+                                                                        .map(
+                                                                            (
+                                                                                id,
+                                                                            ) =>
+                                                                                bundleOf.get(
+                                                                                    id,
+                                                                                ),
+                                                                        )
+                                                                        .find(
+                                                                            Boolean,
+                                                                        );
+                                                                if (bundleId) {
+                                                                    setBundleDeleteTarget(
+                                                                        {
+                                                                            bundleId,
+                                                                            target: 'installed',
+                                                                        },
+                                                                    );
+                                                                } else {
+                                                                    setDeleteTarget(
+                                                                        m,
+                                                                    );
+                                                                }
+                                                            }}
                                                             isDragDisabled={
                                                                 isFiltering
                                                             }
@@ -1294,6 +1822,16 @@ export default function Mods({
                                                             }
                                                             installedModIds={
                                                                 existingModIds
+                                                            }
+                                                            bundle={bundleInfoIn(
+                                                                filteredWorkshopIds,
+                                                                index,
+                                                            )}
+                                                            onUnbundle={
+                                                                unbundle
+                                                            }
+                                                            onEditWorkshopIds={
+                                                                openEditWorkshopIds
                                                             }
                                                         />
                                                     ),
@@ -1366,15 +1904,24 @@ export default function Mods({
                                     </TableHeader>
                                     <TableBody>
                                         {sortedWishlist.map(
-                                            ({ id, details: d }) => {
+                                            ({ id, details: d }, index) => {
                                                 const installed =
                                                     existingWorkshopIds.has(id);
                                                 const isLoadingDetails =
                                                     d === undefined;
+                                                const bundle = bundleInfoIn(
+                                                    wishlistIds,
+                                                    index,
+                                                );
                                                 return (
                                                     <TableRow
                                                         key={id}
                                                         data-testid="wishlist-row"
+                                                        className={
+                                                            bundle
+                                                                ? 'border-l-2 border-l-sky-500/60'
+                                                                : undefined
+                                                        }
                                                     >
                                                         <TableCell className="font-medium">
                                                             {isLoadingDetails ? (
@@ -1397,17 +1944,29 @@ export default function Mods({
                                                                         className="size-12"
                                                                     />
                                                                     <div className="min-w-0">
-                                                                        <a
-                                                                            href={workshopUrl(
-                                                                                id,
+                                                                        <div className="flex items-center gap-2">
+                                                                            <a
+                                                                                href={workshopUrl(
+                                                                                    id,
+                                                                                )}
+                                                                                target="_blank"
+                                                                                rel="noreferrer"
+                                                                                className="block truncate hover:underline"
+                                                                            >
+                                                                                {d?.title ||
+                                                                                    id}
+                                                                            </a>
+                                                                            {bundle?.isFirst && (
+                                                                                <BundleBadge
+                                                                                    bundle={
+                                                                                        bundle
+                                                                                    }
+                                                                                    onUnbundle={
+                                                                                        unbundle
+                                                                                    }
+                                                                                />
                                                                             )}
-                                                                            target="_blank"
-                                                                            rel="noreferrer"
-                                                                            className="block truncate hover:underline"
-                                                                        >
-                                                                            {d?.title ||
-                                                                                id}
-                                                                        </a>
+                                                                        </div>
                                                                         {d && (
                                                                             <ModMeta
                                                                                 details={
@@ -1452,17 +2011,24 @@ export default function Mods({
                                                                     <Button
                                                                         variant="outline"
                                                                         size="sm"
+                                                                        disabled={
+                                                                            loading
+                                                                        }
                                                                         onClick={() =>
-                                                                            installFromWishlist(
-                                                                                id,
-                                                                            )
+                                                                            bundle
+                                                                                ? installBundle(
+                                                                                      bundle.bundleId,
+                                                                                  )
+                                                                                : installFromWishlist(
+                                                                                      id,
+                                                                                  )
                                                                         }
                                                                         data-testid="wishlist-install"
                                                                     >
                                                                         <Download className="mr-1.5 size-4" />
-                                                                        {
-                                                                            'Install'
-                                                                        }
+                                                                        {bundle
+                                                                            ? `Install bundle (${bundle.count} mods)`
+                                                                            : 'Install'}
                                                                     </Button>
                                                                 )}
                                                                 <Button
@@ -1470,9 +2036,17 @@ export default function Mods({
                                                                     size="sm"
                                                                     className="text-destructive hover:text-destructive"
                                                                     onClick={() =>
-                                                                        removeWish(
-                                                                            id,
-                                                                        )
+                                                                        bundle
+                                                                            ? setBundleDeleteTarget(
+                                                                                  {
+                                                                                      bundleId:
+                                                                                          bundle.bundleId,
+                                                                                      target: 'wishlist',
+                                                                                  },
+                                                                              )
+                                                                            : removeWish(
+                                                                                  id,
+                                                                              )
                                                                     }
                                                                     data-testid="wishlist-remove"
                                                                 >
@@ -1533,7 +2107,8 @@ export default function Mods({
                                 )}
                             </div>
                             {(lookup.status === 'success' ||
-                                lookup.status === 'no_mod_ids') && (
+                                lookup.status === 'no_mod_ids' ||
+                                lookup.status === 'bundle') && (
                                 <div
                                     className="flex items-center gap-3 rounded-md border bg-muted/30 p-2"
                                     data-testid="workshop-preview"
@@ -1573,7 +2148,57 @@ export default function Mods({
                             )}
                         </div>
 
-                        <div className="space-y-2">
+                        {lookup.status === 'bundle' && (
+                            <div
+                                className="space-y-2"
+                                data-testid="bundle-preview"
+                            >
+                                <Alert className="border-sky-500/40 bg-sky-500/10">
+                                    <Boxes className="size-4" />
+                                    <AlertDescription className="text-xs">
+                                        {`This is a Workshop collection containing ${lookup.members.length} mods. Installing it adds all of them and keeps them grouped.`}
+                                    </AlertDescription>
+                                </Alert>
+                                <ul className="max-h-48 space-y-1 overflow-y-auto rounded-md border p-2">
+                                    {lookup.members.map((memberId) => (
+                                        <li
+                                            key={memberId}
+                                            className="flex items-center gap-2 text-xs"
+                                        >
+                                            <ModThumb
+                                                src={
+                                                    details[memberId]
+                                                        ?.preview_url
+                                                }
+                                                className="size-6"
+                                            />
+                                            <span className="truncate">
+                                                {details[memberId]?.title ||
+                                                    memberId}
+                                            </span>
+                                            {existingWorkshopIds.has(
+                                                memberId,
+                                            ) && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-[10px] text-muted-foreground"
+                                                >
+                                                    Installed
+                                                </Badge>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        <div
+                            className={
+                                lookup.status === 'bundle'
+                                    ? 'hidden'
+                                    : 'space-y-2'
+                            }
+                        >
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="mod-id">{'Mod ID'}</Label>
                                 {lookup.status === 'success' &&
@@ -1606,7 +2231,9 @@ export default function Mods({
                                     <SelectContent>
                                         {lookup.modIds.map((id) => (
                                             <SelectItem key={id} value={id}>
-                                                {id}
+                                                {existingModIds.has(id)
+                                                    ? `${id} (already installed)`
+                                                    : id}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -1632,9 +2259,43 @@ export default function Mods({
                                     }
                                 </p>
                             )}
+                            {isDuplicateMod && (
+                                <p
+                                    className="text-xs text-destructive"
+                                    data-testid="duplicate-mod-warning"
+                                >
+                                    {`${modId} is already installed. Pick a different mod, or remove the installed one first.`}
+                                </p>
+                            )}
                         </div>
 
-                        <div className="space-y-2">
+                        <div
+                            className={
+                                lookup.status === 'bundle'
+                                    ? 'hidden'
+                                    : 'space-y-2'
+                            }
+                        >
+                            <Label>Additional Workshop IDs</Label>
+                            <p className="text-xs text-muted-foreground">
+                                Only if this mod is split across several
+                                Workshop uploads — extras are downloaded
+                                alongside the one above.
+                            </p>
+                            <WorkshopIdEditor
+                                ids={addWorkshopIds}
+                                onChange={setAddWorkshopIds}
+                                details={details}
+                            />
+                        </div>
+
+                        <div
+                            className={
+                                lookup.status === 'bundle'
+                                    ? 'hidden'
+                                    : 'space-y-2'
+                            }
+                        >
                             <Label htmlFor="map-folder">
                                 Map Folder (optional)
                             </Label>
@@ -1676,17 +2337,29 @@ export default function Mods({
                         <Button variant="outline" onClick={closeAddDialog}>
                             Cancel
                         </Button>
-                        <Button
-                            disabled={
-                                loading ||
-                                !workshopId ||
-                                !modId ||
-                                lookup.status === 'loading'
-                            }
-                            onClick={addMod}
-                        >
-                            Add Mod
-                        </Button>
+                        {lookup.status === 'bundle' ? (
+                            <Button
+                                disabled={loading}
+                                onClick={() => installBundle(workshopId.trim())}
+                                data-testid="install-bundle-button"
+                            >
+                                <Boxes className="mr-1.5 size-4" />
+                                {`Install bundle (${lookup.members.length} mods)`}
+                            </Button>
+                        ) : (
+                            <Button
+                                disabled={
+                                    loading ||
+                                    !workshopId ||
+                                    !modId ||
+                                    isDuplicateMod ||
+                                    lookup.status === 'loading'
+                                }
+                                onClick={addMod}
+                            >
+                                Add Mod
+                            </Button>
+                        )}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -1779,6 +2452,14 @@ export default function Mods({
                             {bulkMapFolders.length > 0 && (
                                 <p className="text-xs text-muted-foreground">
                                     {`${String(bulkMapFolders.length)} map folder(s) will be merged into Map=`}
+                                </p>
+                            )}
+                            {bulkBundleIds.length > 0 && (
+                                <p
+                                    className="text-xs text-muted-foreground"
+                                    data-testid="bulk-bundles"
+                                >
+                                    {`${bulkBundleIds.length} Workshop collection(s) will be installed as bundles`}
                                 </p>
                             )}
                             {bulkUnresolved.length > 0 && (
@@ -1904,6 +2585,95 @@ export default function Mods({
                 </DialogContent>
             </Dialog>
 
+            {/* Edit Workshop IDs Dialog */}
+            <Dialog
+                open={editTarget !== null}
+                onOpenChange={(open) => !open && setEditTarget(null)}
+            >
+                <DialogContent data-testid="edit-workshop-ids-dialog">
+                    <DialogHeader>
+                        <DialogTitle>Edit Workshop IDs</DialogTitle>
+                        <DialogDescription>
+                            {`Which Workshop items ${editTarget?.mod_id ?? ''} needs downloaded. Removing one drops it from WorkshopItems= unless another installed mod still needs it.`}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <WorkshopIdEditor
+                        ids={editWorkshopIds}
+                        onChange={setEditWorkshopIds}
+                        details={details}
+                    />
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setEditTarget(null)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            disabled={loading}
+                            onClick={saveWorkshopIds}
+                            data-testid="save-workshop-ids"
+                        >
+                            Save
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Bundle Removal Confirmation Dialog */}
+            <Dialog
+                open={bundleDeleteTarget !== null}
+                onOpenChange={() => setBundleDeleteTarget(null)}
+            >
+                <DialogContent data-testid="bundle-delete-dialog">
+                    <DialogHeader>
+                        <DialogTitle>Remove bundle</DialogTitle>
+                        <DialogDescription>
+                            {`Remove all ${(bundles[bundleDeleteTarget?.bundleId ?? ''] ?? []).length} mods in "${bundleDeleteTarget ? bundleTitle(bundleDeleteTarget.bundleId) : ''}" from the ${bundleDeleteTarget?.target === 'wishlist' ? 'wishlist' : 'server'}? Unbundle it first if you only want to remove one.`}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setBundleDeleteTarget(null)}
+                        >
+                            Cancel
+                        </Button>
+                        {bundleDeleteTarget?.target === 'installed' && (
+                            <Button
+                                variant="outline"
+                                disabled={loading}
+                                onClick={() =>
+                                    removeBundle(
+                                        bundleDeleteTarget.bundleId,
+                                        'installed',
+                                        true,
+                                    )
+                                }
+                                data-testid="bundle-move-to-wishlist-button"
+                            >
+                                <Bookmark className="mr-1.5 size-4" />
+                                Move to wishlist
+                            </Button>
+                        )}
+                        <Button
+                            variant="destructive"
+                            disabled={loading}
+                            onClick={() =>
+                                bundleDeleteTarget &&
+                                removeBundle(
+                                    bundleDeleteTarget.bundleId,
+                                    bundleDeleteTarget.target,
+                                )
+                            }
+                            data-testid="bundle-delete-confirm"
+                        >
+                            Remove bundle
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {/* Wishlist Mod Dialog */}
             <Dialog
                 open={showWish}
@@ -1935,6 +2705,16 @@ export default function Mods({
                             placeholder="e.g. 2313387159"
                             data-testid="wishlist-workshop-id-input"
                         />
+                        {wishDuplicate && (
+                            <p
+                                className="text-xs text-destructive"
+                                data-testid="duplicate-wishlist-warning"
+                            >
+                                {wishDuplicate === 'installed'
+                                    ? 'That mod is already installed.'
+                                    : 'That mod is already on the wishlist.'}
+                            </p>
+                        )}
                     </div>
                     <DialogFooter>
                         <Button
@@ -1948,7 +2728,9 @@ export default function Mods({
                         </Button>
                         <Button
                             disabled={
-                                wishLoading || !/^\d{1,20}$/.test(wishId.trim())
+                                wishLoading ||
+                                wishDuplicate !== null ||
+                                !/^\d{1,20}$/.test(wishId.trim())
                             }
                             onClick={addWish}
                             data-testid="wishlist-submit-button"

@@ -39,6 +39,13 @@ export type ModStatus = 'active' | 'pending_restart' | 'stopped';
 
 export type ModEntry = {
     workshop_id: string;
+    /**
+     * Every Workshop item this mod needs downloaded. Usually one, but a mod
+     * split across several uploads (a base plus a texture or map pack that
+     * declares no mod ID) can list more. Empty when neither the downloaded
+     * content nor a stored link resolves one.
+     */
+    workshop_ids?: string[];
     mod_id: string;
     position: number;
     status?: ModStatus;
@@ -62,7 +69,15 @@ export type WorkshopDetails = {
     time_updated: number | null;
     file_size: number | null;
     subscriptions: number | null;
+    is_collection: boolean;
 };
+
+/**
+ * Steam Workshop collections the admin manages as one unit, mapped to the
+ * Workshop IDs they currently contain. Membership is resolved live from Steam,
+ * so a collection that gains a mod regroups without any local bookkeeping.
+ */
+export type ModBundles = Record<string, string[]>;
 
 export type AuditEntry = {
     id: string;

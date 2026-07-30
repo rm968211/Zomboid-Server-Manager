@@ -73,10 +73,14 @@ Route::middleware(['auth', 'admin', 'throttle:admin'])->group(function () {
         Route::post('mods/wishlist', [Admin\ModController::class, 'wishlistStore'])->name('mods.wishlist.store');
         Route::post('mods/wishlist/import', [Admin\ModController::class, 'wishlistImport'])->name('mods.wishlist.import');
         Route::delete('mods/wishlist/{workshopId}', [Admin\ModController::class, 'wishlistDestroy'])->name('mods.wishlist.destroy');
+        Route::post('mods/bundles', [Admin\ModController::class, 'bundleStore'])->name('mods.bundles.store');
+        Route::delete('mods/bundles/{workshopId}/mods', [Admin\ModController::class, 'bundleDestroy'])->name('mods.bundles.destroy');
+        Route::delete('mods/bundles/{workshopId}', [Admin\ModController::class, 'bundleUnbundle'])->name('mods.bundles.unbundle');
         Route::post('mods', [Admin\ModController::class, 'store'])->name('mods.store');
         Route::post('mods/import', [Admin\ModController::class, 'import'])->name('mods.import');
         Route::delete('mods/{workshopId}', [Admin\ModController::class, 'destroy'])->name('mods.destroy');
         Route::put('mods/order', [Admin\ModController::class, 'reorder'])->name('mods.reorder');
+        Route::put('mods/workshop-ids', [Admin\ModController::class, 'updateWorkshopIds'])->name('mods.workshop-ids');
 
         // Backups
         Route::get('backups', [Admin\BackupController::class, 'index'])->name('backups');
