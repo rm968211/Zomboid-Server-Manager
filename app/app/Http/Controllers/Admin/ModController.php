@@ -264,6 +264,18 @@ class ModController extends Controller
             ] + $result, 201);
         }
 
+        if (WishlistMod::query()->where('workshop_id', $workshopId)->exists()) {
+            return response()->json([
+                'error' => 'That mod is already on the wishlist.',
+            ], 422);
+        }
+
+        if ($this->isWorkshopItemInstalled($workshopId)) {
+            return response()->json([
+                'error' => 'That mod is already installed.',
+            ], 422);
+        }
+
         WishlistMod::query()->firstOrCreate(['workshop_id' => $workshopId]);
 
         $this->auditLogger->log(
@@ -274,6 +286,21 @@ class ModController extends Controller
         );
 
         return response()->json(['workshop_id' => $workshopId], 201);
+    }
+
+    /**
+     * Whether any installed mod is served by this Workshop item — the same
+     * check `wishlistImport` applies per ID, so the two paths agree on what
+     * "already installed" means.
+     */
+    private function isWorkshopItemInstalled(string $workshopId): bool
+    {
+        $installed = array_column($this->modManager->list(
+            config('zomboid.paths.server_ini'),
+            config('zomboid.paths.workshop_content'),
+        ), 'workshop_id');
+
+        return in_array($workshopId, $installed, true);
     }
 
     public function wishlistDestroy(Request $request, string $workshopId): JsonResponse
@@ -580,6 +607,21 @@ class ModController extends Controller
             [$validated['workshop_id']],
             $validated['workshop_ids'] ?? [],
         )));
+
+        // Only the mod ID has to be unique. `Mods=` is what PZ loads, and a
+        // repeat there is a real fault; a repeated Workshop ID is not, since one
+        // upload can provide several mods and several mods can share a
+        // dependency item.
+        $installedModIds = array_column($this->modManager->list(
+            config('zomboid.paths.server_ini'),
+            config('zomboid.paths.workshop_content'),
+        ), 'mod_id');
+
+        if (in_array($validated['mod_id'], $installedModIds, true)) {
+            return response()->json([
+                'error' => "{$validated['mod_id']} is already installed.",
+            ], 422);
+        }
 
         try {
             $this->modManager->add(

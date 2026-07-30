@@ -24,12 +24,12 @@ it('adds a workshop id to the wishlist', function () {
     $this->assertDatabaseHas('wishlist_mods', ['workshop_id' => '2561774086']);
 });
 
-it('is idempotent when adding an id already on the wishlist', function () {
+it('rejects an id that is already on the wishlist', function () {
     WishlistMod::factory()->create(['workshop_id' => '2561774086']);
 
     $this->actingAs($this->admin)
         ->postJson('/admin/mods/wishlist', ['workshop_id' => '2561774086'])
-        ->assertCreated();
+        ->assertStatus(422);
 
     $this->assertDatabaseCount('wishlist_mods', 1);
 });

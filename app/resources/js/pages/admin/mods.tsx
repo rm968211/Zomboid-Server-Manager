@@ -913,10 +913,24 @@ export default function Mods({
         () => new Set(mods.map((m) => m.workshop_id).filter(Boolean)),
         [mods],
     );
+    // Read inside the debounced lookup without making it a dependency, which
+    // would re-run the Steam lookup every time the mod list changes.
+    const existingModIdsRef = useRef<Set<string>>(new Set());
     const existingModIds = useMemo(
         () => new Set(mods.map((m) => m.mod_id).filter(Boolean)),
         [mods],
     );
+    useEffect(() => {
+        existingModIdsRef.current = existingModIds;
+    }, [existingModIds]);
+
+    /** Blocks the Add button — a repeated `Mods=` entry is a real fault. */
+    const isDuplicateMod = modId !== '' && existingModIds.has(modId);
+    const wishDuplicate = existingWorkshopIds.has(wishId.trim())
+        ? 'installed'
+        : wishlist.includes(wishId.trim())
+          ? 'wishlisted'
+          : null;
 
     const bundleOf = useMemo(() => invertBundles(bundles), [bundles]);
     const bundleTitle = useCallback(
@@ -1304,7 +1318,13 @@ export default function Mods({
         }
 
         setLookup({ status: 'success', title, previewUrl, modIds, mapFolders });
-        setModId(modIds[0]);
+        // One Workshop upload can provide several mods, and you often already
+        // have some of them — start on one that isn't installed so the dialog
+        // opens ready to submit rather than blocked on a duplicate.
+        setModId(
+            modIds.find((id) => !existingModIdsRef.current.has(id)) ??
+                modIds[0],
+        );
         setMapFolder(mapFolders[0] ?? '');
         setManualOverride(false);
     }, []);
@@ -2311,7 +2331,12 @@ export default function Mods({
                                     <SelectContent>
                                         {lookup.modIds.map((id) => (
                                             <SelectItem key={id} value={id}>
-                                                {id}
+                                                {existingModIds.has(id)
+                                                    ? t(
+                                                          'admin.mods.mod_id_installed_option',
+                                                          { mod_id: id },
+                                                      )
+                                                    : id}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -2335,6 +2360,16 @@ export default function Mods({
                             {lookup.status === 'success' && !manualOverride && (
                                 <p className="text-xs text-muted-foreground">
                                     {t('admin.mods.mod_id_auto_filled')}
+                                </p>
+                            )}
+                            {isDuplicateMod && (
+                                <p
+                                    className="text-xs text-destructive"
+                                    data-testid="duplicate-mod-warning"
+                                >
+                                    {t('admin.mods.duplicate_mod', {
+                                        mod_id: modId,
+                                    })}
                                 </p>
                             )}
                         </div>
@@ -2424,6 +2459,7 @@ export default function Mods({
                                     loading ||
                                     !workshopId ||
                                     !modId ||
+                                    isDuplicateMod ||
                                     lookup.status === 'loading'
                                 }
                                 onClick={addMod}
@@ -2811,6 +2847,18 @@ export default function Mods({
                             )}
                             data-testid="wishlist-workshop-id-input"
                         />
+                        {wishDuplicate && (
+                            <p
+                                className="text-xs text-destructive"
+                                data-testid="duplicate-wishlist-warning"
+                            >
+                                {t(
+                                    wishDuplicate === 'installed'
+                                        ? 'admin.mods.duplicate_wishlist_installed'
+                                        : 'admin.mods.duplicate_wishlist',
+                                )}
+                            </p>
+                        )}
                     </div>
                     <DialogFooter>
                         <Button
@@ -2824,7 +2872,9 @@ export default function Mods({
                         </Button>
                         <Button
                             disabled={
-                                wishLoading || !/^\d{1,20}$/.test(wishId.trim())
+                                wishLoading ||
+                                wishDuplicate !== null ||
+                                !/^\d{1,20}$/.test(wishId.trim())
                             }
                             onClick={addWish}
                             data-testid="wishlist-submit-button"
