@@ -38,6 +38,7 @@ import {
     Unlink,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -1381,11 +1382,22 @@ export default function Mods({
      */
     async function installBundle(bundleId: string) {
         setLoading(true);
-        const result = await fetchAction('/admin/mods/bundles', {
+        const result = (await fetchAction('/admin/mods/bundles', {
             data: { workshop_id: bundleId, target: 'installed' },
             successMessage: `Installed bundle ${bundleTitle(bundleId)}`,
-        });
+        })) as { added?: number; unresolved?: string[] } | null;
         setLoading(false);
+
+        // A member whose Workshop page never states a Mod ID can't be enabled
+        // automatically. Say so — otherwise the success toast covers for mods
+        // that quietly did not get installed.
+        const unresolved = result?.unresolved ?? [];
+        if (unresolved.length > 0) {
+            toast.warning(
+                `${unresolved.length} mod(s) in this bundle don't list a Mod ID on their Workshop page and were skipped: ${unresolved.join(', ')}. Add them by hand.`,
+            );
+        }
+
         if (result) {
             closeAddDialog();
             router.reload({
