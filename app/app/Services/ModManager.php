@@ -532,28 +532,36 @@ class ModManager
     }
 
     /**
-     * Reorder mods by replacing both lines with the given ordered list.
+     * Reorder `Mods=` to the given order.
+     *
+     * ONLY `Mods=` is rewritten. The caller sends one entry per visible row —
+     * that is, per mod — so rebuilding `WorkshopItems=` from the same list
+     * pairs the two by position, which this class warns against everywhere
+     * else: a Workshop item providing two enabled mods appears twice, and an
+     * item providing none disappears. PZ then lists the duplicate as a bare,
+     * nameless ID. Load order is a property of `Mods=` anyway; `WorkshopItems=`
+     * is an unordered download list, so it is passed through untouched (and
+     * deduplicated on write, which repairs lists damaged by earlier reorders).
      *
      * @param  array<int, array{workshop_id: string, mod_id: string}>  $orderedMods
      */
     public function reorder(string $iniPath, array $orderedMods): void
     {
-        $workshopIds = array_column($orderedMods, 'workshop_id');
         $modIds = array_column($orderedMods, 'mod_id');
 
         $existing = $this->readCurrentLists($iniPath)['workshop_ids'];
-        foreach (array_keys(self::PROTECTED_MODS) as $required) {
+        foreach (self::PROTECTED_MODS as $requiredWorkshopId => $requiredModId) {
             // Cast: PHP coerces numeric-string array keys to int; compare as strings.
-            $requiredStr = (string) $required;
-            if (in_array($requiredStr, $existing, true) && ! in_array($requiredStr, $workshopIds, true)) {
+            if (in_array((string) $requiredWorkshopId, $existing, true)
+                && ! in_array($requiredModId, $modIds, true)) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
-                    'mods' => ["Reorder cannot drop required mod {$requiredStr}."],
+                    'mods' => ["Reorder cannot drop required mod {$requiredModId}."],
                 ]);
             }
         }
 
         $this->writeIniAndState($iniPath, [
-            'WorkshopItems' => implode(';', $workshopIds),
+            'WorkshopItems' => implode(';', $existing),
             'Mods' => implode(';', $modIds),
         ]);
     }
@@ -693,11 +701,18 @@ class ModManager
             // Without the cast, in_array with strict=true treats int 3685323705
             // and "3685323705" as different and appends a duplicate every write.
             $workshopIdStr = (string) $workshopId;
-            if (in_array($workshopIdStr, $workshopIds, true)) {
-                continue;
+
+            // The two lists are independent, so each is checked on its own —
+            // deciding both off the Workshop ID re-appends the mod ID whenever
+            // the item is missing but the mod is already enabled, duplicating
+            // it in Mods=.
+            if (! in_array($workshopIdStr, $workshopIds, true)) {
+                $workshopIds[] = $workshopIdStr;
             }
-            $workshopIds[] = $workshopIdStr;
-            $modIds[] = $modId;
+
+            if (! in_array($modId, $modIds, true)) {
+                $modIds[] = $modId;
+            }
         }
     }
 
@@ -711,8 +726,13 @@ class ModManager
     private function writeIniAndState(string $iniPath, array $updates): void
     {
         if (isset($updates['WorkshopItems']) && isset($updates['Mods'])) {
-            $workshopIds = $this->splitList($updates['WorkshopItems']);
-            $modIds = $this->splitList($updates['Mods']);
+            // Deduplicate on the way out, keeping first occurrence so load
+            // order survives. Nothing should be writing repeats, but a repeated
+            // WorkshopItems entry makes PZ list a bare, nameless ID, and this
+            // repairs lists left damaged by the reorder bug rather than
+            // requiring the admin to rebuild them by hand.
+            $workshopIds = array_values(array_unique($this->splitList($updates['WorkshopItems'])));
+            $modIds = array_values(array_unique($this->splitList($updates['Mods'])));
             $this->ensureProtectedMods($workshopIds, $modIds);
             $updates['WorkshopItems'] = implode(';', $workshopIds);
             $updates['Mods'] = implode(';', $modIds);

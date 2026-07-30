@@ -735,7 +735,11 @@ class ModController extends Controller
     {
         $validated = $request->validate([
             'mods' => 'required|array',
-            'mods.*.workshop_id' => ['required', 'string', 'regex:/^\d{1,20}$/'],
+            // Accepted for backwards compatibility but no longer used: reorder
+            // touches Mods= only. It must not be `required|regex:\d+` either,
+            // or reordering a list containing a mod whose Workshop item can't
+            // be resolved (workshop_id '') fails validation outright.
+            'mods.*.workshop_id' => ['sometimes', 'nullable', 'string'],
             'mods.*.mod_id' => ['required', 'string', 'max:255', 'not_regex:/[;\r\n]/'],
         ]);
 
@@ -759,7 +763,16 @@ class ModController extends Controller
             ip: $request->ip(),
         );
 
-        $serverRunning = (bool) ($this->dockerManager->getContainerStatus()['running'] ?? false);
+        // The write already succeeded, so an unreachable Docker socket must not
+        // turn a completed reorder into a 500 the user reads as "it failed".
+        $serverRunning = false;
+
+        try {
+            $serverRunning = (bool) ($this->dockerManager->getContainerStatus()['running'] ?? false);
+        } catch (\Throwable) {
+            // Report the new order without live status.
+        }
+
         $status = $this->modManager->listWithStatus(
             config('zomboid.paths.server_ini'),
             $serverRunning,
