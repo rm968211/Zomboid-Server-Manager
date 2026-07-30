@@ -156,15 +156,18 @@ class PlayerController
         $name = RconSanitizer::playerName($name);
         $targetPlayer = $request->validated('target_player');
 
+        // `teleport` takes player names only; `teleportto` takes comma-separated
+        // coordinates, prefixed with the username because RCON has no calling
+        // player to move. See Admin\PlayerController::teleport().
         if ($targetPlayer) {
             $safeTarget = RconSanitizer::playerName($targetPlayer);
-            $command = "teleportto \"{$name}\" \"{$safeTarget}\"";
+            $command = "teleport \"{$name}\" \"{$safeTarget}\"";
             $details = ['target_player' => $targetPlayer];
         } else {
             $x = (float) $request->validated('x');
             $y = (float) $request->validated('y');
             $z = (float) $request->validated('z', '0');
-            $command = "teleport \"{$name}\" {$x},{$y},{$z}";
+            $command = "teleportto \"{$name}\" {$x},{$y},{$z}";
             $details = ['x' => $x, 'y' => $y, 'z' => $z];
         }
 
