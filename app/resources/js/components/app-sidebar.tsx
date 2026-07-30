@@ -5,7 +5,6 @@ import {
     Bell,
     Coins,
     Crosshair,
-    Languages,
     Timer,
     Gamepad2,
     LayoutGrid,
@@ -37,7 +36,6 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import type { Auth, NavGroup, NavItem } from '@/types';
 import AppLogo from './app-logo';
@@ -46,97 +44,96 @@ const adminRoles = ['super_admin', 'admin', 'moderator'];
 
 export function AppSidebar() {
     const { auth } = usePage<{ auth: Auth }>().props;
-    const { t } = useTranslation();
     const isAdmin = adminRoles.includes(auth.user.role);
 
     const adminNavGroups: NavGroup[] = [
         {
-            label: t('nav.group.server'),
+            label: 'Server',
             items: [
                 {
-                    title: t('nav.dashboard'),
+                    title: 'Dashboard',
                     href: dashboard(),
                     icon: LayoutGrid,
                 },
                 {
-                    title: t('nav.players'),
+                    title: 'Players',
                     href: '/admin/players',
                     icon: Users,
                 },
                 {
-                    title: t('nav.player_map'),
+                    title: 'Player Map',
                     href: '/admin/players/map',
                     icon: MapPin,
                 },
-                { title: t('nav.config'), href: '/admin/config', icon: Wrench },
-                { title: t('nav.mods'), href: '/admin/mods', icon: Package },
+                { title: 'Config', href: '/admin/config', icon: Wrench },
+                { title: 'Mods', href: '/admin/mods', icon: Package },
                 {
-                    title: t('nav.backups'),
+                    title: 'Backups',
                     href: '/admin/backups',
                     icon: Archive,
                 },
                 {
-                    title: t('nav.auto_restart'),
+                    title: 'Auto Restart',
                     href: '/admin/auto-restart',
                     icon: Timer,
                 },
                 {
-                    title: t('nav.rcon_console'),
+                    title: 'RCON Console',
                     href: '/admin/rcon',
                     icon: Terminal,
                 },
                 {
-                    title: t('nav.server_logs'),
+                    title: 'Server Logs',
                     href: '/admin/logs',
                     icon: Activity,
                 },
             ],
         },
         {
-            label: t('nav.group.security'),
+            label: 'Security',
             items: [
                 {
-                    title: t('nav.whitelist'),
+                    title: 'Whitelist',
                     href: '/admin/whitelist',
                     icon: Shield,
                 },
                 {
-                    title: t('nav.moderation'),
+                    title: 'Moderation',
                     href: '/admin/moderation',
                     icon: Crosshair,
                 },
                 {
-                    title: t('nav.safe_zones'),
+                    title: 'Safe Zones',
                     href: '/admin/safe-zones',
                     icon: ShieldAlert,
                 },
             ],
         },
         {
-            label: t('nav.group.shop'),
+            label: 'Shop',
             items: [
                 {
-                    title: t('nav.items_categories'),
+                    title: 'Items & Categories',
                     href: '/admin/shop',
                     icon: Store,
                 },
                 {
-                    title: t('nav.bundles'),
+                    title: 'Bundles',
                     href: '/admin/shop/bundles',
                     icon: Package,
                 },
                 {
-                    title: t('nav.promotions'),
+                    title: 'Promotions',
                     href: '/admin/shop/promotions',
                     icon: Tag,
                 },
                 {
-                    title: t('nav.purchases'),
+                    title: 'Purchases',
                     href: '/admin/shop/purchases',
                     icon: ShoppingBag,
                 },
                 {
-                    title: t('nav.wallets'),
+                    title: 'Wallets',
                     href: '/admin/wallets',
                     icon: Wallet,
                 },
@@ -146,58 +143,53 @@ export function AppSidebar() {
 
     const playerNavGroups: NavGroup[] = [
         {
-            label: t('nav.group.menu'),
+            label: 'Menu',
             items: [
                 {
-                    title: t('nav.player_portal'),
+                    title: 'Player Portal',
                     href: '/portal',
                     icon: Gamepad2,
                 },
                 {
-                    title: t('nav.my_wallet'),
+                    title: 'My Wallet',
                     href: '/shop/my/wallet',
                     icon: Coins,
                 },
-                { title: t('nav.shop'), href: '/shop', icon: ShoppingBag },
-                { title: t('nav.rankings'), href: '/rankings', icon: Trophy },
+                { title: 'Shop', href: '/shop', icon: ShoppingBag },
+                { title: 'Rankings', href: '/rankings', icon: Trophy },
             ],
         },
     ];
 
     const footerNavItems: NavItem[] = [
         {
-            title: t('nav.server_status'),
+            title: 'Server Status',
             href: '/status',
             icon: Activity,
         },
     ];
 
     const myStatsItem: NavItem = {
-        title: t('nav.my_stats'),
+        title: 'My Stats',
         href: `/rankings/${auth.user.username}`,
         icon: User,
     };
 
     const communityGroup: NavGroup = {
-        label: t('nav.group.community'),
+        label: 'Community',
         items: [
-            { title: t('nav.discord'), href: '/admin/discord', icon: Bell },
+            { title: 'Discord', href: '/admin/discord', icon: Bell },
             {
-                title: t('nav.audit_log'),
+                title: 'Audit Log',
                 href: '/admin/audit',
                 icon: ScrollText,
             },
             {
-                title: t('nav.site_settings'),
+                title: 'Site Settings',
                 href: '/admin/site-settings',
                 icon: Palette,
             },
-            {
-                title: t('nav.translations'),
-                href: '/admin/translations',
-                icon: Languages,
-            },
-            { title: t('nav.rankings'), href: '/rankings', icon: Trophy },
+            { title: 'Rankings', href: '/rankings', icon: Trophy },
             myStatsItem,
         ],
     };

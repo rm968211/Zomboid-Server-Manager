@@ -9,7 +9,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { formatDateTime } from '@/lib/dates';
 import { edit } from '@/routes/profile';
@@ -56,33 +55,32 @@ export default function Portal({
     hasTiles,
 }: Props) {
     const { auth } = usePage().props;
-    const { t } = useTranslation();
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={t('portal.title')} />
+            <Head title="Player Portal" />
 
             <div className="mx-auto max-w-3xl space-y-6 p-6">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">
-                        {t('portal.title')}
+                        Player Portal
                     </h1>
                     <p className="text-muted-foreground">
-                        {t('portal.description')}
+                        Manage your game account and profile settings.
                     </p>
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>{t('portal.game_account')}</CardTitle>
+                        <CardTitle>{'Game Account'}</CardTitle>
                         <CardDescription>
-                            {t('portal.game_account_desc')}
+                            Your Project Zomboid server account details.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex items-center justify-between">
                             <span className="text-sm font-medium">
-                                {t('portal.username')}
+                                Username
                             </span>
                             <span className="font-mono text-sm">
                                 {pzAccount.username}
@@ -90,36 +88,30 @@ export default function Portal({
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-sm font-medium">
-                                {t('portal.whitelist_status')}
+                                Whitelist Status
                             </span>
                             {pzAccount.whitelisted ? (
-                                <Badge variant="default">
-                                    {t('portal.whitelisted')}
-                                </Badge>
+                                <Badge variant="default">{'Whitelisted'}</Badge>
                             ) : (
                                 <Badge variant="destructive">
-                                    {t('portal.not_whitelisted')}
+                                    Not Whitelisted
                                 </Badge>
                             )}
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-sm font-medium">
-                                {t('portal.server_status')}
+                                Server Status
                             </span>
                             {pzAccount.isOnline ? (
-                                <Badge className="bg-green-600">
-                                    {t('status.online')}
-                                </Badge>
+                                <Badge className="bg-green-600">Online</Badge>
                             ) : (
-                                <Badge variant="secondary">
-                                    {t('status.offline')}
-                                </Badge>
+                                <Badge variant="secondary">{'Offline'}</Badge>
                             )}
                         </div>
                         {pzAccount.syncedAt && (
                             <div className="flex items-center justify-between">
                                 <span className="text-sm font-medium">
-                                    {t('portal.last_synced')}
+                                    Last Synced
                                 </span>
                                 <span className="text-sm text-muted-foreground">
                                     {formatDateTime(pzAccount.syncedAt)}
@@ -131,16 +123,16 @@ export default function Portal({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>{t('portal.profile')}</CardTitle>
+                        <CardTitle>{'Profile'}</CardTitle>
                         <CardDescription>
-                            {t('portal.profile_desc')}
+                            {
+                                'Your account settings and email verification status.'
+                            }
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">
-                                {t('portal.email')}
-                            </span>
+                            <span className="text-sm font-medium">Email</span>
                             {hasEmail ? (
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm">
@@ -148,40 +140,42 @@ export default function Portal({
                                     </span>
                                     {emailVerified ? (
                                         <Badge variant="default">
-                                            {t('portal.verified')}
+                                            Verified
                                         </Badge>
                                     ) : (
                                         <Badge variant="outline">
-                                            {t('portal.unverified')}
+                                            Unverified
                                         </Badge>
                                     )}
                                 </div>
                             ) : (
                                 <span className="text-sm text-muted-foreground">
-                                    {t('portal.not_set')}
+                                    Not set
                                 </span>
                             )}
                         </div>
 
                         <div className="flex flex-wrap gap-3 pt-2">
                             <Button asChild variant="outline" size="sm">
-                                <Link href={edit()}>
-                                    {t('portal.edit_profile')}
-                                </Link>
+                                <Link href={edit()}>{'Edit Profile'}</Link>
                             </Button>
                             <Button asChild variant="outline" size="sm">
                                 <Link href="/settings/password">
-                                    {t('portal.change_password')}
+                                    Change Password
                                 </Link>
                             </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            {t('portal.password_note')}
+                            {
+                                'Changing your password updates both web login and game server password.'
+                            }
                         </p>
 
                         {!hasEmail && (
                             <p className="text-xs text-muted-foreground">
-                                {t('portal.add_email_note')}
+                                {
+                                    'Add an email address to enable password recovery.'
+                                }
                             </p>
                         )}
                     </CardContent>
@@ -190,12 +184,9 @@ export default function Portal({
                 {playerPosition && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>{t('portal.your_location')}</CardTitle>
+                            <CardTitle>{'Your Location'}</CardTitle>
                             <CardDescription>
-                                {t('portal.location_desc', {
-                                    x: playerPosition.x.toFixed(0),
-                                    y: playerPosition.y.toFixed(0),
-                                })}
+                                {`Last known position on the map (${playerPosition.x.toFixed(0)}, ${playerPosition.y.toFixed(0)})`}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="h-[300px] p-0">

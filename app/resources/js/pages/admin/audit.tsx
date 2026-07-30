@@ -30,7 +30,6 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useServerSort } from '@/hooks/use-server-sort';
-import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { formatDateTime } from '@/lib/dates';
 import type { AuditEntry, BreadcrumbItem } from '@/types';
@@ -62,10 +61,9 @@ export default function Audit({
     filters: Filters;
     available_actions: string[];
 }) {
-    const { t } = useTranslation();
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: t('nav.dashboard'), href: '/dashboard' },
-        { title: t('admin.audit.title'), href: '/admin/audit' },
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Audit Log', href: '/admin/audit' },
     ];
     const [localFilters, setLocalFilters] = useState(filters);
     const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -105,18 +103,16 @@ export default function Audit({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={t('admin.audit.title')} />
+            <Head title="Audit Log" />
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">
-                        {t('admin.audit.title')}
+                        Audit Log
                     </h1>
                     <p className="text-muted-foreground">
                         {logs
-                            ? t('admin.audit.event_count', {
-                                  count: String(logs.total),
-                              })
-                            : t('common.loading')}
+                            ? `${String(logs.total)} events recorded`
+                            : 'Loading...'}
                     </p>
                 </div>
 
@@ -125,15 +121,13 @@ export default function Audit({
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-base">
                             <Filter className="size-4" />
-                            {t('admin.audit.filters_title')}
+                            Filters
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-5">
                             <div className="space-y-1.5">
-                                <Label className="text-xs">
-                                    {t('admin.audit.filter_action')}
-                                </Label>
+                                <Label className="text-xs">{'Action'}</Label>
                                 <Select
                                     value={localFilters.action || '__all__'}
                                     onValueChange={(v) =>
@@ -144,17 +138,11 @@ export default function Audit({
                                     }
                                 >
                                     <SelectTrigger>
-                                        <SelectValue
-                                            placeholder={t(
-                                                'admin.audit.filter_all_actions',
-                                            )}
-                                        />
+                                        <SelectValue placeholder="All actions" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="__all__">
-                                            {t(
-                                                'admin.audit.filter_all_actions',
-                                            )}
+                                            All actions
                                         </SelectItem>
                                         {available_actions.map((a) => (
                                             <SelectItem key={a} value={a}>
@@ -165,9 +153,7 @@ export default function Audit({
                                 </Select>
                             </div>
                             <div className="space-y-1.5">
-                                <Label className="text-xs">
-                                    {t('admin.audit.filter_actor')}
-                                </Label>
+                                <Label className="text-xs">{'Actor'}</Label>
                                 <Input
                                     value={localFilters.actor}
                                     onChange={(e) =>
@@ -176,15 +162,11 @@ export default function Audit({
                                             actor: e.target.value,
                                         }))
                                     }
-                                    placeholder={t(
-                                        'admin.audit.filter_all_actors',
-                                    )}
+                                    placeholder="All actors"
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <Label className="text-xs">
-                                    {t('admin.audit.filter_from')}
-                                </Label>
+                                <Label className="text-xs">{'From'}</Label>
                                 <Input
                                     type="date"
                                     value={localFilters.from}
@@ -197,9 +179,7 @@ export default function Audit({
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <Label className="text-xs">
-                                    {t('admin.audit.filter_to')}
-                                </Label>
+                                <Label className="text-xs">{'To'}</Label>
                                 <Input
                                     type="date"
                                     value={localFilters.to}
@@ -213,14 +193,14 @@ export default function Audit({
                             </div>
                             <div className="flex gap-2">
                                 <Button size="sm" onClick={applyFilters}>
-                                    {t('common.apply')}
+                                    Apply
                                 </Button>
                                 <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={clearFilters}
                                 >
-                                    {t('common.clear')}
+                                    Clear
                                 </Button>
                             </div>
                         </div>
@@ -232,10 +212,10 @@ export default function Audit({
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <ScrollText className="size-5" />
-                            {t('admin.audit.events_title')}
+                            Events
                         </CardTitle>
                         <CardDescription>
-                            {t('admin.audit.events_description')}
+                            All admin actions logged with details
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="overflow-x-auto">
@@ -245,20 +225,14 @@ export default function Audit({
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>
-                                                {t('admin.audit.table_action')}
-                                            </TableHead>
-                                            <TableHead>
-                                                {t('admin.audit.table_target')}
-                                            </TableHead>
+                                            <TableHead>{'Action'}</TableHead>
+                                            <TableHead>{'Target'}</TableHead>
                                             <TableHead className="hidden sm:table-cell">
-                                                {t('admin.audit.table_actor')}
+                                                Actor
                                             </TableHead>
-                                            <TableHead>
-                                                {t('admin.audit.table_date')}
-                                            </TableHead>
+                                            <TableHead>{'Date'}</TableHead>
                                             <TableHead className="hidden md:table-cell">
-                                                {t('admin.audit.table_ip')}
+                                                IP
                                             </TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -295,23 +269,17 @@ export default function Audit({
                                             <TableHead>
                                                 <SortableHeader
                                                     column="action"
-                                                    label={t(
-                                                        'admin.audit.table_action',
-                                                    )}
+                                                    label="Action"
                                                     sortKey={sortKey}
                                                     sortDir={sortDir}
                                                     onSort={toggleSort}
                                                 />
                                             </TableHead>
-                                            <TableHead>
-                                                {t('admin.audit.table_target')}
-                                            </TableHead>
+                                            <TableHead>{'Target'}</TableHead>
                                             <TableHead className="hidden sm:table-cell">
                                                 <SortableHeader
                                                     column="actor"
-                                                    label={t(
-                                                        'admin.audit.table_actor',
-                                                    )}
+                                                    label="Actor"
                                                     sortKey={sortKey}
                                                     sortDir={sortDir}
                                                     onSort={toggleSort}
@@ -320,16 +288,14 @@ export default function Audit({
                                             <TableHead>
                                                 <SortableHeader
                                                     column="created_at"
-                                                    label={t(
-                                                        'admin.audit.table_date',
-                                                    )}
+                                                    label="Date"
                                                     sortKey={sortKey}
                                                     sortDir={sortDir}
                                                     onSort={toggleSort}
                                                 />
                                             </TableHead>
                                             <TableHead className="hidden md:table-cell">
-                                                {t('admin.audit.table_ip')}
+                                                IP
                                             </TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -422,7 +388,7 @@ export default function Audit({
                                 </Table>
                             ) : (
                                 <p className="py-8 text-center text-muted-foreground">
-                                    {t('admin.audit.empty')}
+                                    No audit events found
                                 </p>
                             )}
 

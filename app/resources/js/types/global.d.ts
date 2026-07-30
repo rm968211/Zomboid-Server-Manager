@@ -6,13 +6,6 @@ export type SiteSettings = {
     favicon_url: string | null;
     footer_text: string;
     theme_colors: Record<string, string> | null;
-    default_locale: string;
-};
-
-export type AvailableLocale = {
-    code: string;
-    name: string;
-    native_name: string;
 };
 
 declare module '@inertiajs/core' {
@@ -22,9 +15,6 @@ declare module '@inertiajs/core' {
             auth: Auth;
             sidebarOpen: boolean;
             site: SiteSettings;
-            locale: string;
-            translations: Record<string, string>;
-            available_locales: AvailableLocale[];
             [key: string]: unknown;
         };
     }

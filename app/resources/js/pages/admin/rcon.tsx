@@ -11,7 +11,6 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { formatTime } from '@/lib/dates';
 import type { BreadcrumbItem } from '@/types';
@@ -23,11 +22,9 @@ type HistoryEntry = {
 };
 
 export default function Rcon() {
-    const { t } = useTranslation();
-
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: t('nav.dashboard'), href: '/dashboard' },
-        { title: t('admin.rcon.title'), href: '/admin/rcon' },
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'RCON Console', href: '/admin/rcon' },
     ];
     const [command, setCommand] = useState('');
     const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -77,10 +74,7 @@ export default function Rcon() {
                 if (data.error) {
                     addEntry('error', data.error);
                 } else {
-                    addEntry(
-                        'response',
-                        data.response || t('common.no_output'),
-                    );
+                    addEntry('response', data.response || '(no output)');
                 }
             })
             .catch((err) => {
@@ -119,14 +113,14 @@ export default function Rcon() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={t('admin.rcon.title')} />
+            <Head title="RCON Console" />
             <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">
-                        {t('admin.rcon.title')}
+                        RCON Console
                     </h1>
                     <p className="text-muted-foreground">
-                        {t('admin.rcon.description')}
+                        Execute RCON commands directly on the game server
                     </p>
                 </div>
 
@@ -134,10 +128,12 @@ export default function Rcon() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Terminal className="size-5" />
-                            {t('admin.rcon.console')}
+                            Console
                         </CardTitle>
                         <CardDescription>
-                            {t('admin.rcon.commands_hint')}
+                            {
+                                'Commands: players, save, quit, kickuser, banuser, setaccesslevel, servermsg, additem, addxp, godmod, teleport'
+                            }
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-1 flex-col">
@@ -148,7 +144,7 @@ export default function Rcon() {
                         >
                             {history.length === 0 ? (
                                 <p className="text-zinc-500">
-                                    {t('admin.rcon.empty_prompt')}
+                                    Type a command below and press Enter...
                                 </p>
                             ) : (
                                 history.map((entry, i) => (
@@ -176,7 +172,7 @@ export default function Rcon() {
                             )}
                             {loading && (
                                 <div className="animate-pulse text-zinc-500">
-                                    {t('admin.rcon.executing')}
+                                    Executing...
                                 </div>
                             )}
                         </div>
@@ -188,7 +184,7 @@ export default function Rcon() {
                                 value={command}
                                 onChange={(e) => setCommand(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                placeholder={t('admin.rcon.input_placeholder')}
+                                placeholder="Enter RCON command..."
                                 className="border-zinc-700 bg-zinc-900 font-mono text-sm text-zinc-100 placeholder:text-zinc-600"
                                 disabled={loading}
                                 autoFocus

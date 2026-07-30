@@ -21,7 +21,7 @@ print("[ZomboidManager] Initializing server-side bridge mod...")
 -- NOTE: PZ EveryOneMinute fires every ~2.5 real seconds (one in-game minute),
 -- NOT every 60 real seconds. Intervals below are in game-minute ticks.
 local positionTickCounter = 0
-local POSITION_EXPORT_INTERVAL = 12 -- ~30 real seconds
+local POSITION_EXPORT_INTERVAL = 2 -- ~5 real seconds, matching the map's poll rate
 
 local gameStateTickCounter = 0
 local GAME_STATE_EXPORT_INTERVAL = 24 -- ~1 real minute

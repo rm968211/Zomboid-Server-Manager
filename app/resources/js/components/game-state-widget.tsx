@@ -11,28 +11,27 @@ import {
     Thermometer,
     TreeDeciduous,
 } from 'lucide-react';
-import { useTranslation } from '@/hooks/use-translation';
 import type { GameState } from '@/types';
 
 const seasonConfig = {
     spring: {
         icon: Flower2,
-        labelKey: 'game_state.spring',
+        label: 'Spring',
         color: 'text-green-500',
     },
     summer: {
         icon: Sun,
-        labelKey: 'game_state.summer',
+        label: 'Summer',
         color: 'text-yellow-500',
     },
     autumn: {
         icon: Leaf,
-        labelKey: 'game_state.autumn',
+        label: 'Autumn',
         color: 'text-orange-500',
     },
     winter: {
         icon: Snowflake,
-        labelKey: 'game_state.winter',
+        label: 'Winter',
         color: 'text-blue-400',
     },
 };
@@ -46,13 +45,13 @@ const weatherIcons: Record<string, typeof Sun> = {
     night: Moon,
 };
 
-const weatherLabelKeys: Record<string, string> = {
-    clear: 'game_state.clear',
-    rain: 'game_state.rain',
-    heavy_rain: 'game_state.heavy_rain',
-    fog: 'game_state.fog',
-    snow: 'game_state.snow',
-    night: 'game_state.night',
+const weatherLabels: Record<string, string> = {
+    clear: 'Clear',
+    rain: 'Rain',
+    heavy_rain: 'Heavy rain',
+    fog: 'Fog',
+    snow: 'Snow',
+    night: 'Night',
 };
 
 export function GameStateWidget({
@@ -60,14 +59,12 @@ export function GameStateWidget({
 }: {
     gameState: GameState | null;
 }) {
-    const { t } = useTranslation();
-
     if (!gameState) {
         return (
             <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-card px-4 py-3">
                 <TreeDeciduous className="size-5 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
-                    {t('game_state.unavailable')}
+                    Game state unavailable
                 </span>
             </div>
         );
@@ -76,17 +73,15 @@ export function GameStateWidget({
     const { time, season, weather } = gameState;
     const SeasonIcon = seasonConfig[season]?.icon ?? Sun;
     const seasonColor = seasonConfig[season]?.color ?? 'text-muted-foreground';
-    const seasonLabel = seasonConfig[season]
-        ? t(seasonConfig[season].labelKey)
-        : season;
+    const seasonLabel = seasonConfig[season]?.label ?? season;
 
     const WeatherIcon = weather
         ? (weatherIcons[weather.condition] ?? Cloud)
         : Cloud;
-    const weatherLabel =
-        weather && weatherLabelKeys[weather.condition]
-            ? t(weatherLabelKeys[weather.condition])
-            : (weather?.condition.replace('_', ' ') ?? '');
+    const weatherLabel = weather
+        ? (weatherLabels[weather.condition] ??
+          weather.condition.replace('_', ' '))
+        : '';
 
     return (
         <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border/50 bg-card px-4 py-3">
@@ -102,7 +97,7 @@ export function GameStateWidget({
                         {time.formatted}
                     </span>
                     <span className="ml-1.5 text-sm text-muted-foreground">
-                        {t('game_state.day', { day: String(time.day_of_year) })}
+                        {`Day ${String(time.day_of_year)}`}
                     </span>
                 </div>
             </div>

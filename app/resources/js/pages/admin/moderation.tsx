@@ -27,7 +27,6 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useServerSort } from '@/hooks/use-server-sort';
-import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { formatDateTime } from '@/lib/dates';
 import type { BreadcrumbItem } from '@/types';
@@ -59,30 +58,34 @@ type Props = {
 const EVENT_TYPES = [
     {
         value: 'pvp_kill',
-        labelKey: 'admin.moderation.event_type.pvp_kill',
+        label: 'PvP Kill',
         color: '#f97316',
     },
     {
         value: 'pvp_hit',
-        labelKey: 'admin.moderation.event_type.pvp_hit',
+        label: 'PvP Hit',
         color: '#ef4444',
     },
     {
         value: 'death',
-        labelKey: 'admin.moderation.event_type.death',
+        label: 'Death',
         color: '#9ca3af',
     },
     {
         value: 'connect',
-        labelKey: 'admin.moderation.event_type.connect',
+        label: 'Connect',
         color: '#22c55e',
     },
     {
         value: 'disconnect',
-        labelKey: 'admin.moderation.event_type.disconnect',
+        label: 'Disconnect',
         color: '#f59e0b',
     },
 ] as const;
+
+const EVENT_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+    EVENT_TYPES.map((et) => [et.value, et.label]),
+);
 
 const typeBadgeVariant: Record<
     string,
@@ -103,11 +106,9 @@ export default function Moderation({
     filters,
     events,
 }: Props) {
-    const { t } = useTranslation();
-
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: t('nav.dashboard'), href: '/dashboard' },
-        { title: t('admin.moderation.title'), href: '/admin/moderation' },
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Moderation', href: '/admin/moderation' },
     ];
     const [localFilters, setLocalFilters] = useState({
         event_types: filters.event_types || '',
@@ -206,21 +207,21 @@ export default function Moderation({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={t('admin.moderation.title')} />
+            <Head title="Moderation" />
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4 lg:p-6">
                 {/* Filters */}
                 <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-base">
                             <Filter className="size-4" />
-                            {t('admin.moderation.filters')}
+                            Filters
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
                             <div>
                                 <Label className="mb-2 block text-xs">
-                                    {t('admin.moderation.event_types')}
+                                    Event Types
                                 </Label>
                                 <div className="flex flex-wrap gap-2">
                                     {EVENT_TYPES.map((et) => (
@@ -242,16 +243,14 @@ export default function Moderation({
                                                     backgroundColor: et.color,
                                                 }}
                                             />
-                                            {t(et.labelKey)}
+                                            {et.label}
                                         </Button>
                                     ))}
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                 <div className="space-y-1.5">
-                                    <Label className="text-xs">
-                                        {t('admin.moderation.player_label')}
-                                    </Label>
+                                    <Label className="text-xs">Player</Label>
                                     <Input
                                         value={localFilters.player}
                                         onChange={(e) =>
@@ -260,15 +259,11 @@ export default function Moderation({
                                                 player: e.target.value,
                                             }))
                                         }
-                                        placeholder={t(
-                                            'admin.moderation.search_player_placeholder',
-                                        )}
+                                        placeholder="Search player name..."
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-xs">
-                                        {t('admin.moderation.from_label')}
-                                    </Label>
+                                    <Label className="text-xs">{'From'}</Label>
                                     <Input
                                         type="date"
                                         value={localFilters.from}
@@ -281,9 +276,7 @@ export default function Moderation({
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-xs">
-                                        {t('admin.moderation.to_label')}
-                                    </Label>
+                                    <Label className="text-xs">{'To'}</Label>
                                     <Input
                                         type="date"
                                         value={localFilters.to}
@@ -297,14 +290,14 @@ export default function Moderation({
                                 </div>
                                 <div className="flex gap-2">
                                     <Button size="sm" onClick={applyFilters}>
-                                        {t('common.apply')}
+                                        Apply
                                     </Button>
                                     <Button
                                         size="sm"
                                         variant="outline"
                                         onClick={clearFilters}
                                     >
-                                        {t('common.clear')}
+                                        Clear
                                     </Button>
                                 </div>
                             </div>
@@ -319,12 +312,12 @@ export default function Moderation({
                             <div>
                                 <CardTitle className="flex items-center gap-2">
                                     <MapPin className="size-5" />
-                                    {t('admin.moderation.event_map')}
+                                    Event Map
                                 </CardTitle>
                                 <CardDescription>
-                                    {t(
-                                        'admin.moderation.event_map_description',
-                                    )}
+                                    {
+                                        'Click a marker to highlight the event below, or click a table row to pan the map'
+                                    }
                                 </CardDescription>
                             </div>
                             <div className="flex flex-wrap gap-3">
@@ -339,7 +332,7 @@ export default function Moderation({
                                                 backgroundColor: et.color,
                                             }}
                                         />
-                                        {t(et.labelKey)}
+                                        {et.label}
                                     </div>
                                 ))}
                             </div>
@@ -363,14 +356,12 @@ export default function Moderation({
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Crosshair className="size-5" />
-                            {t('admin.moderation.events')}
+                            Events
                         </CardTitle>
                         <CardDescription>
                             {events?.total != null
-                                ? t('admin.moderation.events_found', {
-                                      count: String(events.total),
-                                  })
-                                : t('common.loading')}
+                                ? `${String(events.total)} event(s) found`
+                                : 'Loading...'}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="overflow-x-auto">
@@ -380,33 +371,13 @@ export default function Moderation({
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>
-                                                {t(
-                                                    'admin.moderation.table_time',
-                                                )}
-                                            </TableHead>
-                                            <TableHead>
-                                                {t(
-                                                    'admin.moderation.table_type',
-                                                )}
-                                            </TableHead>
-                                            <TableHead>
-                                                {t(
-                                                    'admin.moderation.table_player',
-                                                )}
-                                            </TableHead>
-                                            <TableHead>
-                                                {t(
-                                                    'admin.moderation.table_target',
-                                                )}
-                                            </TableHead>
-                                            <TableHead>
-                                                {t(
-                                                    'admin.moderation.table_location',
-                                                )}
-                                            </TableHead>
+                                            <TableHead>{'Time'}</TableHead>
+                                            <TableHead>{'Type'}</TableHead>
+                                            <TableHead>{'Player'}</TableHead>
+                                            <TableHead>{'Target'}</TableHead>
+                                            <TableHead>{'Location'}</TableHead>
                                             <TableHead className="text-right">
-                                                {t('common.actions')}
+                                                Actions
                                             </TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -446,9 +417,7 @@ export default function Moderation({
                                             <TableHead>
                                                 <SortableHeader
                                                     column="created_at"
-                                                    label={t(
-                                                        'admin.moderation.table_time',
-                                                    )}
+                                                    label="Time"
                                                     sortKey={sortKey}
                                                     sortDir={sortDir}
                                                     onSort={toggleSort}
@@ -457,9 +426,7 @@ export default function Moderation({
                                             <TableHead>
                                                 <SortableHeader
                                                     column="event_type"
-                                                    label={t(
-                                                        'admin.moderation.table_type',
-                                                    )}
+                                                    label="Type"
                                                     sortKey={sortKey}
                                                     sortDir={sortDir}
                                                     onSort={toggleSort}
@@ -468,26 +435,16 @@ export default function Moderation({
                                             <TableHead>
                                                 <SortableHeader
                                                     column="player"
-                                                    label={t(
-                                                        'admin.moderation.table_player',
-                                                    )}
+                                                    label="Player"
                                                     sortKey={sortKey}
                                                     sortDir={sortDir}
                                                     onSort={toggleSort}
                                                 />
                                             </TableHead>
-                                            <TableHead>
-                                                {t(
-                                                    'admin.moderation.table_target',
-                                                )}
-                                            </TableHead>
-                                            <TableHead>
-                                                {t(
-                                                    'admin.moderation.table_location',
-                                                )}
-                                            </TableHead>
+                                            <TableHead>{'Target'}</TableHead>
+                                            <TableHead>{'Location'}</TableHead>
                                             <TableHead className="text-right">
-                                                {t('common.actions')}
+                                                Actions
                                             </TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -516,9 +473,9 @@ export default function Moderation({
                                                             ] ?? 'outline'
                                                         }
                                                     >
-                                                        {t(
-                                                            `admin.moderation.event_type.${event.event_type}`,
-                                                        )}
+                                                        {EVENT_TYPE_LABELS[
+                                                            event.event_type
+                                                        ] ?? event.event_type}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="font-medium">
@@ -554,7 +511,7 @@ export default function Moderation({
                                                             }
                                                         >
                                                             <UserX className="mr-1 size-3" />
-                                                            {t('common.kick')}
+                                                            Kick
                                                         </Button>
                                                         <Button
                                                             variant="destructive"
@@ -566,7 +523,7 @@ export default function Moderation({
                                                             }
                                                         >
                                                             <Ban className="mr-1 size-3" />
-                                                            {t('common.ban')}
+                                                            Ban
                                                         </Button>
                                                     </div>
                                                 </TableCell>
@@ -576,7 +533,7 @@ export default function Moderation({
                                 </Table>
                             ) : (
                                 <p className="py-8 text-center text-muted-foreground">
-                                    {t('admin.moderation.no_events')}
+                                    No events found matching filters
                                 </p>
                             )}
 

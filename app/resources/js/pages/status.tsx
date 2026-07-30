@@ -10,7 +10,6 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { usePing } from '@/hooks/use-ping';
-import { useTranslation } from '@/hooks/use-translation';
 import PublicLayout from '@/layouts/public-layout';
 import type { StatusPageData } from '@/types';
 
@@ -21,12 +20,11 @@ export default function Status({
     server_name,
 }: StatusPageData) {
     usePoll(5000, { only: ['server', 'game_state'] });
-    const { t } = useTranslation();
     const ping = usePing('/ping', 15000);
 
     return (
         <>
-            <Head title={`${server_name} — ${t('status.page_title')}`} />
+            <Head title={`${server_name} — ${'Server Status'}`} />
             <PublicLayout>
                 {/* Content */}
                 <main className="mx-auto max-w-7xl px-4 py-8">
@@ -55,10 +53,10 @@ export default function Status({
                                 }`}
                             >
                                 {server.status === 'online'
-                                    ? t('status.online')
+                                    ? 'Online'
                                     : server.status === 'starting'
-                                      ? t('status.starting')
-                                      : t('status.offline')}
+                                      ? 'Starting up...'
+                                      : 'Offline'}
                             </span>
                             {ping !== null && server.status === 'online' && (
                                 <span className="text-sm text-muted-foreground">
@@ -80,7 +78,7 @@ export default function Status({
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                                    {t('status.players_card')}
+                                    Players
                                 </CardTitle>
                                 <Users className="size-4 text-muted-foreground" />
                             </CardHeader>
@@ -99,7 +97,7 @@ export default function Status({
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                                    {t('status.map')}
+                                    Map
                                 </CardTitle>
                                 <Map className="size-4 text-muted-foreground" />
                             </CardHeader>
@@ -113,7 +111,7 @@ export default function Status({
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                                    {t('status.uptime')}
+                                    Uptime
                                 </CardTitle>
                                 <Clock className="size-4 text-muted-foreground" />
                             </CardHeader>
@@ -127,7 +125,7 @@ export default function Status({
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                                    {t('status.mods')}
+                                    Mods
                                 </CardTitle>
                                 <Package className="size-4 text-muted-foreground" />
                             </CardHeader>
@@ -145,15 +143,14 @@ export default function Status({
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <Users className="size-5" />
-                                    {t('status.online_players_title')}
+                                    Online Players
                                 </CardTitle>
                                 <CardDescription>
-                                    {t(
+                                    {`${server.player_count} ${
                                         server.player_count !== 1
-                                            ? 'status.players_connected_plural'
-                                            : 'status.players_connected',
-                                        { count: String(server.player_count) },
-                                    )}
+                                            ? 'players'
+                                            : 'player'
+                                    } connected`}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -174,10 +171,10 @@ export default function Status({
                                 ) : (
                                     <p className="text-sm text-muted-foreground">
                                         {server.status === 'online'
-                                            ? t('status.no_players_online')
+                                            ? 'No players online'
                                             : server.status === 'starting'
-                                              ? t('status.server_starting')
-                                              : t('status.server_offline')}
+                                              ? 'Server is starting...'
+                                              : 'Server is offline'}
                                     </p>
                                 )}
                             </CardContent>
@@ -188,15 +185,12 @@ export default function Status({
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <Package className="size-5" />
-                                    {t('status.installed_mods_title')}
+                                    Installed Mods
                                 </CardTitle>
                                 <CardDescription>
-                                    {t(
-                                        mods.length !== 1
-                                            ? 'status.mods_installed_plural'
-                                            : 'status.mods_installed',
-                                        { count: String(mods.length) },
-                                    )}
+                                    {`${mods.length} ${
+                                        mods.length !== 1 ? 'mods' : 'mod'
+                                    } installed`}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -223,7 +217,7 @@ export default function Status({
                                     </div>
                                 ) : (
                                     <p className="text-sm text-muted-foreground">
-                                        {t('status.no_mods_installed')}
+                                        No mods installed
                                     </p>
                                 )}
                             </CardContent>

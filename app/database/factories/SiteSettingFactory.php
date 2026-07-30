@@ -27,7 +27,6 @@ class SiteSettingFactory extends Factory
             'hero_button_text' => 'Join Server',
             'features' => SiteSetting::defaultFeatures(),
             'landing_sections' => SiteSetting::defaultLandingSections(),
-            'default_locale' => 'en',
         ];
     }
 }

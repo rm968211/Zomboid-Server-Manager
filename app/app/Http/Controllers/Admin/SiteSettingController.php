@@ -36,7 +36,6 @@ class SiteSettingController extends Controller
                 'features' => $settings->features ?? [],
                 'landing_sections' => $settings->landing_sections ?? SiteSetting::defaultLandingSections(),
                 'theme_colors' => $settings->theme_colors,
-                'default_locale' => $settings->default_locale,
             ],
             'available_icons' => self::availableIcons(),
             'available_sections' => [
@@ -77,7 +76,7 @@ class SiteSettingController extends Controller
         // Update text fields
         $textFields = [
             'site_name', 'footer_text', 'hero_badge', 'hero_title',
-            'hero_subtitle', 'hero_description', 'hero_button_text', 'default_locale',
+            'hero_subtitle', 'hero_description', 'hero_button_text',
         ];
 
         foreach ($textFields as $field) {

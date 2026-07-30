@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useTranslation } from '@/hooks/use-translation';
 import PublicLayout from '@/layouts/public-layout';
 import { fetchAction } from '@/lib/fetch-action';
 import type { ShopBundle, ShopItem } from '@/types/server';
@@ -27,7 +26,6 @@ type Props = {
 
 export default function ShopItemDetail({ item, bundle, balance }: Props) {
     const { auth } = usePage().props;
-    const { t } = useTranslation();
     const isAuthenticated = !!auth.user;
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [quantity, setQuantity] = useState(1);
@@ -81,7 +79,7 @@ export default function ShopItemDetail({ item, bundle, balance }: Props) {
                     onClick={() => router.visit('/shop')}
                 >
                     <ArrowLeft className="mr-1.5 size-4" />
-                    {t('shop.back_to_shop')}
+                    Back to Shop
                 </Button>
 
                 <Card>
@@ -218,9 +216,7 @@ export default function ShopItemDetail({ item, bundle, balance }: Props) {
                             onClick={handleBuyClick}
                         >
                             <ShoppingBag className="mr-2 size-5" />
-                            {isAuthenticated
-                                ? t('shop.buy_now')
-                                : t('shop.login_to_buy')}
+                            {isAuthenticated ? 'Buy Now' : 'Log in to Buy'}
                         </Button>
                     </CardContent>
                 </Card>
@@ -230,16 +226,16 @@ export default function ShopItemDetail({ item, bundle, balance }: Props) {
             <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('shop.confirm_purchase')}</DialogTitle>
+                        <DialogTitle>{'Confirm your purchase.'}</DialogTitle>
                         <DialogDescription>
-                            {t('shop.review_purchase')}
+                            Review your purchase details.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <p className="text-sm font-medium">{name}</p>
                         {!isBundle && (
                             <div className="space-y-2">
-                                <Label>{t('shop.quantity')}</Label>
+                                <Label>{'Quantity'}</Label>
                                 <Input
                                     type="number"
                                     min={1}
@@ -257,19 +253,17 @@ export default function ShopItemDetail({ item, bundle, balance }: Props) {
                             </div>
                         )}
                         <div className="space-y-2">
-                            <Label>{t('shop.promo_code')}</Label>
+                            <Label>{'Promo Code'}</Label>
                             <Input
                                 value={promoCode}
                                 onChange={(e) =>
                                     setPromoCode(e.target.value.toUpperCase())
                                 }
-                                placeholder={t('shop.enter_code')}
+                                placeholder="Enter code"
                             />
                         </div>
                         <div className="flex items-center justify-between rounded-md bg-muted p-3">
-                            <span className="font-medium">
-                                {t('shop.total')}
-                            </span>
+                            <span className="font-medium">{'Total'}</span>
                             <div className="flex items-center gap-1.5">
                                 <Coins className="size-4 text-amber-500" />
                                 <span className="text-lg font-bold tabular-nums">
@@ -279,7 +273,7 @@ export default function ShopItemDetail({ item, bundle, balance }: Props) {
                         </div>
                         {balance !== null && totalPrice > balance && (
                             <p className="text-sm text-destructive">
-                                {t('shop.insufficient_balance')}
+                                Insufficient balance. You need :amount more.
                             </p>
                         )}
                     </div>
@@ -288,7 +282,7 @@ export default function ShopItemDetail({ item, bundle, balance }: Props) {
                             variant="outline"
                             onClick={() => setConfirmOpen(false)}
                         >
-                            {t('common.cancel')}
+                            Cancel
                         </Button>
                         <Button
                             disabled={
@@ -297,7 +291,7 @@ export default function ShopItemDetail({ item, bundle, balance }: Props) {
                             }
                             onClick={handlePurchase}
                         >
-                            {t('shop.purchase_item')}
+                            Purchase Item
                         </Button>
                     </DialogFooter>
                 </DialogContent>
