@@ -280,6 +280,7 @@
     "admin.mods.required_badge": "სავალდებულო",
     "admin.mods.restart_required": "მოდების ჩატვირთვის რიგი შეიცვალა. ცვლილებების ასამოქმედებლად საჭიროა სერვერის გადატვირთვა.",
     "admin.mods.pending_restart_banner": "მოდების ცვლილებები ელოდება სერვერის გადატვირთვას.",
+    "admin.mods.restart_in_progress": "სერვერი გადაიტვირთება — მოდების ცვლილებები ძალაში შევა ჩატვირთვის დასრულებისთანავე.",
     "admin.mods.restart_now": "სერვერის გადატვირთვა",
     "admin.mods.restarting": "გადატვირთვა...",
     "admin.mods.toast_restart_started": "სერვერი გადაიტვირთება — მოდები წამში ჩაიტვირთება",

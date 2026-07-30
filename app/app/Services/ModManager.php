@@ -219,6 +219,15 @@ class ModManager
      * each mod is actively running, awaiting a restart, or whether the server is
      * stopped.
      *
+     * Both sides are compared by `Mods=` entry (mod_id), because that list is
+     * what PZ actually loads and what add/remove/reorder edit. Comparing
+     * `WorkshopItems=` instead gives wrong answers in every case where the two
+     * lists aren't 1:1: a mod with no Workshop item (workshop_id '', either a
+     * local mod or one whose content isn't downloaded yet) would be reported as
+     * pending forever, and adding/removing one mod out of a Workshop item that
+     * bundles several would leave `WorkshopItems=` unchanged and so report
+     * nothing pending at all.
+     *
      * Statuses:
      *  - 'stopped'         — game server is not running; load state unknown
      *  - 'pending_restart' — mod is in user intent but not in the running config
@@ -240,8 +249,8 @@ class ModManager
     {
         $mods = $this->list($iniPath, $workshopContentPath);
         $applied = $this->parseStateFile(dirname($iniPath).'/.mod_state_applied');
-        $appliedWorkshopIds = $applied !== null
-            ? $this->splitList($applied['WorkshopItems'])
+        $appliedModIds = $applied !== null
+            ? $this->splitList($applied['Mods'])
             : null;
 
         $pendingRestart = false;
@@ -249,9 +258,9 @@ class ModManager
         foreach ($mods as $i => $mod) {
             if (! $serverRunning) {
                 $status = 'stopped';
-            } elseif ($appliedWorkshopIds === null) {
+            } elseif ($appliedModIds === null) {
                 $status = 'active';
-            } elseif (in_array($mod['workshop_id'], $appliedWorkshopIds, true)) {
+            } elseif (in_array($mod['mod_id'], $appliedModIds, true)) {
                 $status = 'active';
             } else {
                 $status = 'pending_restart';
@@ -261,10 +270,12 @@ class ModManager
             $mods[$i]['status'] = $status;
         }
 
-        if ($serverRunning && $applied !== null) {
-            $intentWorkshopIds = array_column($mods, 'workshop_id');
-            $removedSinceStart = array_diff($appliedWorkshopIds, $intentWorkshopIds);
-            if (! empty($removedSinceStart)) {
+        if ($serverRunning && $appliedModIds !== null) {
+            $intentModIds = array_column($mods, 'mod_id');
+            // Load order is part of the running config — PZ resolves overlapping
+            // mods in list order, so a reorder needs a restart too. Comparing the
+            // lists in order covers removals as well.
+            if ($intentModIds !== $appliedModIds) {
                 $pendingRestart = true;
             }
         }

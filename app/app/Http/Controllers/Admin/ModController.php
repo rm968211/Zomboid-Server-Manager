@@ -36,13 +36,15 @@ class ModController extends Controller
     {
         $mods = [];
         $pendingRestart = false;
-        $serverRunning = false;
+        $serverStatus = 'offline';
 
         try {
-            $serverRunning = (bool) ($this->dockerManager->getContainerStatus()['running'] ?? false);
+            $serverStatus = $this->resolveServerStatus();
         } catch (\Throwable) {
             // Docker socket unreachable — treat server as stopped, keep rendering
         }
+
+        $serverRunning = $serverStatus !== 'offline';
 
         try {
             $status = $this->modManager->listWithStatus(
@@ -60,7 +62,7 @@ class ModController extends Controller
             'mods' => $mods,
             'protectedWorkshopIds' => array_keys(ModManager::PROTECTED_MODS),
             'pendingRestart' => $pendingRestart,
-            'serverRunning' => $serverRunning,
+            'serverStatus' => $serverStatus,
             'wishlist' => WishlistMod::query()
                 ->orderByDesc('created_at')
                 ->pluck('workshop_id'),
@@ -193,6 +195,30 @@ class ModController extends Controller
         }
 
         return array_values(array_unique($expanded));
+    }
+
+    /**
+     * Container state as the mod page needs it: 'starting' covers the whole
+     * window between a restart being triggered and PZ actually having loaded
+     * the mods (the game-server healthcheck only passes once RCON is up), so
+     * the UI can show a restart is underway instead of re-offering the button.
+     *
+     * Anything other than Docker's own 'starting' counts as 'online' — a
+     * container with no healthcheck reports null, and an 'unhealthy' one is
+     * past booting, so in both cases we'd rather offer the restart button than
+     * disable it forever.
+     *
+     * @return 'offline'|'starting'|'online'
+     */
+    private function resolveServerStatus(): string
+    {
+        $status = $this->dockerManager->getContainerStatus();
+
+        if (! ($status['running'] ?? false)) {
+            return 'offline';
+        }
+
+        return ($status['health_status'] ?? null) === 'starting' ? 'starting' : 'online';
     }
 
     /**
