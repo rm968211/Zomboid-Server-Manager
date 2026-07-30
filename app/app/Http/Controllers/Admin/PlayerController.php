@@ -172,15 +172,20 @@ class PlayerController extends Controller
         $name = RconSanitizer::playerName($name);
         $targetPlayer = $request->validated('target_player');
 
+        // PZ splits these across two commands, and they are easy to get backwards:
+        // `teleport` only takes player names, `teleportto` only takes coordinates
+        // (with an optional leading username — without it, it moves whoever ran
+        // the command, which over RCON is nobody, so the username is required
+        // here). Coordinates must be comma-separated; spaces fail to parse.
         if ($targetPlayer) {
             $safeTarget = RconSanitizer::playerName($targetPlayer);
-            $command = "teleportto \"{$name}\" \"{$safeTarget}\"";
+            $command = "teleport \"{$name}\" \"{$safeTarget}\"";
             $details = ['target_player' => $targetPlayer];
         } else {
             $x = (float) $request->validated('x');
             $y = (float) $request->validated('y');
             $z = (float) $request->validated('z', 0);
-            $command = "teleport \"{$name}\" {$x},{$y},{$z}";
+            $command = "teleportto \"{$name}\" {$x},{$y},{$z}";
             $details = ['x' => $x, 'y' => $y, 'z' => $z];
         }
 
@@ -189,6 +194,20 @@ class PlayerController extends Controller
             $response = $this->rcon->command($command);
         } catch (\Throwable $e) {
             return response()->json(['error' => 'Failed: '.$e->getMessage()], 503);
+        }
+
+        // PZ answers a refused teleport on the same channel as a successful one,
+        // so without this the UI reports success while nothing moves in game.
+        if (str_contains($response, "Can't find player")) {
+            $this->auditLogger->log(
+                actor: $request->user()->name ?? 'admin',
+                action: 'player.teleport.failed',
+                target: $name,
+                details: [...$details, 'rcon_response' => $response, 'command' => $command],
+                ip: $request->ip(),
+            );
+
+            return response()->json(['error' => $response], 409);
         }
 
         $this->auditLogger->log(
