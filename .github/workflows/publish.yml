@@ -54,19 +54,19 @@ jobs:
       - name: Check if this version is already on Docker Hub
         id: published
         run: |
-          if docker manifest inspect "${{ secrets.DOCKERHUB_USERNAME }}/zomboid-manager:${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+          if docker manifest inspect "${{ secrets.DOCKERHUB_USERNAME }}/zomboid-server-manager:${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
-      # --- zomboid-manager ---
+      # --- zomboid-server-manager ---
 
-      - name: Extract metadata (zomboid-manager)
+      - name: Extract metadata (zomboid-server-manager)
         id: meta-manager
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/zomboid-manager
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/zomboid-server-manager
           tags: |
             type=raw,value=${{ steps.version.outputs.version }},enable=${{ steps.published.outputs.exists == 'false' || inputs.force_version_tags == 'true' }}
             type=raw,value=${{ steps.version.outputs.major_minor }},enable=${{ steps.published.outputs.exists == 'false' || inputs.force_version_tags == 'true' }}
@@ -75,7 +75,7 @@ jobs:
           flavor: |
             latest=${{ github.event_name != 'workflow_dispatch' || inputs.push_latest == 'true' }}
 
-      - name: Build and push zomboid-manager
+      - name: Build and push zomboid-server-manager
         uses: docker/build-push-action@v6
         with:
           context: ./app
@@ -83,8 +83,8 @@ jobs:
           push: true
           tags: ${{ steps.meta-manager.outputs.tags }}
           labels: ${{ steps.meta-manager.outputs.labels }}
-          cache-from: type=gha,scope=zomboid-manager
-          cache-to: type=gha,mode=max,scope=zomboid-manager
+          cache-from: type=gha,scope=zomboid-server-manager
+          cache-to: type=gha,mode=max,scope=zomboid-server-manager
 
       # --- zomboid-server ---
 
