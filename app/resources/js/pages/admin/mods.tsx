@@ -15,7 +15,7 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePoll } from '@inertiajs/react';
 import {
     AlertTriangle,
     Bookmark,
@@ -543,13 +543,13 @@ export default function Mods({
     mods,
     protectedWorkshopIds = [],
     pendingRestart = false,
-    serverRunning = false,
+    serverStatus = 'offline',
     wishlist = [],
 }: {
     mods: ModEntry[];
     protectedWorkshopIds?: string[];
     pendingRestart?: boolean;
-    serverRunning?: boolean;
+    serverStatus?: 'offline' | 'starting' | 'online';
     wishlist?: string[];
 }) {
     const protectedSet = useMemo(
@@ -717,7 +717,7 @@ export default function Mods({
         if (result) {
             closeBulk();
             router.reload({
-                only: ['mods', 'pendingRestart', 'serverRunning'],
+                only: ['mods', 'pendingRestart', 'serverStatus'],
             });
         }
     }
@@ -725,6 +725,37 @@ export default function Mods({
     useEffect(() => {
         setOrderedMods(mods);
     }, [mods]);
+
+    // A restart is underway from the click until the container reports healthy
+    // again. `restarting` only covers the gap before the deferred restart takes
+    // effect; after that the container's own 'starting' state is the truth, and
+    // it survives a page reload where local state wouldn't.
+    const restartInProgress = restarting || serverStatus === 'starting';
+
+    const { start: startStatusPoll, stop: stopStatusPoll } = usePoll(
+        5000,
+        { only: ['mods', 'pendingRestart', 'serverStatus'] },
+        { autoStart: false, keepAlive: true },
+    );
+
+    // Only poll while something is actually changing — the mod list is static
+    // otherwise, and each poll costs a Docker call plus a Workshop dir scan.
+    useEffect(() => {
+        if (restartInProgress) {
+            startStatusPoll();
+        } else {
+            stopStatusPoll();
+        }
+    }, [restartInProgress, startStatusPoll, stopStatusPoll]);
+
+    // Hand off from the local flag once the container has visibly restarted, so
+    // a restart that never took (rejected, or the container never went down)
+    // can't leave the button spinning forever.
+    useEffect(() => {
+        if (restarting && (serverStatus === 'starting' || !pendingRestart)) {
+            setRestarting(false);
+        }
+    }, [restarting, serverStatus, pendingRestart]);
 
     // Batch-fetch Workshop metadata (title, thumbnail, build compat, stats)
     // for every installed + wishlisted mod that we haven't resolved yet.
@@ -920,18 +951,24 @@ export default function Mods({
             successMessage: 'Mod load order updated',
         });
 
-        router.reload({ only: ['mods', 'pendingRestart', 'serverRunning'] });
+        router.reload({ only: ['mods', 'pendingRestart', 'serverStatus'] });
     }
 
     async function restartServer() {
         setRestarting(true);
-        await fetchAction('/admin/server/restart', {
+        const started = await fetchAction('/admin/server/restart', {
             method: 'POST',
             successMessage:
                 'Server restart started — mods will load in a moment',
         });
-        setRestarting(false);
-        router.reload({ only: ['mods', 'pendingRestart', 'serverRunning'] });
+        // The request only *queues* the restart (the controller defers the
+        // container work until after it responds), so keep the busy state until
+        // polling sees the container actually go down — clearing it here would
+        // put "Restart server" back in front of the user mid-restart.
+        if (!started) {
+            setRestarting(false);
+        }
+        router.reload({ only: ['mods', 'pendingRestart', 'serverStatus'] });
     }
 
     function closeAddDialog() {
@@ -961,7 +998,7 @@ export default function Mods({
         setLoading(false);
         closeAddDialog();
         router.reload({
-            only: ['mods', 'wishlist', 'pendingRestart', 'serverRunning'],
+            only: ['mods', 'wishlist', 'pendingRestart', 'serverStatus'],
         });
     }
 
@@ -993,7 +1030,7 @@ export default function Mods({
         setLoading(false);
         setDeleteTarget(null);
         router.reload({
-            only: ['mods', 'wishlist', 'pendingRestart', 'serverRunning'],
+            only: ['mods', 'wishlist', 'pendingRestart', 'serverStatus'],
         });
     }
 
@@ -1164,31 +1201,36 @@ export default function Mods({
                             </div>
                         </CardHeader>
                         <CardContent>
-                            {pendingRestart && (
+                            {(pendingRestart || restartInProgress) && (
                                 <Alert
                                     className="mb-4 border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200 [&>svg]:text-amber-600"
                                     data-testid="pending-restart-banner"
                                 >
-                                    <AlertTriangle className="size-4" />
+                                    {restartInProgress ? (
+                                        <Loader2 className="size-4 animate-spin" />
+                                    ) : (
+                                        <AlertTriangle className="size-4" />
+                                    )}
                                     <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                         <span>
-                                            {
-                                                'Mod changes are waiting for a server restart to take effect.'
-                                            }
+                                            {restartInProgress
+                                                ? 'Server is restarting — mod changes will take effect once it finishes loading.'
+                                                : 'Mod changes are waiting for a server restart to take effect.'}
                                         </span>
                                         <Button
                                             size="sm"
                                             variant="outline"
                                             disabled={
-                                                restarting || !serverRunning
+                                                restartInProgress ||
+                                                serverStatus === 'offline'
                                             }
                                             onClick={restartServer}
                                             data-testid="restart-server-button"
                                         >
                                             <RotateCcw
-                                                className={`mr-1.5 size-4 ${restarting ? 'animate-spin' : ''}`}
+                                                className={`mr-1.5 size-4 ${restartInProgress ? 'animate-spin' : ''}`}
                                             />
-                                            {restarting
+                                            {restartInProgress
                                                 ? 'Restarting...'
                                                 : 'Restart server'}
                                         </Button>
