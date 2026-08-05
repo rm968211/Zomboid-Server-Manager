@@ -41,7 +41,6 @@ services:
       - zomboid-server:/pz-server:ro
       - backup-data:/backups
       - lua-bridge:/lua-bridge
-      - map-tiles:/map-tiles
     env_file: ./app/.env
     environment:
       DB_HOST: ${DB_HOST:-db}
@@ -53,7 +52,6 @@ services:
       PZ_RCON_HOST: game-server
       BACKUP_PATH: /backups
       LUA_BRIDGE_PATH: /lua-bridge
-      PZ_MAP_TILES_PATH: /map-tiles
       ADMIN_USERNAME: ${ADMIN_USERNAME:-}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
@@ -90,7 +88,6 @@ services:
       - zomboid-server:/pz-server:ro
       - backup-data:/backups
       - lua-bridge:/lua-bridge
-      - map-tiles:/map-tiles
     env_file: ./app/.env
     environment:
       DB_HOST: ${DB_HOST:-db}
@@ -102,7 +99,6 @@ services:
       PZ_RCON_HOST: game-server
       BACKUP_PATH: /backups
       LUA_BRIDGE_PATH: /lua-bridge
-      PZ_MAP_TILES_PATH: /map-tiles
       ADMIN_USERNAME: ${ADMIN_USERNAME:-}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
@@ -214,5 +210,3 @@ volumes:
     name: pz-backups
   lua-bridge:
     name: pz-lua-bridge
-  map-tiles:
-    name: pz-map-tiles

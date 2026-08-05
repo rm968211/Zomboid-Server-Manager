@@ -84,7 +84,6 @@ type Props = {
     config: SafeZoneConfig;
     violations: Violation[];
     mapConfig: MapConfig;
-    hasTiles: boolean;
 };
 
 const ZONE_COLORS = [
@@ -98,12 +97,7 @@ const ZONE_COLORS = [
 
 type ViolationSortKey = 'attacker' | 'strike_number' | 'occurred_at' | 'status';
 
-export default function SafeZones({
-    config,
-    violations,
-    mapConfig,
-    hasTiles,
-}: Props) {
+export default function SafeZones({ config, violations, mapConfig }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Safe Zones', href: '/admin/safe-zones' },
@@ -349,7 +343,6 @@ export default function SafeZones({
                         <div className="h-[400px] overflow-hidden rounded-md border">
                             <PzMap
                                 mapConfig={mapConfig}
-                                hasTiles={hasTiles}
                                 zones={zoneOverlays}
                                 drawingMode={drawingMode}
                                 onZoneDrawn={handleZoneDrawn}

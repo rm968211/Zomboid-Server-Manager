@@ -40,7 +40,6 @@ export type EventMarker = {
 type PzMapProps = {
     markers?: PlayerMarker[];
     mapConfig: MapConfig;
-    hasTiles: boolean;
     className?: string;
     interactive?: boolean;
     onMarkerClick?: (marker: PlayerMarker) => void;
@@ -131,7 +130,7 @@ function createPopupHtml(marker: PlayerMarker): string {
 
 /**
  * Create a DZI tile layer.
- * pzmap2dzi outputs tiles as {z}/{x}_{y}.webp (underscore separator).
+ * DZI pyramids serve tiles as {z}/{x}_{y}.jpg (underscore separator).
  */
 function createDziTileLayer(
     templateUrl: string,
@@ -230,7 +229,6 @@ const eventTypeColors: Record<string, string> = {
 export default function PzMap({
     markers = [],
     mapConfig,
-    hasTiles,
     className = '',
     interactive = true,
     onMarkerClick,
@@ -295,7 +293,7 @@ export default function PzMap({
         const center = L.latLng(-mapConfig.center.y, mapConfig.center.x);
         map.setView(center, mapConfig.defaultZoom);
 
-        if (hasTiles && mapConfig.tileUrl && dzi) {
+        if (mapConfig.tileUrl && dzi) {
             createDziTileLayer(mapConfig.tileUrl, {
                 tileSize: mapConfig.tileSize,
                 minZoom: mapConfig.minZoom,
@@ -303,7 +301,7 @@ export default function PzMap({
                 maxNativeZoom,
                 noWrap: true,
             }).addTo(map);
-        } else if (!hasTiles) {
+        } else {
             addCoordinateGrid(map);
         }
 

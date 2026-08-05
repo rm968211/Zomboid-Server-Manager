@@ -52,12 +52,6 @@ Route::middleware(['auth', 'admin', 'throttle:admin'])->group(function () {
         Route::post('players/{username}/inventory/remove', [Admin\InventoryController::class, 'removeItem'])->name('players.inventory.remove');
         Route::get('players/{username}/inventory/status', [Admin\InventoryController::class, 'deliveryStatus'])->name('players.inventory.status');
 
-        // Map Tiles
-        Route::get('map-tiles/{level}/{tile}', [Admin\PlayerMapController::class, 'tile'])
-            ->name('map.tile')
-            ->whereNumber('level')
-            ->where('tile', '\d+_\d+\.(?:webp|jpg)');
-
         // Config
         Route::get('config', [Admin\ConfigController::class, 'index'])->name('config');
         Route::patch('config/server', [Admin\ConfigController::class, 'updateServer'])->name('config.server.update');

@@ -708,7 +708,6 @@ it('renders the player map page with merged data', function () {
         ->component('admin/player-map')
         ->has('markers', 2)
         ->has('mapConfig')
-        ->has('hasTiles')
         ->where('markers.0.username', 'Alice')
         ->where('markers.0.status', 'online')
         ->where('markers.0.x', 10510)

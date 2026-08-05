@@ -50,7 +50,6 @@ type Filters = {
 
 type Props = {
     mapConfig: MapConfig;
-    hasTiles: boolean;
     filters: Filters;
     events: PaginatedEvents;
 };
@@ -100,12 +99,7 @@ const typeBadgeVariant: Record<
 
 type SortKey = 'created_at' | 'event_type' | 'player';
 
-export default function Moderation({
-    mapConfig,
-    hasTiles,
-    filters,
-    events,
-}: Props) {
+export default function Moderation({ mapConfig, filters, events }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Moderation', href: '/admin/moderation' },
@@ -342,7 +336,6 @@ export default function Moderation({
                         <div className="h-[400px] overflow-hidden rounded-md border">
                             <PzMap
                                 mapConfig={mapConfig}
-                                hasTiles={hasTiles}
                                 eventMarkers={eventMarkers}
                                 onEventMarkerClick={handleEventMarkerClick}
                                 onMapReady={handleMapReady}

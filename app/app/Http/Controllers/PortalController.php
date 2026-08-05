@@ -47,7 +47,6 @@ class PortalController extends Controller
         }
 
         $mapConfig = $this->mapConfigBuilder->build();
-        $hasTiles = $mapConfig['tileUrl'] !== null;
 
         return Inertia::render('portal', [
             'pzAccount' => [
@@ -60,7 +59,6 @@ class PortalController extends Controller
             'emailVerified' => $user->email_verified_at !== null,
             'playerPosition' => $playerPosition,
             'mapConfig' => $mapConfig,
-            'hasTiles' => $hasTiles,
         ]);
     }
 
