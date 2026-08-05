@@ -97,11 +97,7 @@ const ZONE_COLORS = [
 
 type ViolationSortKey = 'attacker' | 'strike_number' | 'occurred_at' | 'status';
 
-export default function SafeZones({
-    config,
-    violations,
-    mapConfig,
-}: Props) {
+export default function SafeZones({ config, violations, mapConfig }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Safe Zones', href: '/admin/safe-zones' },

@@ -99,11 +99,7 @@ const typeBadgeVariant: Record<
 
 type SortKey = 'created_at' | 'event_type' | 'player';
 
-export default function Moderation({
-    mapConfig,
-    filters,
-    events,
-}: Props) {
+export default function Moderation({ mapConfig, filters, events }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Moderation', href: '/admin/moderation' },
