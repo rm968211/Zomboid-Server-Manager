@@ -65,7 +65,7 @@ down:
 	$(COMPOSE) down
 
 VOLUMES := pz-postgres pz-app-vendor pz-app-node-modules pz-app-build \
-	pz-server-files pz-data pz-redis pz-backups pz-lua-bridge pz-map-tiles
+	pz-server-files pz-data pz-redis pz-backups pz-lua-bridge
 
 nuke:
 	@echo "WARNING: This will destroy ALL data (database, game saves, backups, config)."

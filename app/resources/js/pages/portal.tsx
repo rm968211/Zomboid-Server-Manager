@@ -36,7 +36,6 @@ type Props = {
     emailVerified: boolean;
     playerPosition: PlayerPosition | null;
     mapConfig: MapConfig;
-    hasTiles: boolean;
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -52,7 +51,6 @@ export default function Portal({
     emailVerified,
     playerPosition,
     mapConfig,
-    hasTiles,
 }: Props) {
     const { auth } = usePage().props;
 
@@ -214,7 +212,6 @@ export default function Portal({
                                     },
                                     defaultZoom: 5,
                                 }}
-                                hasTiles={hasTiles}
                                 interactive={false}
                                 className="rounded-b-xl"
                             />

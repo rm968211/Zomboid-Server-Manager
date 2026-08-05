@@ -34,12 +34,6 @@ type Props = {
     onlineCount: number;
     serverStatus: 'offline' | 'starting' | 'online';
     mapConfig: MapConfig;
-    hasTiles: boolean;
-    usingLocalTiles: boolean;
-    tilesGenerating: boolean;
-    tileError: string | null;
-    tileGenerationStage: string | null;
-    tileGenerationStartedAt: string | null;
     safeZones: SafeZone[];
     positionsStale: boolean;
     positionsUpdatedAt: string | null;
@@ -65,12 +59,6 @@ export default function PlayerMap({
     onlineCount,
     serverStatus,
     mapConfig,
-    hasTiles,
-    usingLocalTiles,
-    tilesGenerating,
-    tileError,
-    tileGenerationStage,
-    tileGenerationStartedAt,
     safeZones,
     positionsStale = false,
     positionsUpdatedAt = null,
@@ -80,27 +68,11 @@ export default function PlayerMap({
             'markers',
             'onlineCount',
             'serverStatus',
-            'hasTiles',
-            'usingLocalTiles',
-            'tilesGenerating',
-            'tileError',
-            'tileGenerationStage',
-            'tileGenerationStartedAt',
             'safeZones',
             'positionsStale',
             'positionsUpdatedAt',
         ],
     });
-
-    const generationStage =
-        tileGenerationStage === 'unpacking'
-            ? 'Unpacking textures...'
-            : tileGenerationStage === 'rendering'
-              ? 'Rendering map tiles...'
-              : 'Preparing render...';
-    const generationStarted = tileGenerationStartedAt
-        ? new Date(tileGenerationStartedAt).toLocaleString()
-        : null;
 
     const zoneOverlays: ZoneOverlay[] = useMemo(
         () =>
@@ -309,59 +281,9 @@ export default function PlayerMap({
                                 </Button>
                             </div>
                         )}
-                        {!usingLocalTiles && tilesGenerating && (
-                            <div className="absolute top-2 left-1/2 z-[1000] w-64 -translate-x-1/2 rounded-lg border bg-background/90 px-4 py-3 shadow-sm backdrop-blur-sm sm:w-72">
-                                <div className="flex items-center gap-2 text-sm font-medium">
-                                    <Loader2 className="size-4 animate-spin text-primary" />
-                                    Generating map tiles...
-                                </div>
-                                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-                                    <div className="h-full w-full animate-pulse rounded-full bg-primary/30" />
-                                </div>
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                    {generationStage}
-                                </p>
-                                {generationStarted && (
-                                    <p className="text-xs text-muted-foreground">
-                                        {`Started: ${generationStarted}`}
-                                    </p>
-                                )}
-                            </div>
-                        )}
-                        {!usingLocalTiles && !tilesGenerating && tileError && (
-                            <div className="absolute top-2 left-1/2 z-[1000] w-72 -translate-x-1/2 rounded-lg border border-red-500/30 bg-background/95 px-4 py-3 text-xs shadow-sm backdrop-blur-sm sm:w-96">
-                                <div className="flex items-center gap-2 text-sm font-medium text-red-400">
-                                    <AlertTriangle className="size-4 shrink-0" />
-                                    Map tile generation failed.
-                                </div>
-                                <pre className="mt-1.5 max-h-24 overflow-auto rounded bg-muted/50 p-1.5 font-mono text-[11px] whitespace-pre-wrap text-muted-foreground">
-                                    {tileError}
-                                </pre>
-                                <p className="mt-1.5 text-xs text-muted-foreground">
-                                    {
-                                        'Check storage/logs/pzmap2dzi.log on the app container, then re-run'
-                                    }{' '}
-                                    <code className="font-mono">
-                                        {
-                                            'php artisan zomboid:generate-map-tiles'
-                                        }
-                                    </code>
-                                </p>
-                            </div>
-                        )}
-                        {!usingLocalTiles && !tilesGenerating && !tileError && (
-                            <div className="absolute top-2 left-1/2 z-[1000] -translate-x-1/2 rounded-md bg-muted/80 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur-sm">
-                                {'No map tiles available. Run'}{' '}
-                                <code className="font-mono">
-                                    php artisan zomboid:generate-map-tiles
-                                </code>{' '}
-                                {'to generate.'}
-                            </div>
-                        )}
                         <PzMap
                             markers={markers}
                             mapConfig={mapConfig}
-                            hasTiles={hasTiles}
                             onMarkerAction={handleMarkerAction}
                             zones={zoneOverlays}
                             locationPickingMode={teleportPicking}

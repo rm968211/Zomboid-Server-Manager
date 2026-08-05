@@ -9,10 +9,8 @@ use App\Services\PlayerPositionReader;
 use App\Services\PlayersDbReader;
 use App\Services\SafeZoneManager;
 use App\Services\ServerStatusResolver;
-use Illuminate\Http\Response;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class PlayerMapController extends Controller
 {
@@ -112,7 +110,6 @@ class PlayerMapController extends Controller
 
         $mapConfig = $this->mapConfigBuilder->build();
         $safeZoneConfig = $this->safeZoneManager->getConfig();
-        $generationStatus = $this->readGenerationStatus();
 
         return Inertia::render('admin/player-map', [
             'markers' => $markers,
@@ -121,94 +118,7 @@ class PlayerMapController extends Controller
             'positionsStale' => $positionsStale && $onlineUsernames !== [],
             'positionsUpdatedAt' => $liveData['timestamp'] ?? null,
             'mapConfig' => $mapConfig,
-            'hasTiles' => $mapConfig['tileUrl'] !== null,
-            'usingLocalTiles' => $mapConfig['source'] === 'local',
-            'tilesGenerating' => $generationStatus['status'] === 'running',
-            'tileError' => $generationStatus['status'] === 'failed' ? $generationStatus['error'] : null,
-            'tileGenerationStage' => $generationStatus['stage'],
-            'tileGenerationStartedAt' => $generationStatus['started_at'],
             'safeZones' => $safeZoneConfig['enabled'] ? $safeZoneConfig['zones'] : [],
-        ]);
-    }
-
-    /**
-     * Read the last known status of the background map-tile generation command,
-     * written by GenerateMapTiles, so the admin UI can show what actually happened
-     * instead of a generic "no tiles yet" message.
-     *
-     * @return array{status: string, error: string|null, stage: string|null, started_at: string|null}
-     */
-    private function readGenerationStatus(): array
-    {
-        $statusPath = config('zomboid.map.status_path');
-
-        if (! is_file($statusPath)) {
-            return [
-                'status' => 'unknown',
-                'error' => null,
-                'stage' => null,
-                'started_at' => null,
-            ];
-        }
-
-        $data = json_decode(file_get_contents($statusPath), true);
-
-        return [
-            'status' => $data['status'] ?? 'unknown',
-            'error' => $data['error'] ?? null,
-            'stage' => $data['stage'] ?? null,
-            'started_at' => $data['started_at'] ?? null,
-        ];
-    }
-
-    /**
-     * Serve a map tile from the configured tiles path.
-     */
-    public function tile(string $level, string $tile): BinaryFileResponse|Response
-    {
-        if (! ctype_digit($level) || ! preg_match('/^\d+_\d+\.(?:webp|jpg)$/', $tile)) {
-            return response('Not found', 404);
-        }
-
-        $tilesPath = config('zomboid.map.tiles_path');
-        $dziPath = $tilesPath.'/html/map_data/base/layer0_files';
-
-        // Try webp first, then jpg
-        $baseTile = pathinfo($tile, PATHINFO_FILENAME);
-        $filePath = null;
-        $contentType = 'image/webp';
-
-        foreach (['webp', 'jpg'] as $ext) {
-            $candidate = $dziPath.'/'.$level.'/'.$baseTile.'.'.$ext;
-            if (is_file($candidate)) {
-                $filePath = $candidate;
-                $contentType = $ext === 'jpg' ? 'image/jpeg' : 'image/webp';
-                break;
-            }
-        }
-
-        if ($filePath === null) {
-            // Return transparent 1x1 PNG for missing tiles (avoids broken-image placeholders in Leaflet)
-            return response(base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='), 200, [
-                'Content-Type' => 'image/png',
-                'Cache-Control' => 'public, max-age=86400',
-            ]);
-        }
-
-        // Prevent path traversal
-        $realTilesPath = realpath($dziPath);
-        $realFilePath = realpath($filePath);
-        $tilesPrefix = $realTilesPath === false
-            ? null
-            : rtrim($realTilesPath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
-
-        if ($tilesPrefix === null || $realFilePath === false || ! str_starts_with($realFilePath, $tilesPrefix)) {
-            return response('Not found', 404);
-        }
-
-        return response()->file($realFilePath, [
-            'Cache-Control' => 'public, max-age=86400',
-            'Content-Type' => $contentType,
         ]);
     }
 }

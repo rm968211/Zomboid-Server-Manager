@@ -84,7 +84,6 @@ type Props = {
     config: SafeZoneConfig;
     violations: Violation[];
     mapConfig: MapConfig;
-    hasTiles: boolean;
 };
 
 const ZONE_COLORS = [
@@ -102,7 +101,6 @@ export default function SafeZones({
     config,
     violations,
     mapConfig,
-    hasTiles,
 }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
@@ -349,7 +347,6 @@ export default function SafeZones({
                         <div className="h-[400px] overflow-hidden rounded-md border">
                             <PzMap
                                 mapConfig={mapConfig}
-                                hasTiles={hasTiles}
                                 zones={zoneOverlays}
                                 drawingMode={drawingMode}
                                 onZoneDrawn={handleZoneDrawn}

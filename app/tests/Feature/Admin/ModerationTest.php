@@ -33,7 +33,6 @@ it('loads for admin users', function () {
         ->assertInertia(fn ($page) => $page
             ->component('admin/moderation')
             ->has('mapConfig')
-            ->has('hasTiles')
             ->has('filters')
         );
 });

@@ -115,7 +115,7 @@ Full player table with search and filtering. Per-player actions: kick, ban/unban
 
 ### Interactive Player Map
 
-Leaflet-based map rendered from PZ map tiles. Live player markers with position tracking. Click a player to view details or take action. Supports zoom levels and coordinates display.
+Leaflet-based map rendered from the official Project Zomboid map tiles. Live player markers with position tracking. Click a player to view details or take action. Supports zoom levels and coordinates display.
 
 <details>
 <summary>Screenshot</summary>
@@ -402,7 +402,7 @@ Six Docker services across two networks:
                 │        └──────────────────────────────────────┘   │
                 └───────────────────────────────────────────────────┘
 
-Volumes: pz-data, pz-server-files, pz-backups, pz-lua-bridge, pz-map-tiles,
+Volumes: pz-data, pz-server-files, pz-backups, pz-lua-bridge,
          pz-postgres (external), pz-redis, pz-app-vendor, pz-app-node-modules,
          pz-app-build
 ```

@@ -11,8 +11,6 @@ RUN apk add --no-cache \
     linux-headers \
     nodejs \
     npm \
-    python3 \
-    py3-pip \
     git
 
 # Install PHP extensions
@@ -37,16 +35,6 @@ WORKDIR /var/www/html
 # Copy composer files first for layer caching
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
-
-# Install pzmap2dzi for map tile generation (pyclipper needs C++ compiler).
-# Pinned to a known commit — GenerateMapTiles writes a config for this exact
-# schema (e.g. output_root), and upstream has renamed config keys before.
-ARG PZMAP2DZI_COMMIT=d56fe637903e4233ed0b1ff6dbc571f10f8d658b
-RUN apk add --no-cache --virtual .pzmap-build-deps g++ python3-dev \
-    && git clone https://github.com/cff29546/pzmap2dzi.git /opt/pzmap2dzi \
-    && git -C /opt/pzmap2dzi checkout "$PZMAP2DZI_COMMIT" \
-    && pip3 install --break-system-packages lupa pyclipper pillow pyyaml ruamel.yaml requests \
-    && apk del .pzmap-build-deps
 
 # Copy package files and install + build frontend
 COPY package.json package-lock.json ./
